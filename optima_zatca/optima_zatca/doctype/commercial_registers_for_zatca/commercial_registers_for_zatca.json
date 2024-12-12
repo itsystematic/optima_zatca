@@ -1,0 +1,33 @@
+{
+ "_liked_by": "[\"Administrator\"]",
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-11-25 11:46:29.317579",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "commercial_register"
+ ],
+ "fields": [
+  {
+   "fieldname": "commercial_register",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Commercial Register",
+   "options": "Commercial Register"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-12-01 10:07:12.762611",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Commercial Registers for Zatca",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

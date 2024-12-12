@@ -43,7 +43,12 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    "Company" : "public/js/company.js",
+    "Branch" : "public/js/branch.js",
+    "Sales Invoice" : "public/js/sales_invoice.js"
+    
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -97,7 +102,7 @@ app_license = "mit"
 # Name of the app being installed is passed as an argument
 
 # before_app_install = "optima_zatca.utils.before_app_install"
-# after_app_install = "optima_zatca.utils.after_app_install"
+after_app_install = "optima_zatca.utils.after_app_install"
 
 # Integration Cleanup
 # -------------------
@@ -242,3 +247,11 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+
+website_route_rules = [{'from_route': '/zatca-onboarding/<path:app_path>', 'to_route': 'zatca-onboarding'},]
+
+regional_overrides = {
+	'Saudi Arabia': {
+		'erpnext.controllers.taxes_and_totals.update_itemised_tax_data': 'optima_zatca.zatca.invoice.update_itemised_tax_data'
+	}
+}

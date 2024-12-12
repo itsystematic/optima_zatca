@@ -1,0 +1,415 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{company}-{commercial_register}",
+ "creation": "2024-11-25 11:20:52.732617",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "set_up_tab",
+  "section_break_hzct",
+  "enable_optima_zatca",
+  "section_break_qvtv",
+  "company",
+  "column_break_pkih",
+  "commercial_register",
+  "section_break_rhex",
+  "address",
+  "tab_2_tab",
+  "common_name",
+  "organization_identifier",
+  "organization_unit_name",
+  "location",
+  "industry",
+  "column_break_ciks",
+  "egs_serial_number",
+  "organization_name",
+  "country_name",
+  "invoice_type",
+  "registration_type",
+  "tab_3_tab",
+  "otp",
+  "column_break_zyfp",
+  "api_endpoints",
+  "section_break_jvhf",
+  "check_csr",
+  "check_csid",
+  "check_pcsid",
+  "column_break_ptkc",
+  "invoice_one",
+  "invoice_two",
+  "invoice_three",
+  "column_break_ulqf",
+  "invoice_four",
+  "invoice_five",
+  "invoice_six",
+  "section_break_osgj",
+  "private_key",
+  "column_break_aaeh",
+  "csr",
+  "section_break_mymv",
+  "request_id",
+  "token_type",
+  "column_break_tksk",
+  "binary_security_token",
+  "column_break_koqt",
+  "secret",
+  "section_break_rqpr",
+  "public_key",
+  "column_break_cbkk",
+  "certificate",
+  "section_break_bjdk",
+  "issuer_name",
+  "serial_number509",
+  "authorization",
+  "column_break_zfzf",
+  "certificate_hash",
+  "signature"
+ ],
+ "fields": [
+  {
+   "fieldname": "set_up_tab",
+   "fieldtype": "Tab Break",
+   "label": "Set Up"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_optima_zatca",
+   "fieldtype": "Check",
+   "label": "Enable Optima Zatca"
+  },
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "Company Informations"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "section_break_hzct",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Enter A Unique Name ex: TST-886431145-311111111101113",
+   "fieldname": "common_name",
+   "fieldtype": "Data",
+   "label": "Common Name"
+  },
+  {
+   "fieldname": "column_break_ciks",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "TAX ID for the Company",
+   "fieldname": "organization_identifier",
+   "fieldtype": "Data",
+   "label": "Organization Identifier"
+  },
+  {
+   "description": "ex: 1-TST|2-TST|3-ed22f1d8-e6a2-1118-9b58-d9a8f11e445f",
+   "fieldname": "egs_serial_number",
+   "fieldtype": "Data",
+   "label": "EGS Serial Number"
+  },
+  {
+   "description": "The branch name for taxpayers\n",
+   "fieldname": "organization_unit_name",
+   "fieldtype": "Data",
+   "label": "Organization Unit Name"
+  },
+  {
+   "description": "Short Address : RRRD2929",
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location"
+  },
+  {
+   "description": "businessCategory",
+   "fieldname": "industry",
+   "fieldtype": "Data",
+   "label": "Industry"
+  },
+  {
+   "description": "Organization/Taxpayer Name",
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Name"
+  },
+  {
+   "default": "SA",
+   "description": "Name of the country , and always SA",
+   "fieldname": "country_name",
+   "fieldtype": "Data",
+   "label": "Country Name"
+  },
+  {
+   "description": "For B2B (1000) or B2C (0100) or Both(1100),and always 1100",
+   "fieldname": "invoice_type",
+   "fieldtype": "Data",
+   "label": "Invoice Type"
+  },
+  {
+   "fieldname": "tab_3_tab",
+   "fieldtype": "Tab Break",
+   "label": "Configuration"
+  },
+  {
+   "fieldname": "api_endpoints",
+   "fieldtype": "Select",
+   "label": "API Endpoints",
+   "options": "sandbox\nsimulation\nproduction"
+  },
+  {
+   "description": "The OTP Code From Fatoora Platform.",
+   "fieldname": "otp",
+   "fieldtype": "Data",
+   "label": "OTP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_zyfp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_osgj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "private_key",
+   "fieldtype": "Text",
+   "label": "Private Key"
+  },
+  {
+   "fieldname": "column_break_aaeh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "public_key",
+   "fieldtype": "Text",
+   "label": "Public Key"
+  },
+  {
+   "fieldname": "section_break_mymv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "binary_security_token",
+   "fieldtype": "Text",
+   "label": "Binary Security Token"
+  },
+  {
+   "fieldname": "column_break_tksk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Text",
+   "label": "Request ID"
+  },
+  {
+   "fieldname": "section_break_rqpr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "csr",
+   "fieldtype": "Text",
+   "label": "CSR"
+  },
+  {
+   "fieldname": "column_break_cbkk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "certificate",
+   "fieldtype": "Text",
+   "label": "Certificate"
+  },
+  {
+   "fieldname": "secret",
+   "fieldtype": "Text",
+   "label": "Secret"
+  },
+  {
+   "fieldname": "token_type",
+   "fieldtype": "Data",
+   "label": "Token Type"
+  },
+  {
+   "fieldname": "column_break_koqt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Type of certificate like Commercial Registration Number.",
+   "fieldname": "registration_type",
+   "fieldtype": "Link",
+   "label": "Registration Type",
+   "options": "Registration Type"
+  },
+  {
+   "fieldname": "section_break_qvtv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_pkih",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rhex",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Link",
+   "label": "Address",
+   "options": "Address"
+  },
+  {
+   "fieldname": "commercial_register",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Commercial Register",
+   "no_copy": 1,
+   "options": "Commercial Register",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_break_jvhf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_pcsid",
+   "fieldtype": "Check",
+   "label": "Check PCSID"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_csid",
+   "fieldtype": "Check",
+   "label": "Check CSID"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_csr",
+   "fieldtype": "Check",
+   "label": "Check CSR"
+  },
+  {
+   "fieldname": "column_break_ptkc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ulqf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_one",
+   "fieldtype": "Check",
+   "label": "Invoice One"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_two",
+   "fieldtype": "Check",
+   "label": "Invoice Two"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_three",
+   "fieldtype": "Check",
+   "label": "Invoice Three"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_four",
+   "fieldtype": "Check",
+   "label": "Invoice Four"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_five",
+   "fieldtype": "Check",
+   "label": "Invoice Five"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_six",
+   "fieldtype": "Check",
+   "label": "Invoice Six"
+  },
+  {
+   "fieldname": "section_break_bjdk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "issuer_name",
+   "fieldtype": "Small Text",
+   "label": "Issuer Name"
+  },
+  {
+   "fieldname": "column_break_zfzf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "serial_number509",
+   "fieldtype": "Data",
+   "label": "Serial Number509"
+  },
+  {
+   "description": "Make Hash To Certificate And encode 64",
+   "fieldname": "certificate_hash",
+   "fieldtype": "Small Text",
+   "label": "Certificate Hash"
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Small Text",
+   "label": "Signature"
+  },
+  {
+   "fieldname": "authorization",
+   "fieldtype": "Long Text",
+   "label": "Authorization"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-12-07 12:29:04.021047",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Optima Zatca Setting",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

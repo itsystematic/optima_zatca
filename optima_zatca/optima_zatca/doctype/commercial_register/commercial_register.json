@@ -1,0 +1,156 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:commercial_register",
+ "creation": "2024-12-01 10:06:26.406925",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "commercial_register_number_section",
+  "commercial_register_name",
+  "is_main_commercial_register_for_the_company",
+  "column_break_hozx",
+  "commercial_register",
+  "commercial_register_units_section",
+  "company",
+  "device_name",
+  "column_break_nolz",
+  "branch",
+  "section_break_dkzg",
+  "address",
+  "address_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "commercial_register",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Commercial Register",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "commercial_register_number_section",
+   "fieldtype": "Section Break",
+   "label": "Commercial Register"
+  },
+  {
+   "fieldname": "commercial_register_units_section",
+   "fieldtype": "Section Break",
+   "label": "Commercial Register Units"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "label": "Device Name"
+  },
+  {
+   "fieldname": "column_break_nolz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "column_break_hozx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_main_commercial_register_for_the_company",
+   "fieldtype": "Check",
+   "label": "Is Main Commercial Register for the Company"
+  },
+  {
+   "fieldname": "address_html",
+   "fieldtype": "HTML",
+   "label": "Address HTML"
+  },
+  {
+   "fieldname": "commercial_register_name",
+   "fieldtype": "Data",
+   "label": "Commercial Register Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_dkzg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Link",
+   "label": "Address",
+   "options": "Address",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-12-05 10:10:51.654314",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Commercial Register",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "commercial_register_name"
+}

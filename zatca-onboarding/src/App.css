@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap');
+
+
+#root, body, html {
+  min-width: 100vw !important;
+  font-family: "Almarai", sans-serif !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  background-color: white !important;
+  color: black !important;
+  overflow: hidden;
+}
+
+.embla {
+  overflow: hidden !important;
+}
+.embla__container {
+  display: flex !important;
+}
+.embla__slide {
+  flex: 0 0 100% !important;
+  min-width: 0;
+}
