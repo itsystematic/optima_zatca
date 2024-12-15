@@ -1,23 +1,43 @@
-import { useAppDispatch } from "@/app/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { step1_schema } from "@/constants";
+import { setData } from "@/data/dataSlice";
 import { nextStep } from "@/data/stepSlice";
+import { Company, DataState } from "@/types";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+
+
+
 const Step1 = () => {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({ resolver: yupResolver(step1_schema) });
+  
+  const [companies, setCompanies] = useState<Company[]>([]);
 
+  const dataState = useAppSelector(state => state.dataReducer);
   const dispatch = useAppDispatch();
 
-  const onSubmit = (data: any) => {
-    localStorage.setItem("data", JSON.stringify(data));
-    // dispatch(setData(data));
+  const onSubmit = (data: DataState | any) => {
+    dispatch(setData({...dataState, ...data}));
     dispatch(nextStep());
   };
+
+  useEffect(() => {
+    if (isDev) {
+      setCompanies([{name: 'anacompnay', cost_center: '123123', country: 'eg', default_bank_account: '123123', default_currency: 'EGP', doctype:'Company'}])
+      return;
+    }
+    const companies = frappe.get_list('Company');
+    setCompanies(companies);
+  }, [])
+
+
+
   return (
     <motion.form
       initial={{ x: "100%" }}
@@ -32,10 +52,13 @@ const Step1 = () => {
       onSubmit={handleSubmit(onSubmit)}
     >
       <select className="select select-bordered " {...register("company")}>
-        <option>Company 1</option>
+      {companies.map((company: Company, index) => (
+        <option key={index}>{company.name}</option>
+      ))}
+        {/* <option>Company 1</option>
         <option>Company 2</option>
         <option>Company 3</option>
-        <option>Company 4</option>
+        <option>Company 4</option> */}
       </select>
       {errors.company && <p>{errors.company.message}</p>}
 
@@ -43,11 +66,11 @@ const Step1 = () => {
         type="text"
         className="input   placeholder:font-extralight"
         placeholder="Company in Arabic"
-        {...register("companyArabic")}
+        {...register("company_name_in_arabic")}
       />
-      {errors.companyArabic && (
+      {errors.company_name_in_arabic && (
         <p className="font-medium text-red-500">
-          {errors.companyArabic.message}
+          {errors.company_name_in_arabic.message}
         </p>
       )}
       <input

@@ -1,6 +1,4 @@
-import { useAppDispatch } from "@/app/hooks";
 import RegistirationForm from "@/components/RegistirationForm";
-import { resetData } from "@/data/dataSlice";
 import Step1 from "@/pages/Steps/Step1";
 import { forwardRef, useEffect, useRef } from "react";
 import Commision from "./Commision";
@@ -14,7 +12,6 @@ const Welcome = forwardRef<HTMLDivElement>((_, ref) => {
   const phasesPageRef = useRef<HTMLDialogElement>(null);
   const commisionPageRef = useRef<HTMLDialogElement>(null);
   const registerForm = useRef<HTMLDialogElement>(null);
-  const dispatch = useAppDispatch();
 
   const handleTutorialClick = () => {
     tutorialPageRef.current?.close();
@@ -26,7 +23,8 @@ const Welcome = forwardRef<HTMLDivElement>((_, ref) => {
     tutorialPageRef.current?.showModal();
   };
 
-  const handlePhaseSubmit = () => {
+  const handlePhaseSubmit = (phase: string) => {
+    sessionStorage.setItem("phase", phase);
     phasesPageRef.current?.close();
     commisionPageRef.current?.showModal();
   };
@@ -41,7 +39,6 @@ const Welcome = forwardRef<HTMLDivElement>((_, ref) => {
     registerForm.current?.showModal();
   };
   const handleRegistirationBack = () => {
-    dispatch(resetData());
     registerForm.current?.close();
     commisionPageRef.current?.showModal();
   };

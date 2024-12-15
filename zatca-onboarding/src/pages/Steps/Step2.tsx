@@ -1,8 +1,8 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { step2_schema } from "@/constants";
-import { setData } from "@/data/dataSlice";
+import { addCommercial } from "@/data/dataSlice";
 import { nextStep } from "@/data/stepSlice";
-import { DataState } from "@/types";
+import { CommercialData } from "@/types";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { motion } from "motion/react";
 import React, { useEffect, useState } from "react";
@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { FaCheckCircle } from "react-icons/fa";
 
 interface Step2Props {
-  item?: DataState;
+  commission?: CommercialData;
   editingRef?: React.ForwardedRef<HTMLDialogElement>;
 }
 
@@ -20,6 +20,7 @@ const Step2: React.FC<Step2Props> = (props) => {
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({ resolver: yupResolver(step2_schema) });
   const [openIndex, setOpenIndex] = useState(null);
@@ -32,36 +33,31 @@ const Step2: React.FC<Step2Props> = (props) => {
   const commission = useAppSelector(
     (state) => state.commissionReducer.commission
   );
-  const data = useAppSelector((state) => state.dataReducer);
+  const dataState = useAppSelector((state) => state.dataReducer);
 
-  const onSubmit = (data: any) => {
-    const storedData = JSON.parse(localStorage.getItem("data") as string);
-    const combinedData = { ...storedData, ...data } as DataState;
-    if (!props.item) {
-      dispatch(setData(combinedData));
+  const onSubmit = (data: CommercialData | any) => {
+    dispatch(addCommercial(data));
       if (commission === "multi") {
-        dispatch(setData(combinedData));
         resetFields();
       } else {
         dispatch(nextStep());
       }
-    } else {
-      dispatch(setData(combinedData));
       //@ts-ignore
       props.editingRef?.current?.close();
-    }
   };
 
   const resetFields = () => {
-    setValue("commercial_register_name", "");
-    setValue("commercial_register_number", "");
-    setValue("short_address", "");
-    setValue("building_no", "");
-    setValue("city", "");
-    setValue("address_line1", "");
-    setValue("address_line2", "");
-    setValue("district", "");
-    setValue("pincode", "");
+    reset({
+      commercial_register_name: "",
+      commercial_register_number: "",
+      short_address: "",
+      building_no: "",
+      city: "",
+      address_line1: "",
+      address_line2: "",
+      district: "",
+      pincode: "",
+    })
   };
 
   const isCommission = () => {
@@ -79,24 +75,24 @@ const Step2: React.FC<Step2Props> = (props) => {
   }
 
   useEffect(() => {
-    if (!props.item) return;
-    setValue("commercial_register_name", props.item.commercial_register_name);
-    setValue("commercial_register_number", props.item.commercial_register_number);
-    setValue("short_address", props.item.short_address);
-    setValue("building_no", props.item.building_no);
-    setValue("city", props.item.city);
-    setValue("address_line1", props.item.address_line1);
-    setValue("address_line2", props.item.address_line2);
-    setValue("district", props.item.district);
-    setValue("pincode", props.item.pincode);
-  }, [props.item]);
+    if (!props.commission) return;
+    setValue("commercial_register_name", props.commission.commercial_register_name);
+    setValue("commercial_register_number", props.commission.commercial_register_number);
+    setValue("short_address", props.commission.short_address);
+    setValue("building_no", props.commission.building_no);
+    setValue("city", props.commission.city);
+    setValue("address_line1", props.commission.address_line1);
+    setValue("address_line2", props.commission.address_line2);
+    setValue("district", props.commission.district);
+    setValue("pincode", props.commission.pincode);
+  }, [props.commission]);
 
   return (
     <>
     <div className={`flex h-full w-full gap-24 p-5 ${!isCommission() && 'justify-center gap-5'}`}>
       {isCommission() ? (
         <div className="h-full w-1/3 bg-[#959ca790] rounded-md flex flex-col gap-5">
-     {data.map((item, index) => (
+     {dataState.commercial_register.map((item, index) => (
         <div key={index} className="group relative">
           <div
             className="bg-[#483f61] text-white p-4 rounded-md cursor-pointer transition-all duration-300 ease-in-out"
@@ -258,12 +254,12 @@ const Step2: React.FC<Step2Props> = (props) => {
         <input
           type="submit"
           className="btn bg-[#483f61] text-white border-0"
-          value={props.item || commission === "multi" ? "Save" : "Next"}
+          value={props.commission || commission === "multi" ? "Save" : "Next"}
         />
       </motion.form>
     </div>
     <div className={`justify-end h-full flex items-end p-5 w-[15%] ${!isCommission() ? 'hidden' : ''}`}>
-      <button onClick={() => dispatch(nextStep())} className="btn bg-[#483f61] text-white w-full border-0 disabled:cursor-not-allowed disabled:opacity-50" disabled={!data.length}>Next</button>
+      <button onClick={() => dispatch(nextStep())} className="btn bg-[#483f61] text-white w-full border-0 disabled:cursor-not-allowed disabled:opacity-50" disabled={!dataState.commercial_register.length}>Next</button>
     </div>
       </>
   );

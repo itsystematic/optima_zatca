@@ -1,8 +1,9 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import DoneDialog from "@/components/DoneDialog";
 import EditingForm from "@/components/EditingForm";
-import { deleteData } from "@/data/dataSlice";
-import { DataState } from "@/types";
+import OTP from "@/components/OTP";
+import { deleteCommercial } from "@/data/dataSlice";
+import { CommercialData } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import Confetti from 'react-confetti';
 import { FaPen, FaTrash } from "react-icons/fa";
@@ -14,25 +15,35 @@ const Step3 = () => {
   const [checked, setChecked] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
-  const [editingItem, setEditingItem] = useState<DataState | null>(null);
+  const [editingItem, setEditingItem] = useState<CommercialData | null>(null);
+  const otpDialog = useRef<HTMLDialogElement>(null);
   const doneDialog = useRef<HTMLDialogElement>(null); 
   const editFormRef = useRef<HTMLDialogElement>(null);
   const dispatch = useAppDispatch();
-  const handleEdit = (item: DataState) => {
+  const phase = sessionStorage.getItem('phase');
+
+
+  const handleEdit = (item: CommercialData) => {
     setEditingItem(item);
   };
 
-  const handleDelete = (item: DataState) => {
-    dispatch(deleteData(item))
+  const handleDelete = (commercial: CommercialData) => {
+    dispatch(deleteCommercial(commercial))
   } 
 
   const handleSubmit = () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setShowConfetti(true);
-      doneDialog.current?.showModal()
-    }, 1500)
+    if (phase === '1') {
+      setTimeout(() => {
+        setLoading(false);
+        setShowConfetti(true);
+        doneDialog.current?.showModal()
+      }, 1500)
+    }
+    else {
+      setLoading(false)
+      otpDialog.current?.showModal();
+    }
   }
   const toggleDetails = (index: any) => {
     setOpenIndex(openIndex === index ? null : index); // Toggle the state
@@ -44,7 +55,7 @@ const Step3 = () => {
   }, [editingItem]);
 
   useEffect(() => {
-    if (dataState.length === 0) window.location.reload()
+    if (dataState.commercial_register.length === 0) window.location.reload()
   }, [dataState])
 
 
@@ -52,7 +63,7 @@ const Step3 = () => {
     <div ref={mainDiv} className="overflow-x-hidden w-full h-full flex flex-col justify-between p-5">
     {showConfetti ? <Confetti recycle={false} height={mainDiv.current?.offsetHeight} width={mainDiv.current?.offsetWidth} /> : null}
       <div>
-      {dataState.map((item, index) => (
+      {dataState.commercial_register.map((item, index) => (
         <div key={index} className="group relative">
         <div
           className="bg-[#483f61] text-white p-4 rounded-md cursor-pointer transition-all duration-300 ease-in-out"
@@ -118,7 +129,7 @@ const Step3 = () => {
           className="btn bg-[#483f61] text-white border-none disabled:bg-gray-400"
           type="submit"
         >
-          {loading ? <span className="loading loading-dots loading-lg"></span> : 'Submit'}
+          {loading ? <span className="loading loading-dots loading-lg"></span> : phase === '2' ?  'OTP' : 'Submit'}
         </button>
       </div>
       {editingItem && (
@@ -129,6 +140,7 @@ const Step3 = () => {
         />
       )}
       <DoneDialog ref={doneDialog} />
+      <OTP ref={otpDialog} />
     </div>
 
   );

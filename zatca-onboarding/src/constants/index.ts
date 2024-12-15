@@ -3,9 +3,9 @@ import * as Yup from 'yup';
 export const step1_schema = Yup.object().shape({
     company: Yup.string().required("Company is required"),
     tax_id: Yup.string()
-      .matches(/^\d{15}$/, "TAX ID must be 15 digits")
+      .matches(/^3\d{13}3$/, "TAX ID must be 15 digits & Start and End with 3")
       .required("TAX ID is required"),
-    companyArabic: Yup.string().required("Company in Arabic is required"),
+      company_name_in_arabic: Yup.string().required("Company in Arabic is required"),
   });
 
 export const step2_schema = Yup.object().shape({

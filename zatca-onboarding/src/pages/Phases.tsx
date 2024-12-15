@@ -5,7 +5,7 @@ import { IoIosArrowBack } from 'react-icons/io';
 
 interface PhasesProps {
     handlePhasesBack: () => void;
-    handlePhaseSubmit: () => void
+    handlePhaseSubmit: (phase: string) => void
 }
 
 const Phases = forwardRef<HTMLDialogElement, PhasesProps>((props, ref) => {
@@ -25,7 +25,7 @@ const PhasesChildren = ({
     handlePhaseSubmit
   }: {
     handlePhasesBack: () => void;
-    handlePhaseSubmit: () => void
+    handlePhaseSubmit: (phase: string) => void
   }) => {
 
   const [isActive, setIsActive] = useState<number>();
@@ -44,13 +44,13 @@ const PhasesChildren = ({
           <div className="h-full w-full flex items-center justify-end">
             <Button isActive={isActive} handleClick={() => {
               setIsActive(1)
-              handlePhaseSubmit()
+              handlePhaseSubmit('1')
             }} number={1} text={"المرحلة الاولة"} />
           </div>
           <div className="h-full w-full flex items-center">
             <Button isActive={isActive} handleClick={() => {
               setIsActive(2)
-              handlePhaseSubmit()
+              handlePhaseSubmit('2')
             }} number={2} text={"المرحلة الثانية"} />
           </div>
         </div>
