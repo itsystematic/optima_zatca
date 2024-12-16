@@ -245,7 +245,8 @@ def generate_qr_code(
 
     # Remove the last character Z from invoice_timestamp
     invoice_timestamp = format_datetime(invoice_date , invoice_time)[:-1]
-
+    print(vat_total)
+    print(invoice_total)
     # Remove Words Start and End
     public_key_str = public_key_str.replace("-----BEGIN PUBLIC KEY-----\n", "")
     public_key_str = public_key_str.replace("-----END PUBLIC KEY-----", "")
