@@ -14,43 +14,37 @@ from erpnext.controllers.taxes_and_totals import get_itemised_tax
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
+
+    sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
+    invoice = ZatcaInvoiceData(sales_invoice)
+    invoice_encoded = base64.b64encode(etree.tostring(invoice.xml.root)).decode()
+
+    response = make_invoice_request(
+        invoice.zatca_invoice.get("Clearance-Status") , 
+        invoice.company_settings.get("authorization") , 
+        invoice.xml.hash , 
+        invoice.zatca_invoice.get("UUID") , 
+        invoice_encoded , 
+        invoice.company_settings , 
+        invoice.zatca_invoice.get("EndPoint")
+    )
     Status , qrcode = "Failed" , ""
+    if response.status_code in [200 , 202]: 
+        ResponseJson = response.json()
+        sales_invoice.db_set("send_to_zatca" , 1 , commit=True)
+        frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=  _("Accepted"),indicator="green" ,alert=True)
+        
+        Status = "Success"  if response.status_code == 200 else "Warning"  
+        qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
+        qrcode_url = create_qr_code_for_invoice(sales_invoice_name , qrcode)
+        frappe.db.set_value("Sales Invoice", sales_invoice_name ,{
+            "clearance_or_reporting" : ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus") ,
+            "ksa_einv_qr" : qrcode_url
+        })
 
-    try :
-        sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
-        invoice = ZatcaInvoiceData(sales_invoice)
-        invoice_encoded = base64.b64encode(etree.tostring(invoice.xml.root)).decode()
-
-        response = make_invoice_request(
-            invoice.zatca_invoice.get("Clearance-Status") , 
-            invoice.company_settings.get("authorization") , 
-            invoice.xml.hash , 
-            invoice.zatca_invoice.get("UUID") , 
-            invoice_encoded , 
-            invoice.company_settings , 
-            invoice.zatca_invoice.get("EndPoint")
-        )
-
-        if response.status_code in [200 , 202]: 
-            ResponseJson = response.json()
-            frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=  _("Accepted"),indicator="green" ,alert=True)
+    else :
+        frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=  _("Rejected"), indicator="red" , alert=True)
             
-            Status = "Success"  if response.status_code == 200 else "Warning"  
-            qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
-            qrcode_url = create_qr_code_for_invoice(sales_invoice_name , qrcode)
-            frappe.db.set_value("Sales Invoice", sales_invoice_name ,{
-                "clearance_or_reporting" : ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus") ,
-                "sent_to_zatca" : 1 ,
-                "ksa_einv_qr" : qrcode_url
-            })
-
-        else :
-            frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=  _("Rejected"), indicator="red" , alert=True)
-            
-
-    except Exception as e:
-        frappe.log_error(title="Error In Zatca Invoice", message=str(e))
-        frappe.msgprint(_("You Must Contact To Your Support"))
 
     make_action_log(
         method ="send_to_zatca" ,
