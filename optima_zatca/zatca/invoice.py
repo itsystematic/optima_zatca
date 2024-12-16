@@ -39,7 +39,7 @@ def send_to_zatca(sales_invoice_name):
             qrcode_url = create_qr_code_for_invoice(sales_invoice_name , qrcode)
             frappe.db.set_value("Sales Invoice", sales_invoice_name ,{
                 "clearance_or_reporting" : ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus") ,
-                "zatca_sent" : 1 ,
+                "sent_to_zatca" : 1 ,
                 "ksa_einv_qr" : qrcode_url
             })
 
@@ -48,7 +48,7 @@ def send_to_zatca(sales_invoice_name):
             
 
     except Exception as e:
-        frappe.log_error(title="Error In Zatca Invoice", msg=str(e))
+        frappe.log_error(title="Error In Zatca Invoice", message=str(e))
         frappe.msgprint(_("You Must Contact To Your Support"))
 
     make_action_log(
