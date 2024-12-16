@@ -139,7 +139,7 @@ class ZatcaInvoiceData :
             "IssueTime" :  datetime.strptime(str(self.sales_invoice.get("posting_time")) , TimeFormat ).strftime("%H:%M:%S"),
             "Note" : self.sales_invoice.get("remarks" , "No Remarks"),
             "DocumentCurrencyCode" : self.sales_invoice.get("currency") ,
-            "TaxCurrencyCode" : self.sales_invoice.get("currency") ,
+            "TaxCurrencyCode" : "SAR" ,
             "PaymentNote" : self.sales_invoice.get("terms") ,
             # "QR" : self.sales_invoice.get("ksa_einv_qr") 
         })
@@ -211,6 +211,7 @@ class ZatcaInvoiceData :
             "TaxAmount" : "{:.2f}".format(abs(self.sales_invoice.get("total_taxes_and_charges"))),
             "TaxTotalTaxAmount" : "{:.2f}".format(abs(self.sales_invoice.get("base_total_taxes_and_charges"))), #in Qrcode and IF Difference in currency 
             "GrandTotalAmount" : "{:.2f}".format(abs(self.sales_invoice.get("base_grand_total"))), # in Qrcode 
+            "GrandTotal" : "{:.2f}".format(abs(self.sales_invoice.get("grand_total"))), # in Qrcode 
             "TaxCategorySchemeID" : "UNCL5305" ,
         })
 
@@ -220,7 +221,7 @@ class ZatcaInvoiceData :
         for row in list_of_subtotals:
             for key, value in row.items():
                 if isinstance(value, (int, float)):  # Check if the value is a number
-                    row[key] = str(value)
+                    row[key] = "{:.2f}".format(value)
 
         self.zatca_invoice["TaxSubtotal"] = list_of_subtotals
 
@@ -248,8 +249,8 @@ class ZatcaInvoiceData :
                 }
 
             # Accumulate the tax amount
-            tax_categories[tax_category]["TaxAmount"] += flt(abs(entry.tax_amount) ,2 )
-            tax_categories[tax_category]["TaxableAmount"] = flt(abs(entry.net_amount ) ,2 )
+            tax_categories[tax_category]["TaxAmount"] += abs(entry.tax_amount)
+            tax_categories[tax_category]["TaxableAmount"] = abs(entry.net_amount )
 
             if tax_category in ["O" , "Z" , "E"] :
                 tax_exemption = entry.get("tax_exemption")
@@ -260,36 +261,38 @@ class ZatcaInvoiceData :
 
     def add_sales_invoice_discount(self) : 
         
-        tax_categories = {}
-        for entry in self.sales_invoice.get("items"):
-            tax_category = entry.tax_category
+        if self.sales_invoice.get("discount_amount") :
+            tax_categories = {}
+            for entry in self.sales_invoice.get("items"):
+                tax_category = entry.tax_category
 
-            if not tax_category :
-                tax_category = frappe.db.get_value("Item Tax Template" , entry.get("item_tax_template") , "tax_category")
+                if not tax_category :
+                    tax_category = frappe.db.get_value("Item Tax Template" , entry.get("item_tax_template") , "tax_category")
 
-            # If the tax category is not in the result, initialize it
-            if entry.get("tax_category") not in tax_categories:
-                tax_categories[tax_category] = {
-                    "TaxCategory": tax_category, 
-                    "TaxCategorySchemeID" : "UNCL5305",
-                    "Percent": "{:.2f}".format(abs(entry.tax_rate)), 
-                    "ChargeIndicator" :"false" ,
-                    "AllowanceChargeReason" : "discount" ,
-                    "AllowanceChargeAmount" : 0.00,
-                }
+                # If the tax category is not in the result, initialize it
+                if entry.get("tax_category") not in tax_categories:
+                    tax_categories[tax_category] = {
+                        "TaxCategory": tax_category, 
+                        "TaxCategorySchemeID" : "UNCL5305",
+                        "Percent": "{:.2f}".format(abs(entry.tax_rate)), 
+                        "ChargeIndicator" :"false" ,
+                        "AllowanceChargeReason" : "discount" ,
+                        "AllowanceChargeAmount" : 0.00,
+                    }
 
-            tax_categories[tax_category]["AllowanceChargeAmount"] += flt(abs(entry.amount) - abs(entry.net_amount) ,2 )
-            #amount = abs(entry.amount) / ( 1 + (entry.tax_rate / 100 ))
+                tax_categories[tax_category]["AllowanceChargeAmount"] += flt(abs(entry.amount) - abs(entry.net_amount) ,2 )
 
-            #tax_categories[tax_category]["AllowanceChargeAmount"] += flt(amount * abs(self.sales_invoice.get("additional_discount_percentage")) /100 ,2 )
+                #amount = abs(entry.amount) / ( 1 + (entry.tax_rate / 100 ))
 
-        list_of_allowance_charge = list(tax_categories.values())
-        for row in list_of_allowance_charge:
-            for key, value in row.items():
-                if isinstance(value, (int, float)):  # Check if the value is a number
-                    row[key] = str(value)
+                #tax_categories[tax_category]["AllowanceChargeAmount"] += flt(amount * abs(self.sales_invoice.get("additional_discount_percentage")) /100 ,2 )
 
-        self.zatca_invoice["AllowanceCharge"] = list_of_allowance_charge
+            list_of_allowance_charge = list(tax_categories.values())
+            for row in list_of_allowance_charge:
+                for key, value in row.items():
+                    if isinstance(value, (int, float)):  # Check if the value is a number
+                        row[key] = str(value)
+
+            self.zatca_invoice["AllowanceCharge"] = list_of_allowance_charge
             
 
         
@@ -372,7 +375,7 @@ def get_invoice_counter_and_pih(endpoint , company_settings:_dict) :
         "company" : company_settings.company ,
         "commercial_register" : company_settings.commercial_register ,
         "environment" : company_settings.api_endpoints ,
-        "api_endpoint" : endpoint
+        "api_endpoint" : endpoint if endpoint == "complainace_checks" else ["in",["reporting" , "clearance"] ]
 
     } , ["hash" , "icv"] , order_by="creation desc" , limit=1 )
 

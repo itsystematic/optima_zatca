@@ -1,0 +1,146 @@
+[
+    {
+        "code": "Z",
+        "description": "Supply of qualified military goods | توريد السلع العسكرية المؤهلة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.216326",
+        "name": "VATEX-SA-MLTRY",
+        "reason_code": "VATEX-SA-MLTRY"
+    },
+    {
+        "code": "Z",
+        "description": "Private education to citizen | الخدمات التعليمية الخاصة للمواطنين",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.243340",
+        "name": "VATEX-SA-EDU",
+        "reason_code": "VATEX-SA-EDU"
+    },
+    {
+        "code": "Z",
+        "description": "Qualifying metals | المعادن المؤهلة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.283021",
+        "name": "VATEX-SA-36",
+        "reason_code": "VATEX-SA-36"
+    },
+    {
+        "code": "Z",
+        "description": "Medicines and medical equipment | الأدوية والمعدات الطبية",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.300132",
+        "name": "VATEX-SA-35",
+        "reason_code": "VATEX-SA-35"
+    },
+    {
+        "code": "Z",
+        "description": "Any services relating to Goods or passenger transportation, as defined in article twenty five of these Regulations | \"الخدمات ذات الصلة بنقل السلع أو الركاب، وفق ًا للتعريف الوارد بالمادة الخامسة والعشرين من الائحة التنفيذية لنظام ضريبة القيامة المضافة\"",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.317237",
+        "name": "VATEX-SA-34-5",
+        "reason_code": "VATEX-SA-34-5"
+    },
+    {
+        "code": "Z",
+        "description": "Supply of a qualifying means of transport | توريد وسائل النقل المؤهلة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.334023",
+        "name": "VATEX-SA-34-4",
+        "reason_code": "VATEX-SA-34-4"
+    },
+    {
+        "code": "Z",
+        "description": "Services directly connected and incidental to a Supply of international passenger transport | الخدمات المرتبطة مباشرة او عرضيا بتوريد النقل الدولي للركاب",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.351346",
+        "name": "VATEX-SA-34-3",
+        "reason_code": "VATEX-SA-34-3"
+    },
+    {
+        "code": "Z",
+        "description": "International transport of passengers | النقل الدولي للركاب",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.368324",
+        "name": "VATEX-SA-34-2",
+        "reason_code": "VATEX-SA-34-2"
+    },
+    {
+        "code": "Z",
+        "description": "The international transport of Goods | النقل الدولي للسلع",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.384807",
+        "name": "VATEX-SA-34-1",
+        "reason_code": "VATEX-SA-34-1"
+    },
+    {
+        "code": "E",
+        "description": "Life insurance services mentioned in Article 29 of the VAT Regulations | عقد تأمين على الحياة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.450560",
+        "name": "VATEX-SA-29-7",
+        "reason_code": "VATEX-SA-29-7"
+    },
+    {
+        "code": "E",
+        "description": "Real estate transactions mentioned in Article 30 of the VAT Regulations | التوريدات العقارية المعفاة من الضريبة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.434607",
+        "name": "VATEX-SA-30",
+        "reason_code": "VATEX-SA-30"
+    },
+    {
+        "code": "Z",
+        "description": "Private healthcare to citizen | الخدمات الصحية الخاصة للمواطنين",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.230187",
+        "name": "VATEX-SA-HEA",
+        "reason_code": "VATEX-SA-HEA"
+    },
+    {
+        "code": "E",
+        "description": "Financial services mentioned in Article 29 of the VAT Regulations",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-10 12:54:22.535940",
+        "name": "VATEX-SA-29",
+        "reason_code": "VATEX-SA-29"
+    },
+    {
+        "code": "Z",
+        "description": "Export of services | صادرات الخدمات من المملكة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.403176",
+        "name": "VATEX-SA-33",
+        "reason_code": "VATEX-SA-33"
+    },
+    {
+        "code": "O",
+        "description": "The reason is a free text, has to be provided by the taxpayer on case to case basis | السبب يتم تزويده من قبل المكلف على أساس كل حالة على حدة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.196047",
+        "name": "VATEX-SA-OOS",
+        "reason_code": "VATEX-SA-OOS"
+    },
+    {
+        "code": "Z",
+        "description": "Export of goods | صادرات السلع من المملكة",
+        "docstatus": 0,
+        "doctype": "Tax Exemption",
+        "modified": "2024-12-08 16:22:00.418668",
+        "name": "VATEX-SA-32",
+        "reason_code": "VATEX-SA-32"
+    }
+]

@@ -1,9 +1,11 @@
+import io
 import asn1
 import uuid
 import base64
 import frappe
-import binascii
+import qrcode
 import hashlib
+import binascii
 from datetime import datetime
 from cryptography import x509
 from cryptography.hazmat._oid import NameOID
@@ -102,6 +104,7 @@ def create_company_csr(settings , company_details:dict):
 
     company_details["csr"] = encoded_string
     company_details["organization_name"] = company_name_in_arabic
+    company_details["check_csr"] = 1
 
     frappe.msgprint("CSR generation successful. CSR saved" , alert=True) 
     return encoded_string
@@ -175,6 +178,7 @@ def format_datetime(date, time):
     
     return formatted_date
 
+
 def get_address_of_company(commercial_register):
 
     """ Handle To Get Address of Company """
@@ -222,3 +226,65 @@ def create_commercial_register(**kwargs):
         return commercial_register
     
     return frappe.get_doc("Commercial Register", kwargs.get("commercial_register"))
+
+
+
+
+def generate_qr_code(
+    seller_name ,
+    seller_vat ,
+    invoice_date , 
+    invoice_time , 
+    invoice_total , 
+    vat_total , 
+    invoice_hash , 
+    invoice_signature , 
+    public_key_str , 
+    signature_ecdsa
+) :
+
+    # Remove the last character Z from invoice_timestamp
+    invoice_timestamp = format_datetime(invoice_date , invoice_time)[:-1]
+
+    # Remove Words Start and End
+    public_key_str = public_key_str.replace("-----BEGIN PUBLIC KEY-----\n", "")
+    public_key_str = public_key_str.replace("-----END PUBLIC KEY-----", "")
+    
+    concatenated_data = (
+        bytes([1]) + bytes([len(seller_name.encode('utf-8'))]) + seller_name.encode("utf-8") +
+        bytes([2]) + bytes([len(seller_vat.encode('utf-8'))]) + seller_vat.encode("utf-8") +
+        bytes([3]) + bytes([len(invoice_timestamp)]) + invoice_timestamp.encode("utf-8") +
+        bytes([4]) + bytes([len(invoice_total)]) + invoice_total.encode("utf-8") +
+        bytes([5]) + bytes([len(vat_total)]) + vat_total.encode("utf-8") +
+        bytes([6]) + bytes([len(invoice_hash)]) + invoice_hash.encode("utf-8") +
+        bytes([7]) + bytes([len(invoice_signature)]) + invoice_signature.encode("utf-8") +
+        bytes([8]) + bytes([len(base64.b64decode(public_key_str))]) + base64.b64decode(public_key_str) +
+        bytes([9]) + bytes([len(bytes.fromhex(signature_ecdsa))]) + bytes.fromhex(signature_ecdsa)
+    )
+    
+    # qr code is the base46 encoding of the concated array
+    qrcode_encode = base64.b64encode(concatenated_data).decode()
+
+    return qrcode_encode
+
+
+def create_qr_code_for_invoice(invoice_id , qrcode_encode):
+
+    img = qrcode.make(qrcode_encode)
+    img_byte_array = io.BytesIO()
+    img.save(img_byte_array, format="PNG" ,optimize=True)
+    img_content = img_byte_array.getvalue()
+
+    frappe.db.delete("File", {"attached_to_doctype": "Sales Invoice", "attached_to_name": invoice_id , "attached_to_field": "ksa_einv_qr"})
+
+    invoice_qrcode = frappe.get_doc({
+        "doctype": "File",
+        "file_name":  f"{invoice_id}.png",
+        "is_private": 0,
+        "content": img_content,
+        "attached_to_doctype": "Sales Invoice",
+        "attached_to_name": invoice_id,
+        "attached_to_field": "ksa_einv_qr",
+    })
+    invoice_qrcode.save()
+    return invoice_qrcode.file_url

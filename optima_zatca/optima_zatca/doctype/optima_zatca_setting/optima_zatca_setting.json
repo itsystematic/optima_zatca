@@ -9,6 +9,7 @@
   "set_up_tab",
   "section_break_hzct",
   "enable_optima_zatca",
+  "phases",
   "section_break_qvtv",
   "company",
   "column_break_pkih",
@@ -376,11 +377,17 @@
    "fieldname": "authorization",
    "fieldtype": "Long Text",
    "label": "Authorization"
+  },
+  {
+   "fieldname": "phases",
+   "fieldtype": "Select",
+   "label": "Phases",
+   "options": "Phase 1\nPhase 2"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-07 12:29:04.021047",
+ "modified": "2024-12-15 16:57:01.992514",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Setting",

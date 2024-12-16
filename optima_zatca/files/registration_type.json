@@ -1,0 +1,90 @@
+[
+    {
+        "description": "Tax Identification Number",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.662731",
+        "name": "TIN",
+        "name1": "TIN"
+    },
+    {
+        "description": "MOMRAH license",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.678624",
+        "name": "MOM",
+        "name1": "MOM"
+    },
+    {
+        "description": "MHRSD license",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.694789",
+        "name": "MLS",
+        "name1": "MLS"
+    },
+    {
+        "description": "700 Number",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.709716",
+        "name": "700",
+        "name1": "700"
+    },
+    {
+        "description": "MISA license",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.720395",
+        "name": "SAG",
+        "name1": "SAG"
+    },
+    {
+        "description": "National ID",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.731272",
+        "name": "NAT",
+        "name1": "NAT"
+    },
+    {
+        "description": "GCC ID",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.742572",
+        "name": "GCC",
+        "name1": "GCC"
+    },
+    {
+        "description": "Iqama Number",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.753763",
+        "name": "IQA",
+        "name1": "IQA"
+    },
+    {
+        "description": "Passport ID",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.764772",
+        "name": "PAS",
+        "name1": "PAS"
+    },
+    {
+        "description": "Other ID",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.776108",
+        "name": "OTH",
+        "name1": "OTH"
+    },
+    {
+        "description": "Commercial registration number",
+        "docstatus": 0,
+        "doctype": "Registration Type",
+        "modified": "2024-11-28 17:01:16.634587",
+        "name": "CRN",
+        "name1": "CRN"
+    }
+]

@@ -1,6 +1,11 @@
+
 import json
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+from os import listdir
+from click import secho
+from frappe import get_app_path
 from frappe import make_property_setter
+from frappe.core.doctype.data_import.data_import import import_doc
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 ADDRESS_DOCTYPE_FIELDS = [
@@ -17,6 +22,13 @@ def after_app_install(app_name) :
     create_additional_fields()
     create_property_setter()
 
+
+
+def add_standard_data() :
+    all_files_in_folders = listdir(get_app_path("optima_zatca", "files"))
+    secho("Install Doctypes From Files  => {}".format(" , ".join(all_files_in_folders)), fg="blue")
+    for file in all_files_in_folders:
+        import_doc(get_app_path("optima_zatca", "files/" + f"{file}"))
 
 
 def create_additional_fields() :
@@ -223,30 +235,30 @@ def create_additional_fields() :
 def create_property_setter() :
 
     property_setter = [
-        # {
-        #     "doctype": "Address",
-        #     "doctype_or_field": "DocField",
-        #     "fieldname": "address_line1",
-        #     "property": "label",
-        #     "value": "Street",
-        #     "property_type": "Data",
-        # },
-        # {
-        #     "doctype": "Address",
-        #     "doctype_or_field": "DocField",
-        #     "fieldname": "address_line2",
-        #     "property": "label",
-        #     "value": "Secondary No",
-        #     "property_type": "Data",
-        # },
-        # {
-        #     "doctype": "Address",
-        #     "doctype_or_field": "DocType",
-        #     "fieldname": "address_line3",
-        #     "property": "field_order",
-        #     "value": json.dumps(ADDRESS_DOCTYPE_FIELDS),
-        #     "property_type": "Data",
-        # },
+        {
+            "doctype": "Address",
+            "doctype_or_field": "DocField",
+            "fieldname": "address_line1",
+            "property": "label",
+            "value": "Street",
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Address",
+            "doctype_or_field": "DocField",
+            "fieldname": "address_line2",
+            "property": "label",
+            "value": "Secondary No",
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Address",
+            "doctype_or_field": "DocType",
+            "fieldname": "address_line3",
+            "property": "field_order",
+            "value": json.dumps(ADDRESS_DOCTYPE_FIELDS),
+            "property_type": "Data",
+        },
         {
             "doctype": "Sales Invoice",
             "doctype_or_field": "DocField",
@@ -263,9 +275,42 @@ def create_property_setter() :
             "value": "Net Total",
             "property_type": "Data",
         },
+        {
+            "doctype": "Sales Invoice",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "default",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Sales Invoice",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Sales Invoice",
+            "doctype_or_field": "DocField",
+            "fieldname" : "taxes_and_charges",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Sales Invoice",
+            "doctype_or_field": "DocField",
+            "fieldname" : "tax_category",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
 
     ]
 
     for setter in property_setter :
-        make_property_setter(setter , ignore_validate=True , is_system_generated=True)
+        make_property_setter(setter , ignore_validate=False , is_system_generated=True)
+
 

@@ -1,4 +1,5 @@
 import re
+import json
 import frappe
 from frappe import _ 
 
@@ -56,21 +57,23 @@ class ZatcaInvoiceValidate :
     def validate_items_fields(self) :
 
         for item in self.sales_invoice.get("items") :
+            global tax_category
 
             if item.get("item_tax_template") in ["",None] :
                 frappe.throw(_("Item Tax Template in Item  {0} Missing in row {1}").format(item.get("item_code") , item.get("idx")))
 
+            tax_category = item.get("tax_category")
             if item.get("tax_cateogry") in ["",None] :
                 tax_category = frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category")
                 
                 if not tax_category :
                     frappe.throw(_("Tax Category in Item Tax Template {0} Not Found").format(item.get("item_tax_template")))
 
+            if tax_category == "S" and item.get("tax_exemption") :
+                frappe.throw(_("You Should Delete Tax Exemption in Tax Category S in row {0}").format(item.get("idx")))
 
-    def validate_taxes_and_charges(self) :
-
-        if len(self.sales_invoice.get("taxes")) != 1 :
-            frappe.throw(_("Invoice Must Have Only One VAT"))
+            elif tax_category in ["Z" , "O" , "E"] and not item.get("tax_exemption") :
+                frappe.throw(_("You Should Add Tax Exemption in Tax Category {0} in row {1}").format(tax_category ,item.get("idx")))
 
                 
     def validate_customer_info(self) :
@@ -114,7 +117,7 @@ def validate_address(main_address: frappe._dict):
     
     for field in company_address_fields:
         if main_address.get(field) in ["",None]:
-            frappe.throw(_("Please Fill the field '{0}' data in 'Company Address' Doc.").format(main_address.meta.get_label(field)))
+            frappe.throw(_("Please Fill the field {0} data in Company Address Doc.").format(frappe.bold(field.replace("_" , " ").title())))
             
     if len(main_address.get("address_line1")) > 1000 :
         frappe.throw( _("Seller Street Name exeeded maximum charachter limit '1000'") )
@@ -155,3 +158,39 @@ def validate_tax_id_in_saudia_arabia(tax_id) -> None :
     if not bool(re.match(r'^3\d{13}3$' , tax_id))  :
         frappe.throw(title=_("Invalid Tax ID") , msg=_("Tax ID Must Only Number , Begin 3 , End 3  and Must be 15 Number Long"))
 
+
+
+def validate_register_data(**kwargs) :
+
+    validate_global_data(kwargs)
+    validate_company_exists(kwargs.get("company"))
+    validate_tax_id_in_saudia_arabia(kwargs.get("tax_id"))
+    
+    if isinstance(kwargs.get("commercial_register") , str) :
+        list_of_branches = json.loads(kwargs.get("commercial_register"))
+
+    for address in list_of_branches  :
+        validate_address(address)
+
+
+
+def validate_global_data(kwargs):
+    fields = ["company" , "company_name_in_arabic" , "tax_id" , "commercial_register"]
+
+    for field in fields :
+        if kwargs.get(field) in ["",None] :
+            frappe.throw(_("Missing Field {0}").format(field.replace("_" , " ").title()))
+
+def validate_company_exists(company) :
+
+    if not frappe.db.exists("Company" ,company) :
+        frappe.throw(_("Company {0} Not Found").format(company))
+
+
+def validate_otp(otp) :
+
+    if not isinstance(otp , str) :
+        otp = str(otp)
+
+    if len(otp) != 5 :
+        frappe.throw(_("OTP Must Be 5 Digits"))

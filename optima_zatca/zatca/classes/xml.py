@@ -8,28 +8,29 @@ import qrcode
 import hashlib
 from lxml import etree
 from frappe import _ , _dict
+from optima_zatca.zatca.utils import generate_qr_code
 from bs4 import BeautifulSoup
 import xml.dom.minidom as mini
 from frappe.utils import  get_bench_relative_path
-from optima_zatca.zatca.utils import format_datetime , sign_invoice
+from optima_zatca.zatca.utils import sign_invoice
 
+
+
+NameSpace = {
+    "ext": "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
+    "sig": "urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2",
+    "sac": "urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2",
+    "sbc": "urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2",
+    "xades": "http://uri.etsi.org/01903/v1.3.2#",
+    "ds": "http://www.w3.org/2000/09/xmldsig#",
+    "cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+    "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+}
 
 class ZatcaXml :
     
     def __init__(self, sales_invoice:_dict = {} ):
         self.sales_invoice = sales_invoice
-        
-        self.nsmap = {
-            "ext": "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
-            "sig": "urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2",
-            "sac": "urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2",
-            "sbc": "urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2",
-            "xades": "http://uri.etsi.org/01903/v1.3.2#",
-            "ds": "http://www.w3.org/2000/09/xmldsig#",
-            "cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
-            "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
-        }
-        
         self.create_zatca_xml()
         
         
@@ -41,7 +42,6 @@ class ZatcaXml :
         self.add_customer_information()
         self.add_items_data()
         
-        # serial, issuer, signature_ecdsa, pubkey_ecdsa = self.__handle_certificate()
         invoice_hash_encoded, inovice_hash = calculate_invoice_hash(copy.deepcopy(self.tree))
 
         signature_encoded, signing_time = sign_invoice( self.sales_invoice.get("private_key") , inovice_hash )
@@ -55,11 +55,10 @@ class ZatcaXml :
             signature_encoded=signature_encoded,
             signed_properities_hash_encoded=signed_properities_hash_encoded,
         )
-        
-        qr_code = self.generate_qr_code()
-        self.create_qr_code(qr_code)
-        
-        self.__final_invoice(qr_code)
+
+        self.__final_invoice(signature_encoded)
+
+        create_xml_file(self.tree , self.sales_invoice.get("ID") , self.sales_invoice.get("UUID"))
         
     def create_xml_tree(self) :
 
@@ -112,7 +111,7 @@ class ZatcaXml :
         document_currency_code.text = self.sales_invoice.get("DocumentCurrencyCode")
 
         tax_currency_code = self.root.find("{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxCurrencyCode")
-        tax_currency_code.text = self.sales_invoice.get("company").get("DefaultCurrency") or self.sales_invoice.get("DocumentCurrencyCode")
+        tax_currency_code.text = self.sales_invoice.get("TaxCurrencyCode")
         # tax_currency_code.text = self.sales_invoice.get("TaxCurrencyCode") or self.sales_invoice.get("DocumentCurrencyCode")
 
 
@@ -145,7 +144,7 @@ class ZatcaXml :
             #     etree.cleanup_namespaces(billing_ref, top_nsmap={None: ns})
 
             # Get the index of the location of insertion
-            tax_Currency_code_index = self.root.xpath( ".//cbc:TaxCurrencyCode[last()]", namespaces=self.nsmap )
+            tax_Currency_code_index = self.root.xpath( ".//cbc:TaxCurrencyCode[last()]", namespaces=NameSpace )
             # insert the new tag
             tax_Currency_code_index[0].getparent().insert(
                 tax_Currency_code_index[0].getparent().index(tax_Currency_code_index[0])
@@ -259,7 +258,7 @@ class ZatcaXml :
             
             seller_address_tag = self.root.find(
                 ".//cac:AccountingSupplierParty/cac:Party/cac:PostalAddress",
-                namespaces=self.nsmap,
+                namespaces=NameSpace,
             )
             seller_province = etree.SubElement(seller_address_tag, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}CountrySubentity")
 
@@ -310,9 +309,9 @@ class ZatcaXml :
             if self.sales_invoice.get("customer").get("ID") not in [ "", None] :
                 
                 # find parent tag to insert customer name and nat
-                customer_party = self.root.find(".//cac:AccountingCustomerParty/cac:Party", namespaces=self.nsmap )
+                customer_party = self.root.find(".//cac:AccountingCustomerParty/cac:Party", namespaces=NameSpace )
                 # find index to insert nat tag
-                customer_tax_scheme = self.root.find(".//cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme",namespaces=self.nsmap)
+                customer_tax_scheme = self.root.find(".//cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme",namespaces=NameSpace)
                 # create the identifier element
                 party_identification = etree.SubElement(customer_party,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}PartyIdentification")
                 buyer_nat = etree.SubElement(party_identification, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID" )
@@ -396,14 +395,14 @@ class ZatcaXml :
             if self.sales_invoice.get("customer").get("CountrySubentity") :
                 buyer_address_tag = self.root.find(
                     ".//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress",
-                    namespaces=self.nsmap,
+                    namespaces=NameSpace,
                 )
                 buyer_province = etree.SubElement(  buyer_address_tag,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}CountrySubentity")
                 buyer_province.text = self.sales_invoice.get("customer").get("CountrySubentity")
                 buyer_province.tail = "\n                "
                 # Remove the specified namespaces from the element
-                for ns in self.nsmap:
-                    etree.cleanup_namespaces(buyer_province, top_nsmap={None: ns})
+                # for ns in self.nsmap:
+                #     etree.cleanup_namespaces(buyer_province, top_nsmap={None: ns})
 
                 # Insert the element after buyer postal code
                 buyer_address_tag.insert(buyer_address_tag.index(buyer_postal_zone) + 1, buyer_province )
@@ -452,7 +451,7 @@ class ZatcaXml :
             # for ns in namespaces:
             #     etree.cleanup_namespaces(parent_delivery_date, top_nsmap={None: ns})
                 
-            customer = self.root.find(".//cac:AccountingCustomerParty", namespaces=self.nsmap)
+            customer = self.root.find(".//cac:AccountingCustomerParty", namespaces=NameSpace)
             self.root.insert(self.root.index(customer) + 1, parent_delivery_date)
 
         # Create Payment means tag if invoice subtype is credit or debit or if payment terms is not empty , note payment terms require payment code .
@@ -504,7 +503,7 @@ class ZatcaXml :
             # Handle spaces and indentation for hashing.
             etree.indent(payment_means, space="    ", level=1)
             # find previous element to get index for insertion
-            customer = self.root.find(".//cac:AccountingCustomerParty", namespaces=self.nsmap)
+            customer = self.root.find(".//cac:AccountingCustomerParty", namespaces=NameSpace)
             # handle spaces for hashing
             payment_means.tail = "\n    "
             # insert after delivary tag
@@ -516,7 +515,7 @@ class ZatcaXml :
         # The value of this tag indicating discount (Allowance) must be ""false""."
 
         ##reason
-        customer = self.root.find(".//cac:AccountingCustomerParty", namespaces=self.nsmap)
+        customer = self.root.find(".//cac:AccountingCustomerParty", namespaces=NameSpace)
         place = 1
 
         if self.sales_invoice.get("PaymentMeansCode") :
@@ -525,7 +524,7 @@ class ZatcaXml :
         if self.sales_invoice.get("ActualDeliveryDate") :
             place += 1
 
-        for allowance_charge in self.sales_invoice.get("AllowanceCharge") :
+        for allowance_charge in self.sales_invoice.get("AllowanceCharge" , []) :
             parent_allowance_charge = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
             parent_allowance_charge.tail = "\n    "
             charge_indicator = etree.SubElement(parent_allowance_charge,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ChargeIndicator")
@@ -563,32 +562,8 @@ class ZatcaXml :
                 parent_allowance_charge,
             )
 
-
-
-        #allowance_charge_reason = self.root.find(".//cac:AllowanceCharge/cbc:AllowanceChargeReason", namespaces=self.nsmap)
-        #allowance_charge_reason.text = self.sales_invoice.get("AllowanceChargeReason")
-
-        ##percent based on base amount
-
-        ##amount without vat
-
-        #allowance_charge_amount = self.root.find( ".//cac:AllowanceCharge/cbc:Amount", namespaces=self.nsmap)
-        #allowance_charge_amount.text = self.sales_invoice.get("AllowanceChargeAmount")
-        #allowance_charge_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
-
-        ##tax id , currently comes from first item tax category , can change
-
-        #allowance_charge_tax_id = self.root.find(".//cac:AllowanceCharge/cac:TaxCategory/cbc:ID", namespaces=self.nsmap)
-        #allowance_charge_tax_id.text = self.sales_invoice.get("TaxCategory")
-        #allowance_charge_tax_id.set("schemeID", self.sales_invoice.get("TaxCategorySchemeID"))
-
-        ##tax percent , currently comes from first item tax type percent , can change
-
-        #allowance_charge_tax_percent = self.root.find(".//cac:AllowanceCharge/cac:TaxCategory/cbc:Percent", namespaces=self.nsmap)
-        #allowance_charge_tax_percent.text = self.sales_invoice.get("Percent")
-
         # tax total amount in company currency (We deal mainly with ksa) , rhera is two tax total amounts one in invoice currency and one in company curreny
-        tax_total_tax_amount = self.root.find(".//cac:TaxTotal/cbc:TaxAmount", namespaces=self.nsmap)
+        tax_total_tax_amount = self.root.find(".//cac:TaxTotal/cbc:TaxAmount", namespaces=NameSpace)
         tax_total_tax_amount.text = self.sales_invoice.get("TaxTotalTaxAmount")
         tax_total_tax_amount.set("currencyID", self.sales_invoice.get("company").get("DefaultCurrency"))
 
@@ -600,34 +575,34 @@ class ZatcaXml :
 
         # legal monetary total tag
         ## line extension amount (sum of net amounts without vat or document discounts)
-        Line_extension_amount = self.root.find(".//cac:LegalMonetaryTotal/cbc:LineExtensionAmount", namespaces=self.nsmap)
+        Line_extension_amount = self.root.find(".//cac:LegalMonetaryTotal/cbc:LineExtensionAmount", namespaces=NameSpace)
         Line_extension_amount.text = self.sales_invoice.get("LineExtensionAmount")
         Line_extension_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
         ## taxt exclusive amount (total without vat with document discounts)
-        TaxExclusiveAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", namespaces=self.nsmap)
+        TaxExclusiveAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", namespaces=NameSpace)
         TaxExclusiveAmount.text = self.sales_invoice.get("TaxExclusiveAmount")
         TaxExclusiveAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
         ## taxt inclusive amount (total with vat and discounts)
-        TaxInclusiveAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", namespaces=self.nsmap)
+        TaxInclusiveAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", namespaces=NameSpace)
         TaxInclusiveAmount.text = self.sales_invoice.get("TaxInclusiveAmount")
         TaxInclusiveAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
         ## allowance total amount
         # "Sum of all allowances on document level in the Invoice.
         # Allowances on line level are included in the Invoice line net amount which is summed up into the Sum of Invoice line net amount."
-        AllowanceTotalAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", namespaces=self.nsmap)
+        AllowanceTotalAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", namespaces=NameSpace)
         AllowanceTotalAmount.text = self.sales_invoice.get("AllowanceTotalAmount")
         AllowanceTotalAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
         ## prepaid amount if exists
-        PrepaidAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:PrepaidAmount", namespaces=self.nsmap)
+        PrepaidAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:PrepaidAmount", namespaces=NameSpace)
         PrepaidAmount.text = self.sales_invoice.get("PrepaidAmount")
         PrepaidAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
         ## payable amount (I'm using grand to solve some bug , but the outstanding is correct as well)
-        PayableAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:PayableAmount", namespaces=self.nsmap)
+        PayableAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:PayableAmount", namespaces=NameSpace)
         # PayableAmount.text = str(abs(self.sales_invoice_data.get("outstanding_amount")))
         PayableAmount.text = self.sales_invoice.get("PayableAmount")
         PayableAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
@@ -636,7 +611,7 @@ class ZatcaXml :
     def insert_tax_total_elements_after_existing(self):
         # "Sum of all taxable amounts subject to a specific VAT category code and VAT category rate (if the VAT category rate is applicable).
 
-        TaxTotal_After_Existing = self.root.xpath(".//cac:TaxTotal[last()]", namespaces=self.nsmap)
+        TaxTotal_After_Existing = self.root.xpath(".//cac:TaxTotal[last()]", namespaces=NameSpace)
 
         tax_total = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxTotal")
         tax_amount = etree.SubElement(tax_total,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxAmount")
@@ -707,7 +682,7 @@ class ZatcaXml :
         item_list = self.sales_invoice.get("items")
 
         # Find the position to insert new invoice line  elements (after the legal monetary total)
-        last_existing_legal_monetary_total = self.root.xpath(".//cac:LegalMonetaryTotal[last()]", namespaces=self.nsmap)
+        last_existing_legal_monetary_total = self.root.xpath(".//cac:LegalMonetaryTotal[last()]", namespaces=NameSpace)
             # Iterate through the item list
         for i, item in enumerate(item_list):
             invoice_line = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}InvoiceLine")
@@ -810,28 +785,28 @@ class ZatcaXml :
         # invoice namespaces if needed , use the class nsmap instead
         # read certificate tag from sample file
         certificate = self.root.find(".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:Object/xades:QualifyingProperties/xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningCertificate/xades:Cert/xades:CertDigest/ds:DigestValue",
-            namespaces=self.nsmap,
+            namespaces=NameSpace,
         )
         certificate.text = self.sales_invoice.get("DigestValue")
 
         # signing time
         timestamp = self.root.find(
             ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:Object/xades:QualifyingProperties/xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningTime",
-            namespaces=self.nsmap,
+            namespaces=NameSpace,
         )
         timestamp.text = signing_time
 
         # certificate issuer
         issuer = self.root.find(
             ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:Object/xades:QualifyingProperties/xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningCertificate/xades:Cert/xades:IssuerSerial/ds:X509IssuerName",
-            namespaces=self.nsmap,
+            namespaces=NameSpace,
         )
         issuer.text = self.sales_invoice.get("X509IssuerName")
 
         # certificate serial number , remember to cast to string
         serial = self.root.find(
             ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:Object/xades:QualifyingProperties/xades:SignedProperties//xades:SignedSignatureProperties/xades:SigningCertificate/xades:Cert/xades:IssuerSerial/ds:X509SerialNumber",
-            namespaces=self.nsmap,
+            namespaces=NameSpace,
         )
         serial.text = self.sales_invoice.get("X509SerialNumber")
         
@@ -841,98 +816,53 @@ class ZatcaXml :
         # encoded signature data
         signature = self.root.find(
             ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignatureValue",
-            namespaces=self.nsmap
+            namespaces=NameSpace
         )
         signature.text = signature_encoded
 
         # encoded certificate
         certificate = self.root.find(
             ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate",
-            namespaces=self.nsmap
+            namespaces=NameSpace
         )
         certificate.text = self.sales_invoice.get("Certificate")
 
         # encoded signed propertities tag hash
         signed_properities = self.root.find(
             "./ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignedInfo/ds:Reference[@URI='#xadesSignedProperties']/ds:DigestValue",
-            namespaces=self.nsmap
+            namespaces=NameSpace
         )
         signed_properities.text = signed_properities_hash_encoded
 
         # encoded incoive hash
         invoice_hash = self.root.find(
             ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignedInfo/ds:Reference[@Id='invoiceSignedData']/ds:DigestValue",
-            namespaces=self.nsmap
+            namespaces=NameSpace
         )
         invoice_hash.text = invoice_hash_encoded
         # Add Global Value 
         self.hash = invoice_hash_encoded
         
         
-    def create_qr_code(self, qr_code) -> None:
-        # make image for qr code
-        
-        self.qr_code = qr_code
-        img = qrcode.make(qr_code)
 
-        # image turn to byte array
-        img_byte_array = io.BytesIO()
-        # Save image png format
-        img.save(img_byte_array, format="PNG")
-        # get image content from bytearray
-        img_content = img_byte_array.getvalue()
+    def __final_invoice(self , signature_encoded) -> None:
+        # find qr in additonal document reference
 
-        field = self.sales_invoice.get("ID")
-        filename = f"{field}.png"
-
-        if self.sales_invoice.get("QR") is not None:
-
-            # if iamge exists then find all files that's attached to this image
-            existing_file = frappe.db.get_all(
-                "File",
-                filters={
-                    # "file_name": filename,
-                    "attached_to_doctype": "Sales Invoice",
-                    "attached_to_name": self.sales_invoice.get("ID"),
-                },
-                fields=["name"],
-            )
-
-            # if there is a file attched to the image then delete it.
-            if existing_file:
-                for ex_file in existing_file:
-                    # File with the same name exists, delete it
-                    existing_file_doc = frappe.get_doc("File", ex_file.name)
-                    existing_file_doc.delete()
-
-        # create a file with the image content
-        _file = frappe.get_doc(
-            {
-                "doctype": "File",
-                "file_name": filename,
-                "is_private": 0,
-                "content": img_content,
-                "attached_to_doctype": "Sales Invoice",
-                "attached_to_name": self.sales_invoice.get("ID"),
-                "attached_to_field": "ksa_einv_qr",
-            }
+        self.qr_code = generate_qr_code(
+            self.sales_invoice.get("company").get("RegistrationName"),
+            self.sales_invoice.get("company").get("CompanyID"),
+            self.sales_invoice.get("IssueDate"),
+            self.sales_invoice.get("IssueTime") ,
+            invoice_total=self.sales_invoice.get("GrandTotalAmount"),
+            vat_total=self.sales_invoice.get("TaxTotalTaxAmount"),
+            invoice_hash= self.hash ,
+            invoice_signature=signature_encoded ,
+            public_key_str=self.sales_invoice.get("public_key"),
+            signature_ecdsa = self.sales_invoice.get("SignatureInformation")
         )
 
-        _file.save()
-    
-        
-        if frappe.db.exists("Sales Invoice" , self.sales_invoice.get("ID")) :
-            sales_invoice_doc = frappe.get_doc("Sales Invoice" , self.sales_invoice.get("ID"))
-            sales_invoice_doc.db_set("ksa_einv_qr" , _file.file_url)
-            sales_invoice_doc.notify_update()
-        
-        # frappe.db.set_value("ksa_einv2_qr" , self.sales_invoice.get("ID") , _file.file_url)
-        # frappe.db.commit()
-
-    def __final_invoice(self, qr_code) -> None:
-        # find qr in additonal document reference
         qr = self.root.findall(
-            ".//cac:AdditionalDocumentReference", namespaces=self.nsmap
+            ".//cac:AdditionalDocumentReference", namespaces=NameSpace
         )
         for element in qr:
             id_element = element.find(
@@ -942,94 +872,8 @@ class ZatcaXml :
                 },
             )
             if id_element is not None and id_element.text == "QR":
-                element.find(".//cac:Attachment/cbc:EmbeddedDocumentBinaryObject",namespaces=self.nsmap).text = qr_code
+                element.find(".//cac:Attachment/cbc:EmbeddedDocumentBinaryObject",namespaces=NameSpace).text = self.qr_code
 
-        # write the final invoice to file in invoices folder if exists else create the invoices folder
-        # Define the folder path
-
-        # folder_path = f"{os.getcwd()}/{frappe.local.site}/public/files/invoices"
-        folder_path = get_bench_relative_path(frappe.local.site) + "/public/files/invoices"
-        # Check if the folder exists, and create it if not
-        
-        if not os.path.exists(folder_path):
-            
-            os.makedirs(folder_path)
-            time.sleep(4)
-        # write the file
-        field = self.sales_invoice.get("ID") + "_uuid_" + self.sales_invoice.get("UUID")+  ".xml"
-        self.tree.write(f"{folder_path}/{field}", encoding="utf-8")
-        
-
-    def generate_qr_code(self):
-
-        # get root from tree
-        root = self.tree.getroot()
-        
-        # namespaces if needed
-        namespaces = {
-            'ext': 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2',
-            'sig': 'urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2',
-            'sac': 'urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2',
-            'sbc': 'urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2',
-            'xades': 'http://uri.etsi.org/01903/v1.3.2#',
-            'ds': 'http://www.w3.org/2000/09/xmldsig#',
-            'cac': 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
-            'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2'
-        }
-        
-        # find seller name
-        seller_name = root.find(".//cac:AccountingSupplierParty/cac:Party/cac:PartyLegalEntity/cbc:RegistrationName",namespaces=namespaces)
-        
-        # find seller vat
-        seller_vat = root.find(".//cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",namespaces=namespaces)
-        
-        # find invoice date
-        invoice_date = root.find(".//cbc:IssueDate",namespaces=namespaces)
-
-        # find invoice time
-        invoice_time = root.find(".//cbc:IssueTime",namespaces=namespaces)
-        
-        #format time and date to ISO format
-        
-        invoice_timestamp = format_datetime(invoice_date.text,invoice_time.text)[:-1]
-        # find VAT total
-        vat_total = root.find(".//cac:TaxTotal/cbc:TaxAmount",namespaces=namespaces)
-
-        # find Hash of XML invoice
-        invoice_hash = root.find(".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestValue",namespaces=namespaces)
-        
-        # find ECDSA signature
-        invoice_signature = root.find(".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignatureValue",namespaces=namespaces)
-        
-        # find ECDSA public key = > certificate
-        pubkey = self.sales_invoice.get("public_key")
-        signature_ecdsa = self.sales_invoice.get("SignatureInformation")
-        invoice_total = self.sales_invoice.get("GrandTotalAmount")
-
-        # handle public key to remove the suffix and preffix
-        public_key_str = pubkey.replace("-----BEGIN PUBLIC KEY-----\n", "")
-        public_key_str = public_key_str.replace("-----END PUBLIC KEY-----", "")
-
-        # concat the 9 tag into tlv format (tag , length , value)
-        # byte tag , byte len of value , test value
-        concatenated_data = (
-            bytes([1]) + bytes([len(seller_name.text.encode('utf-8'))]) + seller_name.text.encode("utf-8") +
-            bytes([2]) + bytes([len(seller_vat.text.encode('utf-8'))]) + seller_vat.text.encode("utf-8") +
-            bytes([3]) + bytes([len(invoice_timestamp)]) + invoice_timestamp.encode("utf-8") +
-            bytes([4]) + bytes([len(invoice_total)]) + invoice_total.encode("utf-8") +
-            bytes([5]) + bytes([len(vat_total.text)]) + vat_total.text.encode("utf-8") +
-            bytes([6]) + bytes([len(invoice_hash.text)]) + invoice_hash.text.encode("utf-8") +
-            bytes([7]) + bytes([len(invoice_signature.text)]) + invoice_signature.text.encode("utf-8") +
-            bytes([8]) + bytes([len(base64.b64decode(public_key_str))]) + base64.b64decode(public_key_str) +
-            bytes([9]) + bytes([len(bytes.fromhex(signature_ecdsa))]) + bytes.fromhex(signature_ecdsa)
-        )
-        
-        # qr code is the base46 encoding of the concated array
-        qrcode_encode = base64.b64encode(concatenated_data).decode()
-        
-        # frappe.throw(str(qrcode_encode))
-        return qrcode_encode
-    
 
 def calculate_invoice_hash(tree):
     """
@@ -1171,3 +1015,27 @@ def generate_signed_properities_tag_hash(tree):
     digest_value = base64.b64encode(hashed_value.encode()).decode()
     
     return digest_value
+
+
+
+def create_xml_file(tree,invoice_id ,uuid):
+
+    folder_path = get_bench_relative_path(frappe.local.site) + "/public/files/invoices"
+    # Check if the folder exists, and create it if not
+    
+    if not os.path.exists(folder_path):
+        
+        os.makedirs(folder_path)
+        time.sleep(4)
+    # write the file
+    field = invoice_id + "_uuid_" + uuid +  ".xml"
+    tree.write(f"{folder_path}/{field}", encoding="utf-8")
+
+
+def get_qrcode_from_xml(xml) :
+
+    tree = etree.fromstring(xml)
+    root = tree.getroot()
+    qr_element = root.find(".//cac:AdditionalDocumentReference[cbc:ID='QR']/cac:Attachment/cbc:EmbeddedDocumentBinaryObject", NameSpace)
+
+    return qr_element.text if qr_element else None

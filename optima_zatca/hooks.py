@@ -255,3 +255,6 @@ regional_overrides = {
 		'erpnext.controllers.taxes_and_totals.update_itemised_tax_data': 'optima_zatca.zatca.invoice.update_itemised_tax_data'
 	}
 }
+
+
+# fixtures = ["Tax Category" , "Tax Exemption" , "Registration Type"]
