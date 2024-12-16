@@ -24,7 +24,7 @@ class ZatcaInvoiceData :
         self.handle_data_to_xml()
         self.make_xml()
         
-        # self.create_json_file()
+        self.create_json_file()
 
 
     def validate_invoice(self) :

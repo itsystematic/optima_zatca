@@ -34,7 +34,7 @@ frappe.ui.form.on("Sales Invoice" , {
 
 
     add_zatca_button(frm) {
-        if ( frm.is_new() ) return ;
+        if ( frm.is_new() || frm.doc.send_to_zatca == 1 ) return ;
         
         frm.add_custom_button(__("Send To Zatca"), function () {
             frappe.call({
