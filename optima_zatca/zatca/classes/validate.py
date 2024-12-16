@@ -22,7 +22,7 @@ class ZatcaInvoiceValidate :
         validate_optima_settings_info(self.company_settings)
         validate_address(self.company_address)
         
-        # self.validate_sales_invoice_sender()
+        self.validate_sales_invoice_sender()
         self.validate_sales_invoice_fields()
         self.validate_items_fields()
         self.validate_customer_info()
