@@ -14,6 +14,8 @@ from erpnext.controllers.taxes_and_totals import get_itemised_tax
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
+    Status , qrcode = "Failed" , ""
+
     try :
         sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
         invoice = ZatcaInvoiceData(sales_invoice)
@@ -29,7 +31,6 @@ def send_to_zatca(sales_invoice_name):
             invoice.zatca_invoice.get("EndPoint")
         )
 
-        Status , qrcode = "Failed" , ""
         if response.status_code in [200 , 202]: 
             ResponseJson = response.json()
             frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=  _("Accepted"),indicator="green" ,alert=True)
