@@ -21,6 +21,7 @@ def after_app_install(app_name) :
 
     create_additional_fields()
     create_property_setter()
+    add_standard_data()
 
 
 
