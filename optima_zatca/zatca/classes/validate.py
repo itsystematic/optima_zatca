@@ -18,7 +18,7 @@ class ZatcaInvoiceValidate :
         self.validate() 
 
     def validate(self) :
-
+        
         validate_optima_settings_info(self.company_settings)
         validate_address(self.company_address)
         

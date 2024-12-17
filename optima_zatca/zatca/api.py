@@ -24,6 +24,7 @@ def get_zatca_csid(setting:str, otp:str , csr:str) -> dict:
     )
 
     if not  response.status_code == 200 :
+        print(response.text)
         frappe.throw(str(response.text))
 
     

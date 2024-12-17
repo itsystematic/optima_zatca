@@ -1,267 +1,227 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
-import { step2_schema } from "@/constants";
+import { LHSinputs, RHSinputs, top_inputs } from "@/constants";
+import { setStep } from "@/data/currentStep";
 import { addCommercial } from "@/data/dataSlice";
-import { nextStep } from "@/data/stepSlice";
+import { deactivateEdit } from "@/data/editModal";
 import { CommercialData } from "@/types";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { motion } from "motion/react";
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { FaCheckCircle } from "react-icons/fa";
+import { CheckCircleFilled } from "@ant-design/icons";
+import {
+  Button,
+  Collapse,
+  CollapseProps,
+  Descriptions,
+  Flex,
+  Form,
+  FormProps,
+  Input,
+  Typography,
+} from "antd";
+import React, { useEffect } from "react";
 
-interface Step2Props {
-  commission?: CommercialData;
-  editingRef?: React.ForwardedRef<HTMLDialogElement>;
+interface Props {
+  commercial?: CommercialData;
+  edit?: boolean;
 }
 
-const Step2: React.FC<Step2Props> = (props) => {
-  const {
-    watch,
-    register,
-    handleSubmit,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm({ resolver: yupResolver(step2_schema) });
-  const [openIndex, setOpenIndex] = useState(null);
-
-  const toggleDetails = (index: any) => {
-    setOpenIndex(openIndex === index ? null : index); // Toggle the state
-  };
-
+const Step2: React.FC<Props> = ({ edit, commercial }) => {
+  const [form] = Form.useForm();
   const dispatch = useAppDispatch();
+  const comName = Form.useWatch("commercial_register_name", form);
+  const comNo = Form.useWatch("commercial_register_number", form);
+  const currentStep = useAppSelector((state) => state.stepReducer.currentStep);
+  const dataState = useAppSelector((state) => state.dataReducer);
   const commission = useAppSelector(
     (state) => state.commissionReducer.commission
   );
-  const dataState = useAppSelector((state) => state.dataReducer);
 
-  const onSubmit = (data: CommercialData | any) => {
-    dispatch(addCommercial(data));
-      if (commission === "multi") {
-        resetFields();
-      } else {
-        dispatch(nextStep());
-      }
-      //@ts-ignore
-      props.editingRef?.current?.close();
-  };
-
-  const resetFields = () => {
-    reset({
-      commercial_register_name: "",
-      commercial_register_number: "",
-      short_address: "",
-      building_no: "",
-      city: "",
-      address_line1: "",
-      address_line2: "",
-      district: "",
-      pincode: "",
-    })
-  };
-
-  const isCommission = () => {
-    if (commission === "multi" && !props.editingRef) {
-      return true
-    }
-    return false
-  }
+  const items: CollapseProps["items"] = [
+    ...dataState.commercial_register.flatMap((c, index) => ({
+      key: index,
+      label: c.commercial_register_name,
+      children: (
+        <Descriptions bordered size="small">
+          <Descriptions.Item span={3} label="Commercial Name">
+            {c.commercial_register_name}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="Commercial Number">
+            {c.commercial_register_number}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="Short Address">
+            {c.short_address}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="Building No">
+            {c.building_no}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="Street">
+            {c.address_line1}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="Secondary No">
+            {c.address_line2}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="City">
+            {c.city}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="District">
+            {c.district}
+          </Descriptions.Item>
+          <Descriptions.Item span={3} label="Postal Code">
+            {c.pincode}
+          </Descriptions.Item>
+          {c.more_info ? (
+            <Descriptions.Item span={3} label="More Info">
+              {c.more_info}
+            </Descriptions.Item>
+          ) : null}
+        </Descriptions>
+      ),
+    })),
+  ];
 
   const isValid = () => {
-    if (watch("commercial_register_number")?.length === 10 && watch('commercial_register_name').length) {
-      return true
+    if (comName && comNo && comNo.length === 10) return true;
+    return false;
+  };
+
+  const onFinish: FormProps<CommercialData>["onFinish"] = (values) => {
+    dispatch(addCommercial(values));
+    if (edit && commercial) {
+      dispatch(deactivateEdit());
+      return;
     }
-    return false
-  }
+    if (commission === "multi") {
+      form.resetFields();
+      return;
+    }
+    nextStep();
+  };
+
+  const nextStep = () => {
+    dispatch(setStep({ currentStep: currentStep + 1 }));
+  };
 
   useEffect(() => {
-    if (!props.commission) return;
-    setValue("commercial_register_name", props.commission.commercial_register_name);
-    setValue("commercial_register_number", props.commission.commercial_register_number);
-    setValue("short_address", props.commission.short_address);
-    setValue("building_no", props.commission.building_no);
-    setValue("city", props.commission.city);
-    setValue("address_line1", props.commission.address_line1);
-    setValue("address_line2", props.commission.address_line2);
-    setValue("district", props.commission.district);
-    setValue("pincode", props.commission.pincode);
-  }, [props.commission]);
+    if (commercial) {
+      form.setFieldsValue(commercial);
+    }
+  }, []);
 
   return (
-    <>
-    <div className={`flex h-full w-full gap-24 p-5 ${!isCommission() && 'justify-center gap-5'}`}>
-      {isCommission() ? (
-        <div className="h-full w-1/3 bg-[#959ca790] rounded-md flex flex-col gap-5">
-     {dataState.commercial_register.map((item, index) => (
-        <div key={index} className="group relative">
-          <div
-            className="bg-[#483f61] text-white p-4 rounded-md cursor-pointer transition-all duration-300 ease-in-out"
-            onClick={() => toggleDetails(index)}
-          >
-            <summary className="text-xl font-semibold">
-              {item.commercial_register_name}
-            </summary>
-          </div>
-
-          <div
-            className={`mt-4 bg-[#595c7a] text-white p-2 rounded-md transition-all duration-500 ease-in-out transform ${
-              openIndex === index ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-            } overflow-hidden`}
-          >
-            <p><strong>Short Address:</strong> {item.short_address}</p>
-            <p><strong>City:</strong> {item.city}</p>
-            <p><strong>Building No:</strong> {item.building_no}</p>
-            <p><strong>Address Line 1:</strong> {item.address_line1}</p>
-            <p><strong>Address Line 2:</strong> {item.address_line2}</p>
-            <p><strong>District:</strong> {item.district}</p>
-            <p><strong>Postal Code:</strong> {item.pincode}</p>
-            <p><strong>Commercial Register Number:</strong> {item.commercial_register_number}</p>
-          </div>
+    <Flex flex={1} align="center" justify="center">
+      {commission === "multi" && !edit ? (
+        <div className="bg-[#00000027] rounded-md h-full w-[30%]">
+          <Collapse
+            accordion
+            items={items}
+            defaultActiveKey={["0"]}
+            ghost
+            className=" bg-[#483f61]"
+          />
         </div>
-      ))}
-        
-      </div>
-      ): null}
-      <motion.form
-        initial={{ x: "100%" }}
-        animate={{ x: "0%" }}
-        exit={{ x: "-100%" }}
-        transition={{
-          type: "spring",
-          stiffness: 100,
-          damping: 20,
-        }}
-        className="form-control justify-center gap-3 h-full w-[40%] bg-transparent"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        {isValid() ? (
-          <h1 className="flex gap-2 items-center">
-            Commercial Information <FaCheckCircle className="text-green-700" />
-          </h1>
-        ) : null}
-                <input
-          type="text"
-          className="input   placeholder:font-extralight"
-          placeholder="Commercial Register Name"
-          {...register("commercial_register_name")}
-        />
-        <input
-          type="text"
-          className="input   placeholder:font-extralight"
-          placeholder="Commercial Register Number"
-          {...register("commercial_register_number")}
-          disabled={props.editingRef ? true : false}
-        />
-        {errors.commercial_register_number && (
-          <p className="font-medium text-red-500">
-            {errors.commercial_register_number.message}
-          </p>
-        )}
-        {isValid() ? (
-          <>
-            <h1>Saudi National Address Components</h1>
-            <div className="flex gap-3">
-              <div className="flex flex-col gap-2 flex-grow">
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="Short Address"
-                  {...register("short_address")}
+      ) : null}
+      <Flex flex={1}>
+        <Flex
+          align={edit ? "start" : "center"}
+          justify="center"
+          className="w-full"
+        >
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{ remember: true }}
+            onFinish={onFinish}
+            autoComplete="off"
+            size="large"
+            className={`${
+              commission === "multi" ? "w-[60%]" : "w-[40%]"
+            }  p-6 ${!edit && "mt-5"} rounded-md h-[80%] flex flex-col gap-3`}
+          >
+            {isValid() ? (
+              <Typography.Text className="text-lg self-center">
+                Commercial Information &nbsp;{" "}
+                <CheckCircleFilled className="text-green-700" />
+              </Typography.Text>
+            ) : null}
+            {top_inputs.map((i) => (
+              <Form.Item<CommercialData>
+                key={i.id}
+                name={i.id as keyof CommercialData}
+                className="mb-0"
+                rules={i.rules}
+                validateTrigger="onSubmit"
+              >
+                <Input
+                  placeholder={i.name}
+                  maxLength={i.maxlength ?? undefined}
+                  disabled={edit ? i.disabled : false}
                 />
-                {errors.short_address && (
-                  <p className="font-medium text-red-500">
-                    {errors.short_address.message}
-                  </p>
-                )}
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="Building No"
-                  {...register("building_no")}
-                />
-                {errors.building_no && (
-                  <p className="font-medium text-red-500">
-                    {errors.building_no.message}
-                  </p>
-                )}
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="Street"
-                  {...register("address_line1")}
-                />
-                {errors.address_line1 && (
-                  <p className="font-medium text-red-500">
-                    {errors.address_line1.message}
-                  </p>
-                )}
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="Secondary No"
-                  {...register("address_line2")}
-                />
-                {errors.address_line2 && (
-                  <p className="font-medium text-red-500">
-                    {errors.address_line2.message}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-2 flex-grow">
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="City/Town"
-                  {...register("city")}
-                />
-                {errors.city && (
-                  <p className="font-medium text-red-500">
-                    {errors.city.message}
-                  </p>
-                )}
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="District"
-                  {...register("district")}
-                />
-                {errors.district && (
-                  <p className="font-medium text-red-500">
-                    {errors.district.message}
-                  </p>
-                )}
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="Postal Code"
-                  {...register("pincode")}
-                />
-                {errors.pincode && (
-                  <p className="font-medium text-red-500">
-                    {errors.pincode.message}
-                  </p>
-                )}
-                <input
-                  type="text"
-                  className="input input-md placeholder:font-extralight"
-                  placeholder="More Info (Optional)"
-                  {...register("more_info")}
-                />
-              </div>
-            </div>
-          </>
-        ) : null}
-        <input
-          type="submit"
-          className="btn bg-[#483f61] text-white border-0"
-          value={props.commission || commission === "multi" ? "Save" : "Next"}
-        />
-      </motion.form>
-    </div>
-    <div className={`justify-end h-full flex items-end p-5 w-[15%] ${!isCommission() ? 'hidden' : ''}`}>
-      <button onClick={() => dispatch(nextStep())} className="btn bg-[#483f61] text-white w-full border-0 disabled:cursor-not-allowed disabled:opacity-50" disabled={!dataState.commercial_register.length}>Next</button>
-    </div>
-      </>
+              </Form.Item>
+            ))}
+            {isValid() ? (
+              <>
+                <Typography.Text className="text-lg self-center">
+                  Saudi National Address Components
+                </Typography.Text>
+                <Flex gap={5}>
+                  {/* Left Side */}
+                  <Flex vertical className="w-full" gap={5}>
+                    {LHSinputs.map((i) => (
+                      <Form.Item<CommercialData>
+                        key={i.id}
+                        name={i.id as keyof CommercialData}
+                        rules={i.rules}
+                        className="mb-0"
+                        validateTrigger="onSubmit"
+                      >
+                        <Input
+                          placeholder={i.name}
+                          maxLength={i.maxlength ?? undefined}
+                        />
+                      </Form.Item>
+                    ))}
+                  </Flex>
+                  {/* Right side */}
+                  <Flex vertical className="w-full" gap={5}>
+                    {RHSinputs.map((i) => (
+                      <Form.Item<CommercialData>
+                        key={i.id}
+                        name={i.id as keyof CommercialData}
+                        rules={i.rules}
+                        className="mb-0"
+                        validateTrigger="onSubmit"
+                      >
+                        <Input
+                          placeholder={i.name}
+                          maxLength={i.maxlength ?? undefined}
+                        />
+                      </Form.Item>
+                    ))}
+                  </Flex>
+                </Flex>
+              </>
+            ) : null}
+
+            <Form.Item>
+              <Button
+                type="primary"
+                className="bg-[#483f61] w-full disabled:opacity-90 disabled:text-white"
+                htmlType="submit"
+              >
+                {edit ? "Edit" : commission === "multi" ? "Add" : "Next"}
+              </Button>
+            </Form.Item>
+          </Form>
+        </Flex>
+      </Flex>
+      {!edit ? (
+        <Button
+          onClick={nextStep}
+          disabled={!dataState.commercial_register.length}
+          className="mt-auto p-5 m-2 bg-[#483f61] text-white disabled:opacity-85"
+        >
+          Next
+        </Button>
+      ) : null}
+    </Flex>
   );
 };
 

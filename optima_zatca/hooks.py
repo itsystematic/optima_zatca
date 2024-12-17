@@ -142,13 +142,12 @@ after_app_install = "optima_zatca.utils.after_app_install"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Sales Invoice": {
+		"on_cancel": "optima_zatca.events.sales_invoice.sales_invoice_on_cancel",
+		"on_trash": "optima_zatca.events.sales_invoice.sales_invoice_on_trash",
+	}
+}
 
 # Scheduled Tasks
 # ---------------
@@ -197,7 +196,7 @@ after_app_install = "optima_zatca.utils.after_app_install"
 # Ignore links to specified DocTypes when deleting documents
 # -----------------------------------------------------------
 
-# ignore_links_on_delete = ["Communication", "ToDo"]
+ignore_links_on_delete = ["Optima Zatca Logs"]
 
 # Request Events
 # ----------------

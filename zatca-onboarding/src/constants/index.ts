@@ -1,22 +1,69 @@
-import * as Yup from 'yup';
+const top_inputs = [
+  {
+    id: "commercial_register_name",
+    name: "Commercial Register Name",
+    rules: [
+      { required: true, message: "Commercial Register Name is required" },
+    ],
+  },
+  {
+    id: "commercial_register_number",
+    name: "Commercial Register Number",
+    rules: [
+      { required: true, message: "Commercial Register Number is required & Must be 10 digits", pattern: /^\d{10}$/ },
+    ],
+    maxlength: 10,
+    disabled: true,
+  },
+];
 
-export const step1_schema = Yup.object().shape({
-    company: Yup.string().required("Company is required"),
-    tax_id: Yup.string()
-      .matches(/^3\d{13}3$/, "TAX ID must be 15 digits & Start and End with 3")
-      .required("TAX ID is required"),
-      company_name_in_arabic: Yup.string().required("Company in Arabic is required"),
-  });
+const LHSinputs = [
+  {
+    id: "short_address",
+    name: "Short Address",
+    rules: [{ required: true, message: "Short Address is required" }],
+    maxlength: 8
+  },
+  {
+    id: "building_no",
+    name: "Building Number",
+    rules: [{ required: true, message: "Building No. is required length of 4", pattern: /^\d{4}$/ }],
+    maxlength: 4
+  },
+  {
+    id: "address_line1",
+    name: "Street",
+    rules: [{ required: true, message: "Street is required" }],
+  },
+  {
+    id: "address_line2",
+    name: "Secondary No",
+    rules: [{ required: true, message: "Secondary No is required" }],
+  },
+];
 
-export const step2_schema = Yup.object().shape({
-    commercial_register_name: Yup.string().required("Commercial Register Name is required"),
-    commercial_register_number: Yup.string().matches(/^\d{10}$/, "Commercial Register must be 10 digits").required("Commercial Register is required"),
-    short_address: Yup.string().required("Short Address is required"),
-    building_no: Yup.string().required("Building Number is required"),
-    address_line1: Yup.string().required("Street is required"),
-    address_line2: Yup.string().required("Secondary No is required"),
-    city: Yup.string().required("City is required"),
-    district: Yup.string().required("District is required"),
-    pincode: Yup.string().matches(/^\d{5}$/, "Pincode must be 5 digits").required("Pincode is required"),
-    more_info: Yup.string().optional(),
-  });
+const RHSinputs = [
+  {
+    id: "city",
+    name: "City",
+    rules: [{ required: true, message: "City is required" }],
+  },
+  {
+    id: "district",
+    name: "District",
+    rules: [{ required: true, message: "District is required" }],
+  },
+  {
+    id: "pincode",
+    name: "Pincode",
+    type: "number",
+    maxlength: 5,
+    rules: [{ required: true, message: "Pincode is required the length of 5", pattern: /^\d{5}$/ }],
+  },
+  {
+    id: "more_info",
+    name: "More Info",
+  },
+];
+
+export { LHSinputs, RHSinputs, top_inputs };

@@ -6,5 +6,5 @@ export default {
   },
   content: ["./src/**/*.{html,jsx,tsx,vue,js,ts}"],
   important: true,
-  plugins: [require("daisyui")],
+  plugins: [],
 };

@@ -1,26 +1,24 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useAppDispatch } from "@/app/hooks";
+import Loading from "@/components/Loading";
+import React, { useState } from "react";
 import Welcome from "./Welcome";
 
 const Home: React.FC = () => {
+  const dispatch = useAppDispatch();
   const [data, setData] = useState<boolean>(false);
-  const tutorialPageRef = useRef<HTMLDialogElement>(null);
-  const welcomePageRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    tutorialPageRef.current?.showModal();
-    const timer = setTimeout(() => {
-      setData(true);
-    }, 1000);
-
-    return () => clearTimeout(timer)
-  }, []);
+  const [loading, setLoading] = useState<boolean>(false);
 
   return (
-    <div>
-      {!data ? (
+    <div className="h-screen w-full">
+      {/* Show loading screen */}
+      {loading ? (
+        <Loading />
+      ) : data ? (
+        // Show list view if data is loaded
         <div>List View</div>
       ) : (
-        <Welcome ref={welcomePageRef} />
+        // Page sliding view
+        <Welcome />
       )}
     </div>
   );

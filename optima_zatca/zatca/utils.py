@@ -45,14 +45,22 @@ def create_private_keys(company_details) -> str :
         encryption_algorithm=serialization.NoEncryption()
     )
 
-    company_details["private_key"] = private_key_pem.decode('utf-8')
-
     return private_key_pem
 
 # @frappe.whitelist(allow_guest=True)
 def create_company_csr(settings , company_details:dict):
 
-    # settings = frappe.get_doc("Optima Zatca Setting" , name)
+    if settings.get("check_csr") == 1 :
+        company_details.update({
+            "egs_serial_number" : settings.get("egs_serial_number") ,
+            "common_name" : settings.get("common_name") ,
+            "private_key" : settings.get('private_key') ,
+            "csr" : settings.get("csr") ,
+            "organization_name"  : settings.get("organization_name"),
+            "check_csr" : 1
+        })
+        return settings.get("csr")
+    
     company_name_in_arabic  , tax_id = get_company_info(settings.get("company")).values()
     common_name = str(frappe.generate_hash(length=15))
     serial_number = generate_serial_number(company_name_in_arabic)
@@ -68,6 +76,9 @@ def create_company_csr(settings , company_details:dict):
         customoid = encode_customoid("ZATCA-Code-Signing")
     
     private_key_pem = create_private_keys(company_details)
+
+    company_details["private_key"] = private_key_pem.decode('utf-8')
+
     private_key = serialization.load_pem_private_key(private_key_pem, password=None, backend=default_backend())
 
     custom_oid_string = "1.3.6.1.4.1.311.20.2"
@@ -245,8 +256,6 @@ def generate_qr_code(
 
     # Remove the last character Z from invoice_timestamp
     invoice_timestamp = format_datetime(invoice_date , invoice_time)[:-1]
-    print(vat_total)
-    print(invoice_total)
     # Remove Words Start and End
     public_key_str = public_key_str.replace("-----BEGIN PUBLIC KEY-----\n", "")
     public_key_str = public_key_str.replace("-----END PUBLIC KEY-----", "")

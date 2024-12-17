@@ -1,48 +1,60 @@
-import { useAppDispatch } from '@/app/hooks'
-import Button from '@/components/Button'
-import Form from '@/components/Form'
-import { setCommission } from '@/data/commission'
-import { forwardRef, useState } from 'react'
-import { IoIosArrowBack } from 'react-icons/io'
+import { useAppDispatch } from "@/app/hooks";
+import { setCommission } from "@/data/commission";
+import { setCurrentPage } from "@/data/currentPage";
+import { Card, Flex, Image, Typography } from "antd";
 
-interface CommisionProps {
-    handleCommisionBack : () => void    
-    handleCommissionSubmit: () => void
-}
-
-const Commision = forwardRef<HTMLDialogElement, CommisionProps>((props, ref) => {
-  return (
-    <Form ref={ref}>
-        <CommissionChildren handleCommissionSubmit={props.handleCommissionSubmit} handleCommisionBack={props.handleCommisionBack} />
-    </Form>
-  )
-})
-
-
-const CommissionChildren = ({handleCommisionBack, handleCommissionSubmit} : CommisionProps) => {
-  const [isActive, setIsActive] = useState<number>();
+const Commission = () => {
   const dispatch = useAppDispatch();
+
+  const commissions = [
+    {
+      id: "main",
+      img: "MainCommision.png",
+      name: "سجل تجاري رئيسي",
+    },
+    {
+      id: "multi",
+      img: "MultipleCommision.png",
+      name: "سجلات تجارية فرعية",
+    },
+  ];
+
+  const handlePhaseSelect = (commission: string) => {
+    dispatch(setCommission({commission}))
+    dispatch(setCurrentPage(4));
+  };
+
   return (
-<>
-      <form method="dialog">
-      <button
-            onClick={handleCommisionBack}
-            className="btn btn-sm btn-circle btn-ghost absolute left-2 top-2 text-lg"
+    <Flex flex={0.9} vertical align="center" justify="center">
+      <Typography.Title level={1}>هل الشركة تملك؟؟</Typography.Title>
+      <Flex gap={16} flex={1} justify="center" align="center">
+        {commissions.map((phase) => (
+          <Card
+            onClick={() => handlePhaseSelect(phase.id)}
+            key={phase.id}
+            hoverable
+            className="transition-all group bg-[#2a2439] text-white duration-300 w-[180px] h-[180px] flex justify-center items-center rounded-3xl hover:bg-white cursor-pointer hover:text-white border-none"
           >
-            <IoIosArrowBack />
-          </button>
-      </form>
-      <h3 className="font-bold text-4xl text-center">هل الشركة تملك؟؟</h3>
-      <div className='flex flex-col gap-5 justify-center items-center h-full'>
-        <div className='flex gap-5'>
-            <Button isActive={isActive} handleClick={() => {handleCommissionSubmit(); setIsActive(3); dispatch(setCommission({commission: 'main'}))}} img={isDev ? `MainCommision.png` : `/assets/optima_zatca/zatca-onboarding/MainCommision.png`} number={3} text={"سجل التجاري رئيسي"} />
-            <Button isActive={isActive} handleClick={() => {handleCommissionSubmit(); setIsActive(4); dispatch(setCommission({commission: 'multi'}))}} img={isDev ? 'MultipleCommision.png' : `/assets/optima_zatca/zatca-onboarding/MultipleCommision.png`} number={4} text={"سجلات تجارية فرعية"} />
-        </div>
-      </div>
-      
+            <div className="flex justify-center items-center flex-col gap-2">
+              <div className="bg-[#d9d9d9] rounded-full w-[70px] h-[70px] group-hover:bg-[#2a2439]">
+                <Image
+                  preview={false}
+                  src={phase.img}
+                  width={70}
+                  height={70}
+                  alt="Expressive Image"
+                  className="transition-all duration-300"
+                />
+              </div>
+              <Typography.Text className="text-2xl font-medium text-center text-white group-hover:text-[#2a2439]">
+                {phase.name}
+              </Typography.Text>
+            </div>
+          </Card>
+        ))}
+      </Flex>
+    </Flex>
+  );
+};
 
-    </>
-  )
-}
-
-export default Commision
+export default Commission;

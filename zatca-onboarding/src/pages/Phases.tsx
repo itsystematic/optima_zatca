@@ -1,60 +1,60 @@
-import Button from '@/components/Button';
-import Form from '@/components/Form';
-import { forwardRef, useState } from 'react';
-import { IoIosArrowBack } from 'react-icons/io';
+import { useAppDispatch } from "@/app/hooks";
+import { setCurrentPage } from "@/data/currentPage";
+import { Card, Flex, Image, Typography } from "antd";
 
-interface PhasesProps {
-    handlePhasesBack: () => void;
-    handlePhaseSubmit: (phase: string) => void
-}
+const Phases = () => {
+  const dispatch = useAppDispatch();
 
-const Phases = forwardRef<HTMLDialogElement, PhasesProps>((props, ref) => {
-    
-  return (
-    <Form ref={ref}>
-        <PhasesChildren handlePhasesBack={props.handlePhasesBack} handlePhaseSubmit={props.handlePhaseSubmit} />
-    </Form>
-  )
-})
+  interface Phases {
+    id: number;
+    img: string;
+    name: string;
+  }
 
-export default Phases
+  const phases: Phases[] = [
+    {
+      img: "Phase_1.svg",
+      id: 1,
+      name: "المرحلة الاولة",
+    },
+    {
+      img: "Phase_2.svg",
+      id: 2,
+      name: "المرحلة الثانية",
+    },
+  ];
 
-
-const PhasesChildren = ({
-    handlePhasesBack,
-    handlePhaseSubmit
-  }: {
-    handlePhasesBack: () => void;
-    handlePhaseSubmit: (phase: string) => void
-  }) => {
-
-  const [isActive, setIsActive] = useState<number>();
-    
-    return (
-      <>
-        <form method="dialog">
-          <button
-            onClick={handlePhasesBack}
-            className="btn btn-sm btn-circle btn-ghost absolute left-2 top-2 text-lg"
-          >
-            <IoIosArrowBack />
-          </button>
-        </form>
-        <div className="flex h-full gap-16">
-          <div className="h-full w-full flex items-center justify-end">
-            <Button isActive={isActive} handleClick={() => {
-              setIsActive(1)
-              handlePhaseSubmit('1')
-            }} number={1} text={"المرحلة الاولة"} />
-          </div>
-          <div className="h-full w-full flex items-center">
-            <Button isActive={isActive} handleClick={() => {
-              setIsActive(2)
-              handlePhaseSubmit('2')
-            }} number={2} text={"المرحلة الثانية"} />
-          </div>
-        </div>
-      </>
-    );
+  const handlePhaseSelect = (phase: number) => {
+    console.log(phase);
+    dispatch(setCurrentPage(3));
   };
-  
+
+  return (
+      <Flex gap={16} flex={1} justify="center" align="center">
+        {phases.map((phase) => (
+          <Card
+            onClick={() => handlePhaseSelect(phase.id)}
+            key={phase.id}
+            hoverable
+            className="transition-all group bg-[#2a2439] text-white duration-300 w-[180px] h-[180px] flex justify-center items-center rounded-3xl hover:bg-white cursor-pointer hover:text-white border-none"
+          >
+            <div className="flex justify-center items-center flex-col gap-5">
+              <Image
+                preview={false}
+                width={120}
+                src={phase.img}
+                alt="Expressive Image"
+                className=" transition-all duration-300"
+              />
+
+              <Typography.Text className="text-xl font-medium text-white group-hover:text-black">
+                {phase.name}
+              </Typography.Text>
+            </div>
+          </Card>
+        ))}
+      </Flex>
+  );
+};
+
+export default Phases;

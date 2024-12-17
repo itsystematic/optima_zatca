@@ -1,5 +1,5 @@
 import os
-import io
+import re
 import copy
 import time
 import base64
@@ -853,8 +853,8 @@ class ZatcaXml :
             self.sales_invoice.get("company").get("CompanyID"),
             self.sales_invoice.get("IssueDate"),
             self.sales_invoice.get("IssueTime") ,
-            invoice_total=self.sales_invoice.get("GrandTotalAmount"),
-            vat_total=self.sales_invoice.get("TaxTotalTaxAmount"),
+            invoice_total=self.sales_invoice.get("GrandTotal"),
+            vat_total=self.sales_invoice.get("TaxAmount"),
             invoice_hash= self.hash ,
             invoice_signature=signature_encoded ,
             public_key_str=self.sales_invoice.get("public_key"),
@@ -1032,10 +1032,8 @@ def create_xml_file(tree,invoice_id ,uuid):
     tree.write(f"{folder_path}/{field}", encoding="utf-8")
 
 
-def get_qrcode_from_xml(xml) :
-
+def get_qrcode_from_xml(invoice) :
+    xml = re.sub(r'<\?xml.*\?>', '', invoice)
     tree = etree.fromstring(xml)
-    root = tree.getroot()
-    qr_element = root.find(".//cac:AdditionalDocumentReference[cbc:ID='QR']/cac:Attachment/cbc:EmbeddedDocumentBinaryObject", NameSpace)
-
-    return qr_element.text if qr_element else None
+    qr_element = tree.find(".//cac:AdditionalDocumentReference[cbc:ID='QR']/cac:Attachment/cbc:EmbeddedDocumentBinaryObject", NameSpace)
+    return qr_element.text if qr_element is not None  else None

@@ -9,32 +9,47 @@ from optima_zatca.zatca.utils import (
     make_auth_header_for_request 
 )
 
+from optima_zatca.zatca.demo import send_sample_sales_invoices
+
 
 
 @frappe.whitelist()
 def add_company_to_zatca(name):
 
     company_details = {}
+
     settings = frappe.get_doc("Optima Zatca Setting" , name)
-    company_csr = None
+    company_csr = create_company_csr(settings , company_details)
 
-    if not settings.check_csr :
-        company_csr = create_company_csr(settings , company_details)
-
-    if settings.get("otp") and company_csr and not settings.check_csid :
+    if settings.get("otp") and company_csr:
         get_certificate(settings ,company_csr , company_details)
 
-    if not settings.check_pcsid and settings.invoice_six :
-        get_production_certificate(settings ,settings.binary_security_token , settings.secret , settings.request_id , company_details ) 
+    if company_csr and company_details.get("certificate") :
+        send_sample_sales_invoices(settings ,company_details)
+
+    list_of_fields = [
+        company_details.get("invoice_one" , False),company_details.get("invoice_two" , False), 
+        company_details.get("invoice_three", False) , company_details.get("invoice_four" , False) , 
+        company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
+    ]
+
+    if not company_details.get("check_pcsid") and all(list_of_fields) :
+        print("in Production")
+        get_production_certificate(settings , company_details ) 
+    # except :
+    #     frappe.msgprint("Error IN Zatca")
 
     saving_data_to_company(name , company_details)
 
 
 def get_certificate(settings ,company_csr , company_details:dict) :
 
-    request_id , binary_security_token , secret  = get_zatca_csid(settings.name , settings.otp , company_csr )
-
-    certificate = base64.b64decode(binary_security_token).decode("utf-8")
+    if settings.get("check_csid" , False) == 0  :
+        request_id , binary_security_token , secret  = get_zatca_csid(settings.name , settings.otp , company_csr )
+        certificate = base64.b64decode(binary_security_token).decode("utf-8")
+    else :
+        print("true certificate")
+        request_id , binary_security_token , secret , certificate =  settings.get("request_id"),settings.get("binary_security_token") , settings.get("secret") , settings.get("certificate")
     
     company_details.update({
         "binary_security_token" : binary_security_token ,
@@ -49,12 +64,12 @@ def get_certificate(settings ,company_csr , company_details:dict) :
         extract_details_from_certificate(certificate , company_details)
 
 
-def get_production_certificate(settings ,binary_security_token , secret ,request_id , company_details:dict ) :
+def get_production_certificate(settings , company_details:dict ) :
     response = get_production_csid(
         settings,
-        binary_security_token ,
-        secret ,
-        request_id
+        company_details.get("binary_security_token") ,
+        company_details.get("secret") ,
+        company_details.get("request_id")
     )
     
     certificate = base64.b64decode(response.get("binarySecurityToken")).decode("utf-8")
@@ -83,7 +98,7 @@ def saving_data_to_company(
     frappe.db.set_value("Optima Zatca Setting" , name , company_details , update_modified=True )
     frappe.db.commit()
     
-    frappe.msgprint("Daata Saved Successfully" , alert=True)
+    frappe.msgprint("Data Saved Successfully" , alert=True)
 
 
 

@@ -50,11 +50,12 @@
   "csr",
   "section_break_mymv",
   "request_id",
-  "token_type",
   "column_break_tksk",
   "binary_security_token",
   "column_break_koqt",
   "secret",
+  "section_break_ilkf",
+  "token_type",
   "section_break_rqpr",
   "public_key",
   "column_break_cbkk",
@@ -236,7 +237,7 @@
   },
   {
    "fieldname": "token_type",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Token Type"
   },
   {
@@ -383,11 +384,15 @@
    "fieldtype": "Select",
    "label": "Phases",
    "options": "Phase 1\nPhase 2"
+  },
+  {
+   "fieldname": "section_break_ilkf",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-15 16:57:01.992514",
+ "modified": "2024-12-17 12:24:31.137831",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Setting",

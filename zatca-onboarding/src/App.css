@@ -21,3 +21,24 @@
   flex: 0 0 100% !important;
   min-width: 0;
 }
+
+.ant-typography {
+  font-family: "Almarai", sans-serif !important;
+}
+
+.ant-descriptions-item-content {
+  background-color: rgba(255, 255, 255, 0.644);
+}
+
+.ant-descriptions-item-label {
+  background-color: #737694 !important;
+  color: white !important;
+}
+
+.ant-collapse-header-text {
+  color: white;
+}
+
+.ant-collapse-expand-icon {
+  color: white;
+}

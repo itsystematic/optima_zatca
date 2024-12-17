@@ -1,54 +1,57 @@
-import Carousel from "@/components/Carousel";
-import Form from "@/components/Form";
-import { forwardRef } from "react";
+import { useAppDispatch } from "@/app/hooks";
+import { setCurrentPage } from "@/data/currentPage";
+import { Button, Carousel, Typography } from "antd";
+import React from "react";
 
-interface TutorialProps {
-  handleTutorialClick: () => void
-}
+const Tutorial: React.FC = () => {
+  const dispatch = useAppDispatch();
 
+  const items = [
+    {
+      id: 1,
+      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=1&font=bebas",
+    },
+    {
+      id: 2,
+      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=2&font=bebas",
+    },
+    {
+      id: 3,
+      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=3&font=bebas",
+    },
+    {
+      id: 4,
+      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=4&font=bebas",
+    },
+  ];
 
-const Tutorial = forwardRef<HTMLDialogElement, TutorialProps>(
-  (props, ref) => {
-    return (
-      <Form ref={ref}>
-        <TutorialChildren handleTutorialClick={props.handleTutorialClick} />
-      </Form>
-    );
-  }
-);
+  const onOk = () => {
+    dispatch(setCurrentPage(2));
+  };
 
-
-const TutorialChildren = ({ handleTutorialClick }: { handleTutorialClick: () => void }) => {
   return (
     <>
-      <form method="dialog">
-        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-          ✕
-        </button>
-      </form>
-      <h3 className="font-medium text-lg text-center">How it works!</h3>
-      <div className="h-[500px]">
-        <Carousel />
-      </div>
-      <div className="modal-action bg-transparent m-0  flex-grow w-full">
-        <form
-          method="dialog"
-          className="w-full flex flex-col justify-center items-center gap-5"
-        >
-          <button
-            onClick={handleTutorialClick}
-            className="btn bg-[#483f61] rounded-md w-[40%] text-white mt-2"
-          >
-            Let's Get Started!!
-          </button>
-          <div className="text-white">
-            Continuing Means That You Agree To Our Terms Aand Conditions
+      <Carousel autoplay>
+        {items.map((item, index) => (
+          <div key={index}>
+            <img src={item.src} alt={item.id.toString()} />
           </div>
-        </form>
+        ))}
+      </Carousel>
+      {/* Center the button vertically and horizontally */}
+      <div className="flex flex-col gap-2 bg-transparent justify-center items-center h-full">
+        <Button
+          className="w-1/3 p-6 bg-[#483f61] text-white font-bold"
+          onClick={onOk}
+        >
+          Let's Get Started!!!
+        </Button>
+        <Typography.Text className="text-red-500">
+          Continuing Means That You Agree To Our Terms Aand Conditions
+        </Typography.Text>
       </div>
     </>
   );
 };
-
 
 export default Tutorial;

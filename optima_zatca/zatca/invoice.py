@@ -14,7 +14,6 @@ from erpnext.controllers.taxes_and_totals import get_itemised_tax
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
-
     sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
     invoice = ZatcaInvoiceData(sales_invoice)
     invoice_encoded = base64.b64encode(etree.tostring(invoice.xml.root)).decode()
@@ -31,16 +30,17 @@ def send_to_zatca(sales_invoice_name):
     Status , qrcode = "Failed" , ""
     if response.status_code in [200 , 202]: 
         ResponseJson = response.json()
-        sales_invoice.db_set("send_to_zatca" , 1 , commit=True)
+        sales_invoice.db_set({
+            "send_to_zatca" : 1  ,
+            "clearance_or_reporting" : ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus")
+        }, commit=True)
+
         frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=  _("Accepted"),indicator="green" ,alert=True)
         
         Status = "Success"  if response.status_code == 200 else "Warning"  
         qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
         qrcode_url = create_qr_code_for_invoice(sales_invoice_name , qrcode)
-        frappe.db.set_value("Sales Invoice", sales_invoice_name ,{
-            "clearance_or_reporting" : ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus") ,
-            "ksa_einv_qr" : qrcode_url
-        })
+        frappe.db.set_value("Sales Invoice", sales_invoice_name ,{"ksa_einv_qr" : qrcode_url})
 
     else :
         frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=  _("Rejected"), indicator="red" , alert=True)
