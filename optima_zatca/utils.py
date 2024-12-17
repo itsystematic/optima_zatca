@@ -55,6 +55,11 @@ def create_additional_fields() :
                 "insert_after" : "column_break88",
                 "options" : "Commercial Register" ,
                 "description" : "this field should contain the 10-digit"
+            },
+            {
+                "fieldname" : "section_break87956",
+                "fieldtype" : "Section Break",
+                "insert_after" : "commercial_register",
             }
         ],
         "Address" : [
@@ -110,7 +115,7 @@ def create_additional_fields() :
                 "fieldname" : "commercial_register" ,
                 "fieldtype" : "Link" ,
                 "label" : "Commercial Register" ,
-                "insert_after" : "customer",
+                "insert_after" : "company",
                 "options" : "Commercial Register" ,
                 "description" : "this field should contain the 10-digit" ,
                 "reqd" : 1

@@ -66,6 +66,14 @@ frappe.ui.form.on("Sales Invoice" , {
                 }
             }
         })
+
+        frm.set_query("commercial_register" , () => {
+            return {
+                filters : {
+                    company : frm.doc.company
+                }
+            }
+        })
     },
 
     async commercial_register(frm) {
