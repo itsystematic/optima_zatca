@@ -84,6 +84,37 @@ frappe.ui.form.on("Sales Invoice" , {
             company_address = commercial_register.message ? commercial_register.message.address : "";
         }
         frm.set_value("company_address" , company_address) ;
+    },
+
+    is_return(frm) {
+        if (frm.doc.is_return) {
+            frm.set_df_property("return_against" , "label" , __("Return Against"));
+            frm.set_df_property("return_against" , "reqd" , 1);
+        } else {
+            frm.set_df_property("return_against" , "reqd" , 0);
+        }
+    },
+
+    is_debit_note(frm) {
+        if (frm.doc.is_debit_note) {
+            frm.set_df_property("return_against" , "label" , __("Debit Note Against"));
+            frm.set_df_property("return_against" , "reqd" , 1);
+        } else {
+            frm.set_df_property("return_against" , "reqd" , 0);
+        }
     }
+
 })
 
+
+frappe.ui.form.on("Sales Invoice Item" , {
+    item_tax_template(frm ,cdt ,cdn) {
+        let item = frappe.get_doc(cdt ,cdn) ;
+
+        if (item.item_tax_template) {
+            frappe.db.get_value("Item Tax Template", item.item_tax_template, ["tax_category"]).then(r => {
+                frappe.model.set_value(cdt ,cdn , "tax_category" , r.message.tax_category)
+            })
+        }
+    }
+})
