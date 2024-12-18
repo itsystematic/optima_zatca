@@ -18,11 +18,11 @@ const EditingForm = () => {
     <ConfigProvider theme={{
       components: {
         Modal: {
-          contentBg: '#ffffff99'
+          contentBg: '#f3f3f3'
         }
       }
     }}>
-    <Modal centered onCancel={onClose} open={editState.edit} footer className="w-[40%]">
+    <Modal centered onCancel={onClose} open={editState.edit} footer className="w-[25%] ">
       <Step2 edit={true} commercial={editState.commercial} />
     </Modal>
     </ConfigProvider>

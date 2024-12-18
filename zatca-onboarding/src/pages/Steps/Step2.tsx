@@ -112,7 +112,6 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
           <Collapse
             accordion
             items={items}
-            defaultActiveKey={["0"]}
             ghost
             className=" bg-[#483f61]"
           />
@@ -132,8 +131,8 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
             autoComplete="off"
             size="large"
             className={`${
-              commission === "multi" ? "w-[60%]" : "w-[40%]"
-            }  p-6 ${!edit && "mt-5"} rounded-md h-[80%] flex flex-col gap-3`}
+              edit ? "w-[100%]" : commission === "multi" ? "w-[60%]" : "w-[40%]"
+            }  p-6 ${!edit && "mt-5"} rounded-md h-full flex flex-col gap-3`}
           >
             {isValid() ? (
               <Typography.Text className="text-lg self-center">
@@ -212,7 +211,7 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
           </Form>
         </Flex>
       </Flex>
-      {!edit ? (
+      {!edit && commission === "multi" ? (
         <Button
           onClick={nextStep}
           disabled={!dataState.commercial_register.length}

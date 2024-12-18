@@ -1,0 +1,19 @@
+{
+  "name": "optima_zatca",
+  "version": "1.0.0",
+  "description": "App For Zatca Phase Two",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "cd zatca-onboarding && yarn install",
+    "dev": "cd zatca-onboarding && yarn dev",
+    "build": "cd zatca-onboarding && yarn build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

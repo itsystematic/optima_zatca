@@ -13,12 +13,12 @@ const Phases = () => {
 
   const phases: Phases[] = [
     {
-      img: "Phase_1.svg",
+      img: !isDev ? "/assets/optima_zatca/zatca-onboarding/Phase_1.svg" : "Phase_1.svg",
       id: 1,
       name: "المرحلة الاولة",
     },
     {
-      img: "Phase_2.svg",
+      img: !isDev ? "/assets/optima_zatca/zatca-onboarding/Phase_2.svg" : "Phase_2.svg",
       id: 2,
       name: "المرحلة الثانية",
     },

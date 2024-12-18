@@ -9,19 +9,19 @@ const Tutorial: React.FC = () => {
   const items = [
     {
       id: 1,
-      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=1&font=bebas",
+      src: "https://fakeimg.pl/1684x600/cccfd4/000000?text=1&font=bebas",
     },
     {
       id: 2,
-      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=2&font=bebas",
+      src: "https://fakeimg.pl/1684x600/cccfd4/000000?text=2&font=bebas",
     },
     {
       id: 3,
-      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=3&font=bebas",
+      src: "https://fakeimg.pl/1684x600/cccfd4/000000?text=3&font=bebas",
     },
     {
       id: 4,
-      src: "https://fakeimg.pl/1320x600/cccfd4/000000?text=4&font=bebas",
+      src: "https://fakeimg.pl/1684x600/cccfd4/000000?text=4&font=bebas",
     },
   ];
 

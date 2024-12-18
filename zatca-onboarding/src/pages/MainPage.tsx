@@ -1,5 +1,6 @@
 import { useAppSelector } from "@/app/hooks";
 import CustomModal from "@/components/CustomModal";
+import Success from "@/components/Success";
 import { AnimatePresence, motion } from "framer-motion";
 import Commission from "./Commision";
 import Phases from "./Phases";
@@ -30,6 +31,11 @@ const MainPage = () => {
       name: "Company Info",
       component: <Step1 />,
     },
+    {
+      id: 200,
+      name: "Success",
+      component: <Success />
+    }
   ];
 
   return (

@@ -9,12 +9,12 @@ const Commission = () => {
   const commissions = [
     {
       id: "main",
-      img: "MainCommision.png",
+      img: !isDev ? "/assets/optima_zatca/zatca-onboarding/MainCommision.png" :"MainCommision.png",
       name: "سجل تجاري رئيسي",
     },
     {
       id: "multi",
-      img: "MultipleCommision.png",
+      img: !isDev ? "/assets/optima_zatca/zatca-onboarding/MultipleCommision.png"  : "MultipleCommision.png",
       name: "سجلات تجارية فرعية",
     },
   ];

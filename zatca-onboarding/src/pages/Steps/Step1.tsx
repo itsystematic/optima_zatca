@@ -4,10 +4,9 @@ import { setStep } from "@/data/currentStep";
 import { setData } from "@/data/dataSlice";
 import { Company, DataState } from "@/types";
 import { Button, Flex, Form, FormProps, Input, Select } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Step2 from "./Step2";
 import Step3 from "./Step3";
-
 
 const Step1 = () => {
   const currentStep = useAppSelector((state) => state.stepReducer.currentStep);
@@ -16,19 +15,19 @@ const Step1 = () => {
     {
       id: 0,
       title: "Company Info",
-      component: <StepOneComponent />,
+      component: <StepOneComponent key={0} />,
     },
     {
       id: 1,
       title: "Commercial Info",
-      component: <Step2 />,
+      component: <Step2 key={1} />,
       // component: ,
     },
     {
       id: 2,
       title: "Finishing up",
       // component: <Step3 />,
-      component: <Step3 />,
+      component: <Step3 key={3} />,
     },
   ];
 
@@ -45,13 +44,13 @@ const StepOneComponent = () => {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm<DataState>();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const dataState = useAppSelector((state) => state.dataReducer);
   const step = useAppSelector((state) => state.stepReducer.currentStep);
 
   const onFinish: FormProps<DataState>["onFinish"] = (values) => {
     console.log("Received values of form:", values);
-    dispatch(setData({...values, commercial_register: []}))
+    dispatch(setData({ ...values, commercial_register: [] }));
     dispatch(setStep({ currentStep: step + 1 }));
-
   };
 
   const onFinishFailed: FormProps<DataState>["onFinishFailed"] = (
@@ -72,9 +71,25 @@ const StepOneComponent = () => {
     return Promise.resolve(); // Validation passed
   };
 
+  useEffect(() => {
+    if (isDev) return;
+    const data = frappe.get_list("Company");
+    setCompanies(data);
+  }, []);
+
+  useEffect(() => {
+    if (dataState) {
+      form.setFieldsValue({
+        company: dataState.company,
+        company_name_in_arabic: dataState.company_name_in_arabic,
+        tax_id: dataState.tax_id,
+      });
+    }
+  }, []);
+
   return (
     <Flex flex={1} align="center" className="w-full">
-      <Flex align="center" className="w-full" justify="center" >
+      <Flex align="center" className="w-full" justify="center">
         <Form
           form={form}
           layout="vertical"
@@ -93,7 +108,15 @@ const StepOneComponent = () => {
           >
             <Select
               placeholder="Company"
-              options={[{ value: "company1", label: "company1" }]}
+              options={
+                isDev
+                  ? [{ value: "company1", label: "company1" }]
+                  : companies.map((company) => ({
+                      value: company.name,
+                      label: company.name,
+                    }))
+              }
+              defaultValue={companies[0]?.name}
               className="h-12"
             />
           </Form.Item>
