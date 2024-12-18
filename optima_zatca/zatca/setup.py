@@ -45,9 +45,9 @@ def add_company_to_zatca(name):
     saving_data_to_company(name , company_details)
 
     if settings.get("check_pcsid") == 1 or company_details.get("check_pcsid") == 1 :
-        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Completed", "indicator" : "green" })
+        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Completed", "indicator" : "green" ,  "complete" : True })
     else :
-        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Failed", "indicator" : "red" })
+        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Failed", "indicator" : "red" ,  "complete" : True})
 
 
 def get_certificate(settings ,company_csr , company_details:dict) :
@@ -73,16 +73,16 @@ def get_certificate(settings ,company_csr , company_details:dict) :
 def get_production_certificate(settings , company_details:dict ) :
     response = get_production_csid(
         settings,
-        company_details.get("binary_security_token") ,
-        company_details.get("secret") ,
-        company_details.get("request_id")
+        settings.get("binary_security_token") ,
+        settings.get("secret") ,
+        settings.get("request_id")
     )
     
     certificate = base64.b64decode(response.get("binarySecurityToken")).decode("utf-8")
         
     company_details.update({
         "binary_security_token" : response.get("binarySecurityToken")  ,
-        "request_id" : response.get("requestID") ,
+        "production_request_id" : response.get("requestID") ,
         "secret" : response.get("secret"),
         "certificate" : certificate,
         "token_type" : response.get("tokenType"),
@@ -93,7 +93,7 @@ def get_production_certificate(settings , company_details:dict ) :
         make_auth_header_for_request(response.get("binarySecurityToken"), response.get("secret") , company_details)
         extract_details_from_certificate(certificate , company_details)
 
-        frappe.publish_realtime("zatca" , {"message" :"Production CSID Created Successfully", "indicator" : "green" })
+        frappe.publish_realtime("zatca" , {"message" :"Production CSID Created Successfully", "indicator" : "green"})
     
 
 

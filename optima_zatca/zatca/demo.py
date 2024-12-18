@@ -27,7 +27,7 @@ def send_sample_sales_invoices(settings ,company_details) :
         sales_invoices = json.load(file)
         
     company_info = get_company_info(settings)
-    invoice_info = get_public_info(company_details)
+    invoice_info = get_public_info(settings)
 
     # try :
     for idx , sales_invoice  in enumerate(sales_invoices.get("Invoices")) :
@@ -121,15 +121,15 @@ def get_company_info(company_settings) :
     }
 
 
-def get_public_info(company_details) :
+def get_public_info(settings) :
 
     return {
-        "X509SerialNumber" : str(company_details.get("serial_number509")) ,
-        "X509IssuerName" : company_details.get("issuer_name") ,
-        "DigestValue" : company_details.get("certificate_hash") ,
-        "Certificate" : company_details.get("certificate") ,
-        'SignatureInformation' : company_details.get("signature"),
-        "private_key" : company_details.get("private_key") ,
-        "public_key" : company_details.get("public_key").strip() ,
+        "X509SerialNumber" : str(settings.get("serial_number509")) ,
+        "X509IssuerName" : settings.get("issuer_name") ,
+        "DigestValue" : settings.get("certificate_hash") ,
+        "Certificate" : settings.get("certificate") ,
+        'SignatureInformation' : settings.get("signature"),
+        "private_key" : settings.get("private_key") ,
+        "public_key" : settings.get("public_key").strip() ,
         "UUID" : str(uuid.uuid4()) ,
     }

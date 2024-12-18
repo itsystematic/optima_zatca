@@ -8,6 +8,10 @@ frappe.ui.form.on("Optima Zatca Setting", {
                 message: __(data.message),
                 indicator: data.indicator,
             },7);
+
+            if (data.complete ) {
+                frm.reload_doc();
+            }
         });
     },
 

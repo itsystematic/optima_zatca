@@ -50,6 +50,7 @@
   "csr",
   "section_break_mymv",
   "request_id",
+  "production_request_id",
   "column_break_tksk",
   "binary_security_token",
   "column_break_koqt",
@@ -209,7 +210,7 @@
   },
   {
    "fieldname": "request_id",
-   "fieldtype": "Text",
+   "fieldtype": "Data",
    "label": "Request ID"
   },
   {
@@ -388,11 +389,16 @@
   {
    "fieldname": "section_break_ilkf",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "production_request_id",
+   "fieldtype": "Data",
+   "label": "Production Request ID"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-17 12:24:31.137831",
+ "modified": "2024-12-18 15:04:11.097450",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Setting",
