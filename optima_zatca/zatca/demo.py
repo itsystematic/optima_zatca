@@ -29,70 +29,72 @@ def send_sample_sales_invoices(settings ,company_details) :
     company_info = get_company_info(settings)
     invoice_info = get_public_info(settings)
 
-    # try :
+
     for idx , sales_invoice  in enumerate(sales_invoices.get("Invoices")) :
+        try :
+            if settings.get(DEMO_INVOICE.get("{0}".format(idx))) == 1:
+                company_details[DEMO_INVOICE.get(f"{idx}")] = True
+                continue
 
-        if settings.get(DEMO_INVOICE.get("{0}".format(idx))) == 1:
-            company_details[DEMO_INVOICE.get(f"{idx}")] = True
-            continue
-
-        sales_invoice['PIH'] = PIH
-        sales_invoice.update(company_info)
-        sales_invoice.update(invoice_info)
-        
-        zatca_xml = ZatcaXml(sales_invoice)
-
-        invoice_encoded = base64.b64encode(etree.tostring(zatca_xml.root)).decode()
-
-        response = make_invoice_request(
-            sales_invoice.get("Clearance-Status") , 
-            settings.get("authorization") , 
-            zatca_xml.hash , 
-            sales_invoice.get("UUID") , 
-            invoice_encoded , 
-            settings, 
-            "complainace_checks"
-        )
-        
-        if response.status_code in [200 , 202]:
+            sales_invoice['PIH'] = PIH
+            sales_invoice.update(company_info)
+            sales_invoice.update(invoice_info)
             
-            Status = "Success"  if response.status_code == 200 else "Warning" 
-            frappe.publish_realtime("zatca" , { 
-                "message" : _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "green"
-            })
-            # frappe.msgprint(alert=True , indicator="green" , msg= _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
-            PIH = zatca_xml.hash
+            zatca_xml = ZatcaXml(sales_invoice)
 
-            company_details[DEMO_INVOICE.get(f"{idx}")] = True
+            invoice_encoded = base64.b64encode(etree.tostring(zatca_xml.root)).decode()
+
+            response = make_invoice_request(
+                sales_invoice.get("Clearance-Status") , 
+                settings.get("authorization") , 
+                zatca_xml.hash , 
+                sales_invoice.get("UUID") , 
+                invoice_encoded , 
+                settings, 
+                "complainace_checks"
+            )
             
-        else :
+            if response.status_code in [200 , 202]:
+                
+                Status = "Success"  if response.status_code == 200 else "Warning" 
+                frappe.publish_realtime("zatca" , { 
+                    "message" : _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "green"
+                })
+                # frappe.msgprint(alert=True , indicator="green" , msg= _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
+                PIH = zatca_xml.hash
+
+                company_details[DEMO_INVOICE.get(f"{idx}")] = True
+                
+            else :
+                frappe.publish_realtime("zatca" , {
+                    "message" : _("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "red"
+                })
+                # frappe.msgprint(alert=True , indicator="red" , msg=_("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
+                
+                Status = "Failed" 
+                
+            make_action_log(
+                method ="send_to_zatca" ,
+                status = Status  ,
+                message = response.text ,
+                reference_doctype = "Sales Invoice",
+                company = settings.company ,
+                commercial_register = sales_invoice.get("commercial_register") ,
+                uuid = sales_invoice.get("UUID"),
+                invoice = invoice_encoded,
+                hash = zatca_xml.hash ,
+                api_endpoint = "complainace_checks" ,
+                environment = settings.get("api_endpoints"),
+                pih = zatca_xml.hash,
+                icv = sales_invoice.get("InvoiceCounter")
+            )
+
+            time.sleep(5)
+
+        except Exception as e:
             frappe.publish_realtime("zatca" , {
                 "message" : _("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "red"
             })
-            # frappe.msgprint(alert=True , indicator="red" , msg=_("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
-            
-            Status = "Failed" 
-            
-        make_action_log(
-            method ="send_to_zatca" ,
-            status = Status  ,
-            message = response.text ,
-            reference_doctype = "Sales Invoice",
-            company = settings.company ,
-            commercial_register = sales_invoice.get("commercial_register") ,
-            uuid = sales_invoice.get("UUID"),
-            invoice = invoice_encoded,
-            hash = zatca_xml.hash ,
-            api_endpoint = "complainace_checks" ,
-            environment = settings.get("api_endpoints"),
-            pih = zatca_xml.hash,
-            icv = sales_invoice.get("InvoiceCounter")
-        )
-
-        time.sleep(5)
-
-    # except Exception as e:
-    #     frappe.msgprint(str(e))
     
     # time.sleep(5)
 
