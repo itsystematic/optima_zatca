@@ -19,12 +19,17 @@ def add_company_to_zatca(name):
     company_details = {}
 
     settings = frappe.get_doc("Optima Zatca Setting" , name)
+
     company_csr = create_company_csr(settings , company_details)
 
-    if settings.get("otp") and company_csr:
-        get_certificate(settings ,company_csr , company_details)
+    if settings.get("otp") and settings.get("check_csid") == 0 :
 
-    if company_csr and company_details.get("certificate") :
+        get_certificate(settings ,company_csr , company_details)
+        saving_data_to_company(name , company_details)
+        settings = frappe.get_doc("Optima Zatca Setting" , name)
+
+
+    if settings.get("check_csid") == 1 :
         send_sample_sales_invoices(settings ,company_details)
 
     list_of_fields = [
@@ -33,24 +38,18 @@ def add_company_to_zatca(name):
         company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
     ]
 
-    if not company_details.get("check_pcsid") and all(list_of_fields) :
-        print("in Production")
+    if settings.get("check_pcsid") == 0 and all(list_of_fields) :
         get_production_certificate(settings , company_details ) 
-    # except :
-    #     frappe.msgprint("Error IN Zatca")
+
 
     saving_data_to_company(name , company_details)
 
 
 def get_certificate(settings ,company_csr , company_details:dict) :
 
-    if settings.get("check_csid" , False) == 0  :
-        request_id , binary_security_token , secret  = get_zatca_csid(settings.name , settings.otp , company_csr )
-        certificate = base64.b64decode(binary_security_token).decode("utf-8")
-    else :
-        print("true certificate")
-        request_id , binary_security_token , secret , certificate =  settings.get("request_id"),settings.get("binary_security_token") , settings.get("secret") , settings.get("certificate")
-    
+    request_id , binary_security_token , secret  = get_zatca_csid(settings.name , settings.otp , company_csr )
+    certificate = base64.b64decode(binary_security_token).decode("utf-8")
+
     company_details.update({
         "binary_security_token" : binary_security_token ,
         "request_id" : request_id ,
