@@ -63,11 +63,9 @@ def get_certificate(settings ,company_csr , company_details:dict) :
         "check_csid" : 1,
     })
 
-    if certificate :
-        make_auth_header_for_request(binary_security_token, secret , company_details)
-        extract_details_from_certificate(certificate , company_details)
-
-        frappe.publish_realtime("zatca" , {"message" :"CSID Created Successfully", "indicator" : "green" })
+    make_auth_header_for_request(binary_security_token, secret , company_details)
+    extract_details_from_certificate(certificate , company_details)
+    frappe.publish_realtime("zatca" , {"message" :"CSID Created Successfully", "indicator" : "green" })
 
 
 def get_production_certificate(settings , company_details:dict ) :
@@ -89,11 +87,9 @@ def get_production_certificate(settings , company_details:dict ) :
         "check_pcsid" : 1 ,
     })
 
-    if certificate :
-        make_auth_header_for_request(response.get("binarySecurityToken"), response.get("secret") , company_details)
-        extract_details_from_certificate(certificate , company_details)
-
-        frappe.publish_realtime("zatca" , {"message" :"Production CSID Created Successfully", "indicator" : "green"})
+    make_auth_header_for_request(response.get("binarySecurityToken"), response.get("secret") , company_details)
+    extract_details_from_certificate(certificate , company_details)
+    frappe.publish_realtime("zatca" , {"message" :"Production CSID Created Successfully", "indicator" : "green"})
     
 
 

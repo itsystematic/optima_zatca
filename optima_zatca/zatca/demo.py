@@ -89,6 +89,8 @@ def send_sample_sales_invoices(settings ,company_details) :
             icv = sales_invoice.get("InvoiceCounter")
         )
 
+        time.sleep(5)
+
     # except Exception as e:
     #     frappe.msgprint(str(e))
     
