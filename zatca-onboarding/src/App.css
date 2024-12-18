@@ -42,3 +42,6 @@
 .ant-collapse-expand-icon {
   color: white;
 }
+.ant-modal-title{
+  text-align: center !important;
+}

@@ -2,7 +2,7 @@ import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { setCurrentPage } from "@/data/currentPage";
 import { addOTP } from "@/data/dataSlice";
 import { CommercialData } from "@/types";
-import { Flex, Input, message, Modal, Typography } from "antd";
+import { ConfigProvider, Flex, Input, message, Modal, Typography } from "antd";
 import React, { useState } from "react";
 
 interface Props {
@@ -49,6 +49,15 @@ const OTPModal: React.FC<Props> = ({ open, setOpen }) => {
   };
   return (
     <>
+    <ConfigProvider
+    theme={{
+        components: {
+            Modal: {
+                contentBg: '#f3f3f3',
+                headerBg: '#f3f3f3',
+            }
+        }
+    }}>
     {contextHolder}
     <Modal
       centered
@@ -57,7 +66,7 @@ const OTPModal: React.FC<Props> = ({ open, setOpen }) => {
       onOk={() => handleSubmit(otpValues)}
       confirmLoading={otpLoading}
       onCancel={() => setOpen(false)}
-      className="w-[40%]"
+      className="w-[35%]"
     >
       <Flex gap="middle" align="center" vertical className="p-5">
         {dataState.commercial_register.map((com, index) => (
@@ -81,6 +90,7 @@ const OTPModal: React.FC<Props> = ({ open, setOpen }) => {
         ))}
       </Flex>
     </Modal>
+    </ConfigProvider>
     </>
 
   );
