@@ -46,7 +46,7 @@ def send_sample_sales_invoices(settings ,company_details) :
 
         response = make_invoice_request(
             sales_invoice.get("Clearance-Status") , 
-            company_details.get("authorization") , 
+            settings.get("authorization") , 
             zatca_xml.hash , 
             sales_invoice.get("UUID") , 
             invoice_encoded , 
@@ -88,6 +88,8 @@ def send_sample_sales_invoices(settings ,company_details) :
             pih = zatca_xml.hash,
             icv = sales_invoice.get("InvoiceCounter")
         )
+
+        time.sleep(5)
 
     # except Exception as e:
     #     frappe.msgprint(str(e))
