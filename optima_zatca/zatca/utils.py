@@ -117,7 +117,8 @@ def create_company_csr(settings , company_details:dict):
     company_details["organization_name"] = company_name_in_arabic
     company_details["check_csr"] = 1
 
-    frappe.msgprint("CSR generation successful. CSR saved" , alert=True) 
+    frappe.publish_realtime("zatca" , {"message" :"ZATCA CSR Generated", "indicator" : "green" })
+
     return encoded_string
 
 

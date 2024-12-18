@@ -87,7 +87,7 @@ class ZatcaInvoiceData :
                     "schemeID" : self.customer_info.get("registration_type")  , # type of registration tax_id , commercial_register
                     "CompanyID" : self.customer_info.get("tax_id"),
                     "RegistrationName" : self.customer_info.get("customer_name_in_arabic")  or self.customer_info.get("name"),
-                    "IdentificationCode" : country_code.upper(),
+                    "IdentificationCode" : country_code.upper() if country_code else "SA" ,
                     "CitySubdivisionName" : self.customer_address.get("district"),
                     "BuildingNumber" : self.customer_address.get("building_no"),
                     "StreetName" : self.customer_address.get("address_line1"),

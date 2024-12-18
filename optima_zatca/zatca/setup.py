@@ -44,6 +44,11 @@ def add_company_to_zatca(name):
 
     saving_data_to_company(name , company_details)
 
+    if settings.get("check_pcsid") == 1 or company_details.get("check_pcsid") == 1 :
+        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Completed", "indicator" : "green" })
+    else :
+        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Failed", "indicator" : "red" })
+
 
 def get_certificate(settings ,company_csr , company_details:dict) :
 
@@ -61,6 +66,8 @@ def get_certificate(settings ,company_csr , company_details:dict) :
     if certificate :
         make_auth_header_for_request(binary_security_token, secret , company_details)
         extract_details_from_certificate(certificate , company_details)
+
+        frappe.publish_realtime("zatca" , {"message" :"CSID Created Successfully", "indicator" : "green" })
 
 
 def get_production_certificate(settings , company_details:dict ) :
@@ -85,6 +92,8 @@ def get_production_certificate(settings , company_details:dict ) :
     if certificate :
         make_auth_header_for_request(response.get("binarySecurityToken"), response.get("secret") , company_details)
         extract_details_from_certificate(certificate , company_details)
+
+        frappe.publish_realtime("zatca" , {"message" :"Production CSID Created Successfully", "indicator" : "green" })
     
 
 
@@ -97,7 +106,7 @@ def saving_data_to_company(
     frappe.db.set_value("Optima Zatca Setting" , name , company_details , update_modified=True )
     frappe.db.commit()
     
-    frappe.msgprint("Data Saved Successfully" , alert=True)
+    frappe.publish_realtime("zatca" , {"message" :"Data Saved Successfully", "indicator" : "green" })
 
 
 
