@@ -1,5 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import EditingForm from "@/components/EditingForm";
+import OTPModal from "@/components/OTPModal";
 import { deleteCommercial } from "@/data/dataSlice";
 import { activateEdit } from "@/data/editModal";
 import { CommercialData } from "@/types";
@@ -9,117 +10,19 @@ import {
   Checkbox,
   CheckboxProps,
   ConfigProvider,
-  Descriptions,
-  DescriptionsProps,
   Flex,
-  Input,
-  Modal,
   Space,
   Table,
-  TableProps,
-  Typography,
+  TableProps
 } from "antd";
-import { OTPProps } from "antd/es/input/OTP";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const Step3 = () => {
+  const dispatch = useAppDispatch();
   const [open, setOpen] = useState<boolean>(false);
   const [checked, setChecked] = useState<boolean>(false);
   const dataState = useAppSelector((state) => state.dataReducer);
-  const editState = useAppSelector(state => state.editReducer);
-  const c = dataState.commercial_register[0];
-  const dispatch = useAppDispatch();
-  const commission = useAppSelector(
-    (state) => state.commissionReducer.commission
-  );
-
-  const items: DescriptionsProps["items"] = [
-    {
-      label: "Company",
-      span: "filled",
-      children: dataState.company,
-    },
-    {
-      label: "Commercial Register",
-      span: "filled",
-      children: dataState.tax_id,
-    },
-    {
-      label: "Company in Arabic",
-      span: "filled",
-      children: dataState.company_name_in_arabic,
-    },
-    //@ts-ignore
-    // ...dataState.commercial_register((c) => [
-    //   {
-    //     label: "Commercial Name",
-    //     children: c.commercial_register_name,
-    //   },
-    //   {
-    //     label: "Commercial Number",
-    //     span: 'filled',
-    //     children: c.commercial_register_number,
-    //   },
-    //   {
-    //     label: "Commercial Info",
-    //     span: 'filled',
-    //     children: (
-    //       <>
-    //         Short Address: {c.short_address}
-    //         <br />
-    //         Building Number: {c.building_no}
-    //         <br />
-    //         Street: {c.address_line1}
-    //         <br />
-    //         Secondary No: {c.address_line2}
-    //         <br />
-    //         City: {c.city}
-    //         <br />
-    //         District: {c.district}
-    //         <br />
-    //         Postal Code: {c.pincode}
-    //         <br />
-    //         {c.more_info ?
-    //         `More Info: ${c.more_info}`
-    //       : null
-    //       }
-    //       </>
-    //     ),
-    //   },
-    // ]),
-    {
-      label: "Commercial Name",
-      children: c.commercial_register_name,
-    },
-    {
-      label: "Commercial Number",
-      span: "filled",
-      children: c.commercial_register_number,
-    },
-    {
-      label: "Commercial Info",
-      span: "filled",
-      children: (
-        <>
-          Short Address: {c.short_address}
-          <br />
-          Building Number: {c.building_no}
-          <br />
-          Street: {c.address_line1}
-          <br />
-          Secondary No: {c.address_line2}
-          <br />
-          City: {c.city}
-          <br />
-          District: {c.district}
-          <br />
-          Postal Code: {c.pincode}
-          <br />
-          {c.more_info ? `More Info: ${c.more_info}` : null}
-        </>
-      ),
-    },
-  ];
+  const editState = useAppSelector((state) => state.editReducer);
 
   const columns: TableProps<CommercialData>["columns"] = [
     {
@@ -181,9 +84,6 @@ const Step3 = () => {
                 <DeleteOutlined
                   onClick={() => {
                     dispatch(deleteCommercial(record));
-                    if (!dataState.commercial_register.length) {
-                      location.reload();
-                    }
                   }}
                   className="cursor-pointer text-lg hover:text-red-500"
                 />
@@ -202,28 +102,18 @@ const Step3 = () => {
     dispatch(activateEdit({ commercial: record }));
   };
 
-  const onOTPChange: OTPProps["onChange"] = (text) => {
-    console.log("onChange:", text);
-  };
 
-  const onInput: OTPProps["onInput"] = (value) => {
-    console.log("onInput:", value);
-  };
 
-  const sharedProps: OTPProps = {
-    onChange: onOTPChange,
-    onInput,
-  };
+
+
+  useEffect(() => {
+    if (!dataState.commercial_register.length) location.reload()
+
+  }, [dataState.commercial_register.length])
+
   return (
-    <Flex vertical className="w-full p-5">
-      {commission === "main" ? (
-        <Descriptions
-          className="bg-[#ffffff00] rounded p-5"
-          bordered
-          title="Company Information"
-          items={items}
-        />
-      ) : (
+    <>
+      <Flex vertical className="w-full p-5">
         <ConfigProvider
           theme={{
             components: {
@@ -236,42 +126,28 @@ const Step3 = () => {
         >
           <Table<CommercialData>
             columns={columns}
-            dataSource={dataState.commercial_register}
+            pagination={false}
+            dataSource={dataState.commercial_register || []}
           />
         </ConfigProvider>
-      )}
-      <Flex justify="space-between" align="center" className="mt-auto">
-        <Checkbox className="text-lg" onChange={onChange} value={checked}>
-          By checkign this box i fully acknowledge that this data is correct and
-          any errors is on my resposiblity
-        </Checkbox>
-        <Button
-          onClick={() => setOpen(true)}
-          disabled={!checked}
-          size="large"
-          className="bg-[#483f61] text-white w-1/12 disabled:opacity-85"
-        >
-          OTP
-        </Button>
-      </Flex>
-      <Modal
-        centered
-        title="Please provide an OTP"
-        open={open}
-        onOk={() => console.log("object")}
-        onCancel={() => setOpen(false)}
-      >
-        <Flex gap="middle" align="center" vertical className="p-5">
-          {dataState.commercial_register.map((com,index) => (
-            <>
-            <Typography.Text className="text-lg">{com.commercial_register_name}</Typography.Text>
-          <Input.OTP key={index} formatter={(str) => str.toUpperCase()} {...sharedProps} />
-            </>
-          ))}
+        <Flex justify="space-between" align="center" className="mt-auto">
+          <Checkbox className="text-lg" onChange={onChange} checked={checked}>
+            By checkign this box i fully acknowledge that this data is correct
+            and any errors is on my resposiblity
+          </Checkbox>
+          <Button
+            onClick={() => setOpen(true)}
+            disabled={!checked}
+            size="large"
+            className="bg-[#483f61] text-white w-1/12 disabled:opacity-85"
+          >
+            OTP
+          </Button>
         </Flex>
-      </Modal>
-      {editState.edit && <EditingForm />}
-    </Flex>
+          <OTPModal open={open} setOpen={setOpen} />
+        {editState.edit && <EditingForm />}
+      </Flex>
+    </>
   );
 };
 
