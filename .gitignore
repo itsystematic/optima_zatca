@@ -4,7 +4,8 @@
 *.swp
 tags
 node_modules
-__pycache__
+optima_zatca/zatca/__pycache__/
+*__pycache__
 
 
 optima_zatca/public/zatca-onboarding
