@@ -22,7 +22,7 @@ def get_company_info(company) -> frappe._dict :
 
 def generate_serial_number(company_name) :
     key =  str(uuid.uuid4())
-    return "1-{0}uy|2-{1}nt|3-{2}pu".format(company_name,"ERPNEXT",key[:12])
+    return "1-{0}uy|2-{1}nt|3-{2}pu".format(key[:12],"ERPNEXT",key[:12])
 
 
 def generate_common_name():
