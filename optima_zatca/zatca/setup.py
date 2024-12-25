@@ -157,7 +157,10 @@ def saving_branches_data(**kwargs) :
     for branch in list_of_branches:
         company_address = saving_address_data(company , **branch)
         commercial_register = saving_commercial_register(company , company_address , **branch)
-        saving_optima_payment_setting(company ,tax_id, legal_name , commercial_register , company_address , **branch)
+        optima_settings = saving_optima_payment_setting(company ,tax_id, legal_name , commercial_register , company_address , **branch)
+        add_company_to_zatca(optima_settings)
+
+
 
 
 def saving_address_data(company , **kwargs) :
@@ -194,7 +197,7 @@ def saving_commercial_register(company , address , **kwargs) :
 
 def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_register ,company_address , **kwargs) :
     
-    frappe.get_doc({
+    settings = frappe.get_doc({
         "doctype" : "Optima Zatca Setting" ,
         "company" : company ,
         "commercial_register" : commercial_register ,
@@ -210,6 +213,8 @@ def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_regist
         "otp" : kwargs.get("otp") or "12356",
         "api_endpoints" : "production"
     }).insert(ignore_if_duplicate=True , ignore_permissions=True)
+
+    return settings.name
 
 
 def saving_main_settings(**kwargs) :
