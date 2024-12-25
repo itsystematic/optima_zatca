@@ -1,8 +1,10 @@
+import addingReducer from "@/data/addingState";
 import commissionReducer from "@/data/commission";
 import pageReducer from "@/data/currentPage";
 import stepReducer from "@/data/currentStep";
 import dataReducer from "@/data/dataSlice";
 import editReducer from "@/data/editModal";
+import tourReducer from "@/data/tour";
 import { configureStore } from "@reduxjs/toolkit";
 export const store = configureStore({
   reducer: {
@@ -10,7 +12,9 @@ export const store = configureStore({
     commissionReducer,
     pageReducer,
     stepReducer,
-    editReducer
+    editReducer,
+    tourReducer,
+    addingReducer
   },
 });
 

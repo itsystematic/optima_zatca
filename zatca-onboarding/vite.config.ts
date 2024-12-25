@@ -19,10 +19,10 @@ export default defineConfig({
     },
   },
   build: {
+    minify: true,
     outDir: "../optima_zatca/public/zatca-onboarding",
     emptyOutDir: true,
     target: "es2015",
-    // cssCodeSplit: false,
     rollupOptions: {
       input: path.resolve(__dirname, "src/main.tsx"),
       output: {

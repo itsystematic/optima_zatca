@@ -2,10 +2,12 @@ import { CommercialData, DataState } from "@/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 const initialState: DataState = {
+  phase: "",
   tax_id: "",
-  company: "",
+  company: undefined,
   commercial_register: [],
   company_name_in_arabic: "",
+  adding: false,
 };
 
 const dataSlice = createSlice({

@@ -50,7 +50,7 @@ const MainPage = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className="w-full h-full flex flex-col"
+              className="h-full"
             >
               {page.component}
             </motion.div>

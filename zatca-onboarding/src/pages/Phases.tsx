@@ -1,36 +1,44 @@
-import { useAppDispatch } from "@/app/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { setCurrentPage } from "@/data/currentPage";
+import { setData } from "@/data/dataSlice";
 import { Card, Flex, Image, Typography } from "antd";
 
 const Phases = () => {
   const dispatch = useAppDispatch();
+  const dataState = useAppSelector((state) => state.dataReducer);
 
-  interface Phases {
-    id: number;
-    img: string;
-    name: string;
-  }
+  type Phases = {
+    [k in "img" | "id" | "name"]: string;
+  };
 
   const phases: Phases[] = [
     {
-      img: !isDev ? "/assets/optima_zatca/zatca-onboarding/Phase_1.svg" : "Phase_1.svg",
-      id: 1,
-      name: "المرحلة الاولة",
+      img: !isDev
+        ? "/assets/optima_zatca/zatca-onboarding/Phase_1.svg"
+        : "Phase_1.svg",
+      id: "Phase One",
+      name: "Phase 1",
     },
     {
-      img: !isDev ? "/assets/optima_zatca/zatca-onboarding/Phase_2.svg" : "Phase_2.svg",
-      id: 2,
-      name: "المرحلة الثانية",
+      img: !isDev
+        ? "/assets/optima_zatca/zatca-onboarding/Phase_2.svg"
+        : "Phase_2.svg",
+      id: "Phase Two",
+      name: "Phase 2",
     },
   ];
 
-  const handlePhaseSelect = (phase: number) => {
-    console.log(phase);
+  const handlePhaseSelect = (phase: string) => {
+    dispatch(setData({ ...dataState, phase }));
     dispatch(setCurrentPage(3));
   };
 
   return (
-      <Flex gap={16} flex={1} justify="center" align="center">
+    <Flex align="center" vertical className="h-full">
+      <Flex className="h-1/3" align="center">
+        <Typography.Title>{__("Company Phase?")}</Typography.Title>
+      </Flex>
+      <Flex gap={16} justify="center" align="center" className="mt-6">
         {phases.map((phase) => (
           <Card
             onClick={() => handlePhaseSelect(phase.id)}
@@ -48,12 +56,13 @@ const Phases = () => {
               />
 
               <Typography.Text className="text-xl font-medium text-white group-hover:text-black">
-                {phase.name}
+                {__(phase.name)}
               </Typography.Text>
             </div>
           </Card>
         ))}
       </Flex>
+    </Flex>
   );
 };
 

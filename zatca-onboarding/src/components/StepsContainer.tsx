@@ -11,11 +11,11 @@ interface Props {
 const StepsContainer: React.FC<Props> = ({ steps, children }) => {
   const dispatch = useAppDispatch();
   const currentStep = useAppSelector((state) => state.stepReducer.currentStep);
-
+  const isAdding = useAppSelector((state) => state.addingReducer.isAdding);
   const validStep = (step: number) => {
     if (step > currentStep) return false;
     return true;
-  }
+  };
 
   const onChange = (step: number) => {
     if (!validStep(step)) return;
@@ -23,13 +23,15 @@ const StepsContainer: React.FC<Props> = ({ steps, children }) => {
   };
 
   return (
-    <Flex flex={1} align="center" justify="center" vertical>
-      <Steps
-        current={currentStep}
-        onChange={onChange}
-        items={steps}
-        className="w-1/2"
-      />
+    <Flex className="h-[96%]" align="center" justify="center" vertical>
+      {isAdding ? null : (
+        <Steps
+          current={currentStep}
+          onChange={onChange}
+          items={steps}
+          className="w-1/2"
+        />
+      )}
       <AnimatePresence>
         <motion.div
           key={currentStep}

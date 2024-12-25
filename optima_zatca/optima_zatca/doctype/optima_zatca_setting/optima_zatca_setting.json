@@ -8,8 +8,9 @@
  "field_order": [
   "set_up_tab",
   "section_break_hzct",
-  "enable_optima_zatca",
   "phases",
+  "column_break_wotm",
+  "status",
   "section_break_qvtv",
   "company",
   "column_break_pkih",
@@ -74,12 +75,6 @@
    "fieldname": "set_up_tab",
    "fieldtype": "Tab Break",
    "label": "Set Up"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_optima_zatca",
-   "fieldtype": "Check",
-   "label": "Enable Optima Zatca"
   },
   {
    "fieldname": "tab_2_tab",
@@ -394,11 +389,22 @@
    "fieldname": "production_request_id",
    "fieldtype": "Data",
    "label": "Production Request ID"
+  },
+  {
+   "fieldname": "column_break_wotm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "is_virtual": 1,
+   "label": "Status",
+   "options": "Not Connected\nConnected"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-18 15:04:11.097450",
+ "modified": "2024-12-23 16:26:05.580705",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Setting",

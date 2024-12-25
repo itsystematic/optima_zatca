@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-12-22 14:17:05.501577",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable_optima_zatca",
+  "enable_cancel_invoice",
+  "enable_delete_invoice",
+  "column_break_cehc",
+  "phase"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enable_cancel_invoice",
+   "fieldtype": "Check",
+   "label": "Enable Cancel Invoice"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_delete_invoice",
+   "fieldtype": "Check",
+   "label": "Enable Delete Invoice"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_optima_zatca",
+   "fieldtype": "Check",
+   "label": "Enable Optima Zatca"
+  },
+  {
+   "fieldname": "phase",
+   "fieldtype": "Select",
+   "label": "Phase",
+   "options": "Phase One\nPhase Two"
+  },
+  {
+   "fieldname": "column_break_cehc",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-12-24 10:32:21.369497",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Zatca Main Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,7 +1,9 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import StepsContainer from "@/components/StepsContainer";
+import { step1Tour } from "@/constants";
 import { setStep } from "@/data/currentStep";
 import { setData } from "@/data/dataSlice";
+import { setTourSteps } from "@/data/tour";
 import { Company, DataState } from "@/types";
 import { Button, Flex, Form, FormProps, Input, Select } from "antd";
 import { useEffect, useState } from "react";
@@ -14,18 +16,18 @@ const Step1 = () => {
   const steps = [
     {
       id: 0,
-      title: "Company Info",
+      title: __("Company Info"),
       component: <StepOneComponent key={0} />,
     },
     {
       id: 1,
-      title: "Commercial Info",
+      title: __("Commercial Info"),
       component: <Step2 key={1} />,
       // component: ,
     },
     {
       id: 2,
-      title: "Finishing up",
+      title: __("Finishing up"),
       // component: <Step3 />,
       component: <Step3 key={3} />,
     },
@@ -48,8 +50,7 @@ const StepOneComponent = () => {
   const step = useAppSelector((state) => state.stepReducer.currentStep);
 
   const onFinish: FormProps<DataState>["onFinish"] = (values) => {
-    console.log("Received values of form:", values);
-    dispatch(setData({ ...values, commercial_register: [] }));
+    dispatch(setData({ ...values, commercial_register: [], phase: dataState.phase }));
     dispatch(setStep({ currentStep: step + 1 }));
   };
 
@@ -70,6 +71,10 @@ const StepOneComponent = () => {
     }
     return Promise.resolve(); // Validation passed
   };
+
+  useEffect(() => {
+    dispatch(setTourSteps(step1Tour));
+  }, []);
 
   useEffect(() => {
     if (isDev) return;
@@ -107,7 +112,8 @@ const StepOneComponent = () => {
             className="mb-0"
           >
             <Select
-              placeholder="Company"
+              id="firstInput"
+              placeholder={__("Company")}
               options={
                 isDev
                   ? [{ value: "company1", label: "company1" }]
@@ -116,7 +122,6 @@ const StepOneComponent = () => {
                       label: company.name,
                     }))
               }
-              defaultValue={companies[0]?.name}
               className="h-12"
             />
           </Form.Item>
@@ -130,7 +135,11 @@ const StepOneComponent = () => {
               },
             ]}
           >
-            <Input placeholder="Company name in Arabic" className="h-12" />
+            <Input
+              id="secondInput"
+              placeholder={__("Company name in Arabic")}
+              className="h-12"
+            />
           </Form.Item>
           <Form.Item<DataState>
             name={"tax_id"}
@@ -138,7 +147,12 @@ const StepOneComponent = () => {
             className="mb-0"
             validateTrigger="onSubmit"
           >
-            <Input placeholder="TAX ID" className="h-12" maxLength={15} />
+            <Input
+              id="thirdInput"
+              placeholder={__("TAX ID")}
+              className="h-12"
+              maxLength={15}
+            />
           </Form.Item>
           <Form.Item label={null}>
             <Button
@@ -146,7 +160,7 @@ const StepOneComponent = () => {
               className="bg-[#483f61] w-full text-white h-12"
               htmlType="submit"
             >
-              Next
+              {__("Next")}
             </Button>
           </Form.Item>
         </Form>

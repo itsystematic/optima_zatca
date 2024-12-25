@@ -105,7 +105,8 @@ class ZatcaInvoiceData :
             self.zatca_invoice.update({
                 "customer" : _dict({
                     "TaxSchemeID" : "VAT" ,
-                    "ID" : self.sales_invoice.get("customer_national_id") ,
+                    "ID" : self.customer_info.get("registration_value") ,
+                    "schemeID" : self.customer_info.get("registration_type") ,
                     "RegistrationName" : self.sales_invoice.get("customer_name")
                 })
             })
@@ -141,7 +142,6 @@ class ZatcaInvoiceData :
             "DocumentCurrencyCode" : self.sales_invoice.get("currency") ,
             "TaxCurrencyCode" : "SAR" ,
             "PaymentNote" : self.sales_invoice.get("terms") ,
-            # "QR" : self.sales_invoice.get("ksa_einv_qr") 
         })
         
         
@@ -327,9 +327,7 @@ class ZatcaInvoiceData :
                 "ID" : str(item.get("idx")) ,
                 "InvoicedQuantity" : str(abs(item.get("qty"))) ,
                 "LineExtensionAmount" :"{:.2f}".format(abs(item.get("amount"))) ,
-                # "TaxAmount" : "{:.2f}".format(abs(item.get("tax_amount"))) ,
                 "TaxAmount" : "{:.2f}".format(abs(tax_amount)) ,
-                # "RoundingAmount" : "{:.2f}".format(abs(item.get("total_amount"))) ,
                 "RoundingAmount" : "{:.2f}".format(abs(rounding_amount)),
                 "Name" : item.get("item_code") ,
                 "TaxCategory" :  item.get("tax_category") or frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category") ,
@@ -337,7 +335,7 @@ class ZatcaInvoiceData :
                 "TaxScheme" : "VAT" ,
                 "PriceAmount" : "{:.2f}".format(abs(item.get("rate"))) ,
                 "ChargeIndicator" : "false" ,
-                "Amount" : "0.0" ,
+                "Amount" : "{:.2f}".format(abs(item.get("discount_amount"))) if item.get("discount_amount") else "0.0"
             })
             
         self.zatca_invoice['items'] = items
