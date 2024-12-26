@@ -5,9 +5,9 @@ import proxyOptions from "./proxyOptions";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  define: {
-    __: `(text) => text`,
-  },
+  // define: {
+  //   __: `(text) => text`,
+  // },
   server: {
     port: 8200,
     proxy: proxyOptions,
