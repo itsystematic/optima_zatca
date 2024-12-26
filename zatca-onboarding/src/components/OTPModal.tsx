@@ -27,6 +27,10 @@ const OTPModal: React.FC<Props> = ({ open, setOpen }) => {
 
   const handleSubmit = async (otpValues: any) => {
     try {
+      if (isDev) {
+        dispatch(setCurrentPage(204));
+        return
+      }
       setOtpLoading(true);
       dispatch(addOTP(otpValues));
       const data = await frappe.call({

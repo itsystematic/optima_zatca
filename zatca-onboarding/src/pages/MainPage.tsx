@@ -1,5 +1,6 @@
 import { useAppSelector } from "@/app/hooks";
 import CustomModal from "@/components/CustomModal";
+import SocketLoading from "@/components/SocketLoading";
 import Success from "@/components/Success";
 import { AnimatePresence, motion } from "framer-motion";
 import Commission from "./Commision";
@@ -35,7 +36,12 @@ const MainPage = () => {
       id: 200,
       name: "Success",
       component: <Success />
-    }
+    },
+     {
+      id: 204,
+      name: "Loading",
+      component: <SocketLoading />
+     }
   ];
 
   return (

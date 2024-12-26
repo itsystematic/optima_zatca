@@ -13,7 +13,7 @@ const CustomModal: React.FC<React.PropsWithChildren> = ({ children }) => {
   const currentStep = useAppSelector((state) => state.stepReducer.currentStep);
   const tourState = useAppSelector((state) => state.tourReducer);
   const isAdding = useAppSelector((state) => state.addingReducer.isAdding);
-  const lang = frappe.boot.lang || "en";
+  const lang = isDev ? "en" : frappe.boot.lang;
 
   const handleBackButton = () => {
     if (currentStep === 1 && isAdding) {

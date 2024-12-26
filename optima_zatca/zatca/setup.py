@@ -38,8 +38,8 @@ def add_company_to_zatca(name):
         company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
     ]
 
-    if settings.get("check_pcsid") == 0 and all(list_of_fields) :
-        get_production_certificate(settings , company_details ) 
+    #if settings.get("check_pcsid") == 0 and all(list_of_fields) :
+        #get_production_certificate(settings , company_details ) 
 
 
     saving_data_to_company(name , company_details)
@@ -211,7 +211,7 @@ def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_regist
         "address" : company_address ,
         "invoice_type" : "1100" ,
         "otp" : kwargs.get("otp") or "12356",
-        "api_endpoints" : "production"
+        "api_endpoints" : kwargs.get("api_endpoints")
     }).insert(ignore_if_duplicate=True , ignore_permissions=True)
 
     return settings.name

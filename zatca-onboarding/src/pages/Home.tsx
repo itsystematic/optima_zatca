@@ -121,7 +121,7 @@ const Home: React.FC = () => {
       {/* Show loading screen */}
       {loading ? (
         <Loading />
-      ) : !data?.length ? (
+      ) : data?.length ? (
         currentPage ? (
           <MainPage />
         ) : (
