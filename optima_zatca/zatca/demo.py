@@ -29,7 +29,7 @@ def send_sample_sales_invoices(settings ,company_details) :
     company_info = get_company_info(settings)
     invoice_info = get_public_info(settings)
 
-
+    percentage = 20
     for idx , sales_invoice  in enumerate(sales_invoices.get("Invoices")) :
         try :
             if settings.get(DEMO_INVOICE.get("{0}".format(idx))) == 1:
@@ -57,8 +57,10 @@ def send_sample_sales_invoices(settings ,company_details) :
             if response.status_code in [200 , 202]:
                 
                 Status = "Success"  if response.status_code == 200 else "Warning" 
+                percentage += 10
                 frappe.publish_realtime("zatca" , { 
-                    "message" : _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "green"
+                    "message" : _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")),
+                    "indicator" : "green" , "percentage" : percentage
                 })
                 # frappe.msgprint(alert=True , indicator="green" , msg= _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
                 PIH = zatca_xml.hash
@@ -67,7 +69,9 @@ def send_sample_sales_invoices(settings ,company_details) :
                 
             else :
                 frappe.publish_realtime("zatca" , {
-                    "message" : _("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "red"
+                    "message" : _("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")),
+                    "indicator" : "red" ,
+                    "percentage" : percentage
                 })
                 # frappe.msgprint(alert=True , indicator="red" , msg=_("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
                 

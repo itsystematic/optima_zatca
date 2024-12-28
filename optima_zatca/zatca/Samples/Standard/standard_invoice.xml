@@ -135,12 +135,6 @@
                     <cbc:IdentificationCode>SA</cbc:IdentificationCode>
                 </cac:Country>
             </cac:PostalAddress>
-            <cac:PartyTaxScheme>
-                <cbc:CompanyID>311111111101113</cbc:CompanyID>
-                <cac:TaxScheme>
-                    <cbc:ID>VAT</cbc:ID>
-                </cac:TaxScheme>
-            </cac:PartyTaxScheme>
             <cac:PartyLegalEntity>
                 <cbc:RegistrationName>Acme Widget’s LTD 2</cbc:RegistrationName>
             </cac:PartyLegalEntity>

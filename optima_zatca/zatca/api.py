@@ -3,7 +3,7 @@ import base64
 import frappe
 from frappe import _
 from optima_zatca.zatca.classes.validate import validate_register_data
-from optima_zatca.zatca.request import make_post_request , make_get_request
+from optima_zatca.zatca.request import make_post_request , make_get_request , make_patch_request
 
 
 @frappe.whitelist()
@@ -24,9 +24,7 @@ def get_zatca_csid(setting:str, otp:str , csr:str) -> dict:
     )
 
     if not  response.status_code == 200 :
-        print(response.text)
         frappe.throw(str(response.text))
-
     
     res = response.json()
     
@@ -82,12 +80,44 @@ def make_invoice_request(clearance_status , authentication , invoice_hash , invo
     return response
 
 
-@frappe.whitelist(allow_guest=True)
-def register_company_phase_two(**kwargs) :
-    from optima_zatca.zatca.setup import saving_register_data
+def renew_production_csid(setting ,otp , authorization , csr):
     
+    response = make_patch_request(
+        setting= setting ,
+        endpoint= "onboarding" ,
+        header = {
+            "OTP": otp,
+            "Accept-Language": "en",
+            "Accept-Version": "V2",
+            "Authorization": "Basic " + authorization,
+            "Content-Type": "application/json",
+        },
+        json_data={
+            "csr" : csr
+        }
+    )
+
+    if response.status_code != 200 :
+        frappe.throw(str(response.text))
+    
+    return response.json()
+
+
+
+
+@frappe.whitelist()
+def register_company(**kwargs) :
+    from optima_zatca.zatca.setup import saving_register_data
     
     validate_register_data(**kwargs)
     saving_register_data(**kwargs)
 
     frappe.response["message"] = _("Company Data Successfuly Saved")
+
+
+@frappe.whitelist()
+def get_companies_registered() :
+    from optima_zatca.zatca.setup import get_registered_companies
+
+    list_of_companies = get_registered_companies()
+    return list_of_companies

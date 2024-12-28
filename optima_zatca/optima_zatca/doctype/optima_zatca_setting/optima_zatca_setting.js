@@ -16,13 +16,42 @@ frappe.ui.form.on("Optima Zatca Setting", {
     },
 
     refresh(frm) {
-        frm.add_custom_button(__("Setup Zatca") , () => {
-            frappe.call({
-                method : "optima_zatca.zatca.setup.add_company_to_zatca" ,
-                args : {
-                    name : frm.doc.name
-                }
-            })
-        })
+        frm.trigger("add_buttons");
+    },
+
+
+    add_buttons(frm) {
+        frm.add_custom_button(__("Setup Zatca Phase Two") , () => {
+            frappe.confirm('Are you sure you want to proceed?',
+                () => {
+                    frappe.call({
+                        method : "optima_zatca.zatca.setup.add_company_to_zatca" ,
+                        args : {
+                            name : frm.doc.name
+                        }
+                    })
+                }, () => {
+                    // action to perform if No is selected
+                })
+        } , __("Setup Zatca"));
+
+        if (frm.doc.check_pcsid ) {
+            frm.add_custom_button(__("Renew Production Certificate") , () => {
+                frappe.confirm('Are you sure you want to proceed?',
+                    () => {
+                        frappe.call({
+                            method : "optima_zatca.zatca.setup.renew_production_certificate" ,
+                            args : {
+                                setting : frm.doc.name,
+                                otp : frm.doc.otp ,
+                                authorization : frm.doc.authorization ,
+                                csr : frm.doc.csr
+                            }
+                        })
+                    }, () => {
+                        // action to perform if No is selected
+                    })
+            } , __("Setup Zatca"));
+        }
     }
 });

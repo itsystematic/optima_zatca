@@ -5,7 +5,8 @@
 tags
 node_modules
 optima_zatca/zatca/__pycache__/
-*__pycache__
+__pycache__
+*.pyc
 
 
 optima_zatca/public/zatca-onboarding

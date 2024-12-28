@@ -1,10 +1,17 @@
+import { useAppDispatch } from "@/app/hooks";
+import { setCurrentPage } from "@/data/currentPage";
+import { resetData } from "@/data/dataSlice";
 import { WhatsAppOutlined } from "@ant-design/icons";
 import { Button, Flex, Result } from "antd";
 
 const Success = () => {
   const phoneNumber = "+201016649035";
+  const dispatch = useAppDispatch();
+
   const handleHome = () => {
-    window.location.pathname = "/app";
+    // window.location.pathname = "/app";
+    dispatch(resetData());
+    dispatch(setCurrentPage(0));
   };
   const handleWhatsapp = () => {
     const url = `https://wa.me/${phoneNumber}`;
@@ -30,7 +37,7 @@ const Success = () => {
             </Flex>
           </Button>,
           <Button onClick={handleHome} key="home">
-            Home Page
+            Back to board
           </Button>,
         ]}
       />

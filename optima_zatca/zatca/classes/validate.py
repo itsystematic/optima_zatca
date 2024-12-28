@@ -6,7 +6,6 @@ from frappe import _
 
 class ZatcaInvoiceValidate :
 
-    
     def __init__(self , company_settings : dict , sales_invoice :dict , company_address :dict , customer_info: dict, customer_address :dict ):
         
         self.company_settings = company_settings
@@ -24,6 +23,7 @@ class ZatcaInvoiceValidate :
         
         self.validate_sales_invoice_sender()
         self.validate_sales_invoice_fields()
+        self.validate_credit_or_debit_invoice()
         self.validate_items_fields()
         self.validate_customer_info()
 
@@ -53,6 +53,18 @@ class ZatcaInvoiceValidate :
                     frappe.bold(frappe.get_meta("Sales Invoice").get_label(field))
                 ))
 
+
+    def validate_credit_or_debit_invoice(self) :
+
+        if ( 
+            ( self.sales_invoice.get("is_return") or self.sales_invoice.get("is_debit_note") ) and not
+            (  self.sales_invoice.get("return_against") and self.sales_invoice.get("reason_for_issuance") )
+        ):
+            frappe.throw(_("Fields Missing in Sales Invoice => {0}").format(
+                ( "Return Against " if self.sales_invoice.get("is_return") else "Debit Against " ) + "and " + "Reason for Issuance"
+            ))
+
+
     def validate_items_fields(self) :
 
         for item in self.sales_invoice.get("items") :
@@ -74,28 +86,48 @@ class ZatcaInvoiceValidate :
             elif tax_category in ["Z" , "O" , "E"] and not item.get("tax_exemption") :
                 frappe.throw(_("You Should Add Tax Exemption in Tax Category {0} in row {1}").format(tax_category ,item.get("idx")))
 
+
+            if item.get("tax_exemption") in ["VATEX-SA-HEA" , "VATEX-SA-EDU"] :
+
+                if self.customer_info.get("registration_value") in ["",None] :
+                    frappe.throw(_("You Must Add National Id in Customer"))
+
+                if len(str(self.customer_info.get("registration_value")).strip()) != 10 :
+                    frappe.throw(title=_("National Id Required"),msg=_("National Id Must 10 no"))
+
                 
     def validate_customer_info(self) :
 
         if self.customer_info.get("customer_type") == "Company" :
             self.validate_customer_details()
-            validate_tax_id_in_saudia_arabia(self.customer_info.get("tax_id"))
+            self.validate_customer_saudia_arabia()
             validate_address(self.customer_address , "Customer")
             
             
     def validate_customer_details(self ) :
         
-        customer_fields = [ 'tax_id','name','registration_type' , "customer_primary_address" , "registration_value"]
+        customer_fields = ['name','registration_type'  , "registration_value"]
         
         for field in customer_fields:
             if self.customer_info.get(field) in ["",None] :
                 frappe.throw(_("Please Fill the field '{0}' data in 'Customer' Doc.").format(self.customer_info.meta.get_label(field)))
                 
-        commercial_register = self.customer_info.get("registration_value") 
-        
-        if len(str(commercial_register).strip()) != 10 :
-            frappe.throw(_("Commercial Register Must 10 no"))
 
+    def validate_customer_saudia_arabia(self) :
+        if self.customer_address.get("country") :
+            country_code = frappe.db.get_value("Country" ,self.customer_address.get("country") , "code")
+            if country_code == "SA" :
+                validate_commercial_register(self.customer_info.get("commercial_register"))
+                validate_tax_id_in_saudia_arabia(self.customer_info.get("tax_id"))
+
+
+def validate_commercial_register(commercial_register) :
+
+    if commercial_register in ["",None] :
+        frappe.throw(_("Commercial Register is Required"))
+        
+    if len(str(commercial_register).strip()) != 10 :
+        frappe.throw(_("Commercial Register Must 10 no"))
 
 # Main Function
 
@@ -146,6 +178,8 @@ def validate_tax_id_in_saudia_arabia(tax_id) -> None :
     *args* : (tax_id : str)
     
     """
+    if not tax_id :
+        frappe.throw(title=_("Invalid Tax ID") , msg=_("Tax ID is Required"))
     
     if isinstance(tax_id , str) :
         tax_id = str(tax_id)
@@ -191,5 +225,5 @@ def validate_otp(otp) :
     if not isinstance(otp , str) :
         otp = str(otp)
 
-    if len(otp) != 5 :
-        frappe.throw(_("OTP Must Be 5 Digits"))
+    if len(otp) != 6 :
+        frappe.throw(_("OTP Must Be 6 Digits"))

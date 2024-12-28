@@ -4,7 +4,6 @@ import copy
 import time
 import base64
 import frappe
-import qrcode
 import hashlib
 from lxml import etree
 from frappe import _ , _dict
@@ -40,6 +39,8 @@ class ZatcaXml :
         self.add_general_data()
         self.add_supplier_information()
         self.add_customer_information()
+        # self.add_allowance_charges()
+        # self.add_legal_mandatory_data()
         self.add_items_data()
         
         invoice_hash_encoded, inovice_hash = calculate_invoice_hash(copy.deepcopy(self.tree))
@@ -124,9 +125,6 @@ class ZatcaXml :
             order_date.text = self.sales_invoice.get("PurchaseOrderIssueDate")
             order_ref.tail = "\n    "
             etree.indent(order_ref, space="    ", level=1)
-            
-            # for ns in self.nsmap:
-            #     etree.cleanup_namespaces(order_ref, top_nsmap={None: ns})
                 
             tax_currency_code.getparent().insert(tax_currency_code.getparent().index(tax_currency_code) + index_count, order_ref )
             index_count += 1
@@ -139,9 +137,6 @@ class ZatcaXml :
             invoice_doc_id.text = self.sales_invoice.get("ReturnAgainst")
             billing_ref.tail = "\n    "
             etree.indent(billing_ref, space="    ", level=1)
-            
-            # for ns in self.nsmap:
-            #     etree.cleanup_namespaces(billing_ref, top_nsmap={None: ns})
 
             # Get the index of the location of insertion
             tax_Currency_code_index = self.root.xpath( ".//cbc:TaxCurrencyCode[last()]", namespaces=NameSpace )
@@ -280,6 +275,7 @@ class ZatcaXml :
         seller_country_code.text = self.sales_invoice.get("company").get("IdentificationCode")
 
         # Seller Vat Number (Tax id) and if Group Tax id if exists (tin) , Note TIN Exists if 11th digit of tax id  is not 1.
+
         seller_vat = self.root.find(
             ".//cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
             namespaces={
@@ -316,7 +312,7 @@ class ZatcaXml :
                 party_identification = etree.SubElement(customer_party,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}PartyIdentification")
                 buyer_nat = etree.SubElement(party_identification, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID" )
                 buyer_nat.text = self.sales_invoice.get("customer").get("ID")
-                buyer_nat.set("schemeID", "NAT")
+                buyer_nat.set("schemeID", self.sales_invoice.get("customer").get("schemeID" , "NAT"))
                 party_identification.tail = "\n            "
                 etree.indent(party_identification, space="    ", level=3)
 
@@ -393,16 +389,10 @@ class ZatcaXml :
             buyer_postal_zone.text = self.sales_invoice.get("customer").get("PostalZone")
             
             if self.sales_invoice.get("customer").get("CountrySubentity") :
-                buyer_address_tag = self.root.find(
-                    ".//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress",
-                    namespaces=NameSpace,
-                )
+                buyer_address_tag = self.root.find(".//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress", namespaces=NameSpace,)
                 buyer_province = etree.SubElement(  buyer_address_tag,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}CountrySubentity")
                 buyer_province.text = self.sales_invoice.get("customer").get("CountrySubentity")
                 buyer_province.tail = "\n                "
-                # Remove the specified namespaces from the element
-                # for ns in self.nsmap:
-                #     etree.cleanup_namespaces(buyer_province, top_nsmap={None: ns})
 
                 # Insert the element after buyer postal code
                 buyer_address_tag.insert(buyer_address_tag.index(buyer_postal_zone) + 1, buyer_province )
@@ -416,16 +406,22 @@ class ZatcaXml :
                 },
             )
             buyer_country_code.text = self.sales_invoice.get("customer").get("IdentificationCode")
-            # Buyer Tax ID or tin (Group Vat number if exists)
-            buyer_vat = self.root.find(
-                ".//cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
-                namespaces={
-                    "cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
-                    "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
-                },
-            )
-            
-            buyer_vat.text = self.sales_invoice.get("customer").get("CompanyID")
+
+
+            if self.sales_invoice.get("customer").get("IdentificationCode") == "SA":
+                party = self.root.find('.//cac:AccountingCustomerParty/cac:Party', namespaces=NameSpace)
+                postal_address = self.root.find(".//cac:AccountingCustomerParty/cac:Party/cac:PostalAddress", namespaces=NameSpace)
+
+                party_tax_scheme = etree.SubElement(party, "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}PartyTaxScheme")
+                company_id = etree.SubElement(party_tax_scheme, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}CompanyID")
+                company_id.text = self.sales_invoice.get("customer").get("CompanyID")
+                tax_scheme = etree.SubElement(party_tax_scheme, "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxScheme")
+                tax_scheme_id = etree.SubElement(tax_scheme, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                tax_scheme_id.text = "VAT"
+                party_tax_scheme.tail = "\n            "
+                etree.indent(party_tax_scheme, space="    ", level=3)
+                party.insert(party.index(postal_address) + 1, party_tax_scheme)
+
             # Buyer Name
             buyer_name = self.root.find(
                 ".//cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cbc:RegistrationName",
@@ -444,12 +440,8 @@ class ZatcaXml :
             parent_delivery_date = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}Delivery")
             delivery_date = etree.SubElement(parent_delivery_date,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ActualDeliveryDate")
             delivery_date.text = self.sales_invoice.get('ActualDeliveryDate')
-            #parent_delivery_date.tail = "\n        "
             parent_delivery_date.tail = "\n    "
             etree.indent(parent_delivery_date, space="    ", level=1)
-            
-            # for ns in namespaces:
-            #     etree.cleanup_namespaces(parent_delivery_date, top_nsmap={None: ns})
                 
             customer = self.root.find(".//cac:AccountingCustomerParty", namespaces=NameSpace)
             self.root.insert(self.root.index(customer) + 1, parent_delivery_date)
@@ -571,7 +563,7 @@ class ZatcaXml :
         self.insert_tax_total_elements_after_existing()
 
         # Create item or invoice lines
-        self.insert_invoice_line_elements_after_existing()
+        self.add_invoice_items()
 
         # legal monetary total tag
         ## line extension amount (sum of net amounts without vat or document discounts)
@@ -590,8 +582,7 @@ class ZatcaXml :
         TaxInclusiveAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
         ## allowance total amount
-        # "Sum of all allowances on document level in the Invoice.
-        # Allowances on line level are included in the Invoice line net amount which is summed up into the Sum of Invoice line net amount."
+
         AllowanceTotalAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", namespaces=NameSpace)
         AllowanceTotalAmount.text = self.sales_invoice.get("AllowanceTotalAmount")
         AllowanceTotalAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
@@ -603,7 +594,6 @@ class ZatcaXml :
 
         ## payable amount (I'm using grand to solve some bug , but the outstanding is correct as well)
         PayableAmount = self.root.find(".//cac:LegalMonetaryTotal/cbc:PayableAmount", namespaces=NameSpace)
-        # PayableAmount.text = str(abs(self.sales_invoice_data.get("outstanding_amount")))
         PayableAmount.text = self.sales_invoice.get("PayableAmount")
         PayableAmount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
             
@@ -674,10 +664,8 @@ class ZatcaXml :
                 tax_total,
             )
 
-
-
         
-    def insert_invoice_line_elements_after_existing(self):
+    def add_invoice_items(self):
 
         item_list = self.sales_invoice.get("items")
 
@@ -748,6 +736,10 @@ class ZatcaXml :
             item_unit_price.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
             item_unit_price.text = item.get("PriceAmount")
 
+            item_base_qauntity = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}BaseQuantity")
+            item_base_qauntity.set("unitCode", "PCE")
+            item_base_qauntity.text = "1"
+
             # charge or allowance on item price not item net line (discount for now)
             item_price_allowance = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
 
@@ -756,8 +748,8 @@ class ZatcaXml :
             item_price_allowance_indicator.text = item.get("ChargeIndicator")
 
             # discount or charge reason , for now not important , important in charge
-            # item_price_allowance_reason = etree.SubElement(item_price_allowance, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason", nsmap=nsmap)
-            # item_price_allowance_reason.text = "discount"
+            item_price_allowance_reason = etree.SubElement(item_price_allowance, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason")
+            item_price_allowance_reason.text = "discount"
 
             # item price discount amount
             item_price_allowance_amount = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
@@ -814,31 +806,19 @@ class ZatcaXml :
     def __fill_ubl_ext( self, invoice_hash_encoded, signature_encoded, signed_properities_hash_encoded):
         
         # encoded signature data
-        signature = self.root.find(
-            ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignatureValue",
-            namespaces=NameSpace
-        )
+        signature = self.root.find(".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignatureValue", namespaces=NameSpace)
         signature.text = signature_encoded
 
         # encoded certificate
-        certificate = self.root.find(
-            ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate",
-            namespaces=NameSpace
-        )
+        certificate = self.root.find(".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate",namespaces=NameSpace)
         certificate.text = self.sales_invoice.get("Certificate")
 
         # encoded signed propertities tag hash
-        signed_properities = self.root.find(
-            "./ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignedInfo/ds:Reference[@URI='#xadesSignedProperties']/ds:DigestValue",
-            namespaces=NameSpace
-        )
+        signed_properities = self.root.find("./ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignedInfo/ds:Reference[@URI='#xadesSignedProperties']/ds:DigestValue",namespaces=NameSpace)
         signed_properities.text = signed_properities_hash_encoded
 
         # encoded incoive hash
-        invoice_hash = self.root.find(
-            ".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignedInfo/ds:Reference[@Id='invoiceSignedData']/ds:DigestValue",
-            namespaces=NameSpace
-        )
+        invoice_hash = self.root.find(".//ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:SignedInfo/ds:Reference[@Id='invoiceSignedData']/ds:DigestValue",namespaces=NameSpace)
         invoice_hash.text = invoice_hash_encoded
         # Add Global Value 
         self.hash = invoice_hash_encoded

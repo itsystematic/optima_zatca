@@ -33,7 +33,7 @@ const Welcome: React.FC = () => {
             onClick={handleGetStarted}
             className="absolute font-bold text-3xl top-[71%] left-[10%] rounded-md w-[263px] h-[78px] bg-[#07012f] hover:bg-[#483f61]"
           >
-            Get Started
+            {__("Get Started")}
           </Button>
         </div>
       )}

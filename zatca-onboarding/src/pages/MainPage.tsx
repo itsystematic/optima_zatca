@@ -1,5 +1,6 @@
 import { useAppSelector } from "@/app/hooks";
 import CustomModal from "@/components/CustomModal";
+import SocketLoading from "@/components/SocketLoading";
 import Success from "@/components/Success";
 import { AnimatePresence, motion } from "framer-motion";
 import Commission from "./Commision";
@@ -35,7 +36,12 @@ const MainPage = () => {
       id: 200,
       name: "Success",
       component: <Success />
-    }
+    },
+     {
+      id: 204,
+      name: "Loading",
+      component: <SocketLoading />
+     }
   ];
 
   return (
@@ -50,7 +56,7 @@ const MainPage = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className="w-full h-full flex flex-col"
+              className="h-full"
             >
               {page.component}
             </motion.div>

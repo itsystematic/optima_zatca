@@ -6,6 +6,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "disabled",
+  "column_break_zawb",
+  "is_default",
   "commercial_register_number_section",
   "commercial_register_name",
   "is_main_commercial_register_for_the_company",
@@ -91,11 +94,27 @@
    "label": "Address",
    "options": "Address",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  },
+  {
+   "fieldname": "column_break_zawb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Is Default"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-05 10:10:51.654314",
+ "modified": "2024-12-23 16:35:37.146858",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Commercial Register",

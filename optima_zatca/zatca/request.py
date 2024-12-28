@@ -59,3 +59,8 @@ def make_get_request(setting , endpoint , header ,json_data) :
     return requests.get(url , headers=header , json=json_data)
     
     
+def make_patch_request(setting , endpoint , headers , json_data) :
+    
+    url = get_base_url(setting , endpoint)
+
+    return requests.patch(url , header=headers , json=json_data)

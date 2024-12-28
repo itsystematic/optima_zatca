@@ -29,10 +29,8 @@ def generate_common_name():
     return str(uuid.uuid4())
 
 
-def make_auth_header_for_request(binary_security_token, secret , company_details) :
-
-    authorization = base64.b64encode(f"{binary_security_token}:{secret}".encode()).decode("utf-8")
-    company_details['authorization'] = authorization
+def make_auth_header_for_request(binary_security_token, secret) :
+    return base64.b64encode(f"{binary_security_token}:{secret}".encode()).decode("utf-8")
 
 
 def create_private_keys(company_details) -> str :
@@ -117,7 +115,7 @@ def create_company_csr(settings , company_details:dict):
     company_details["organization_name"] = company_name_in_arabic
     company_details["check_csr"] = 1
 
-    frappe.publish_realtime("zatca" , {"message" :"ZATCA CSR Generated", "indicator" : "green" })
+    frappe.publish_realtime("zatca" , {"message" :"ZATCA CSR Generated", "indicator" : "green" , "percentage" : 10})
 
     return encoded_string
 

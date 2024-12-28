@@ -10,12 +10,12 @@ const Commission = () => {
     {
       id: "main",
       img: !isDev ? "/assets/optima_zatca/zatca-onboarding/MainCommision.png" :"MainCommision.png",
-      name: "سجل تجاري رئيسي",
+      name: "Main Commission Register",
     },
     {
       id: "multi",
       img: !isDev ? "/assets/optima_zatca/zatca-onboarding/MultipleCommision.png"  : "MultipleCommision.png",
-      name: "سجلات تجارية فرعية",
+      name: "Multiple Commission Registers",
     },
   ];
 
@@ -25,9 +25,11 @@ const Commission = () => {
   };
 
   return (
-    <Flex flex={0.9} vertical align="center" justify="center">
-      <Typography.Title level={1}>هل الشركة تملك؟؟</Typography.Title>
-      <Flex gap={16} flex={1} justify="center" align="center">
+    <Flex vertical align="center" className="h-full">
+      <Flex className="h-1/3" align="center">
+      <Typography.Title >{__("Commission Type?")}</Typography.Title>
+      </Flex>
+      <Flex gap={16} justify="center" align="center" className="mt-6">
         {commissions.map((phase) => (
           <Card
             onClick={() => handlePhaseSelect(phase.id)}
@@ -47,7 +49,7 @@ const Commission = () => {
                 />
               </div>
               <Typography.Text className="text-2xl font-medium text-center text-white group-hover:text-[#2a2439]">
-                {phase.name}
+                {__(phase.name)}
               </Typography.Text>
             </div>
           </Card>

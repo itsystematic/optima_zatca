@@ -1,15 +1,16 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import EditingForm from "@/components/EditingForm";
 import OTPModal from "@/components/OTPModal";
+import { step3Tour } from "@/constants";
 import { deleteCommercial } from "@/data/dataSlice";
 import { activateEdit } from "@/data/editModal";
+import { setTourSteps } from "@/data/tour";
 import { CommercialData } from "@/types";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import {
   Button,
   Checkbox,
   CheckboxProps,
-  ConfigProvider,
   Flex,
   Space,
   Table,
@@ -23,60 +24,64 @@ const Step3 = () => {
   const [checked, setChecked] = useState<boolean>(false);
   const dataState = useAppSelector((state) => state.dataReducer);
   const editState = useAppSelector((state) => state.editReducer);
+  const currentPage = useAppSelector((state) => state.pageReducer.currentPage);
 
   const columns: TableProps<CommercialData>["columns"] = [
     {
-      title: "Commercial Name",
+      title: __("Commercial Name"),
       dataIndex: "commercial_register_name",
       key: "commercial_register_name",
     },
     {
-      title: "Commercial Number",
+      title: __("Commercial Number"),
       dataIndex: "commercial_register_number",
       key: "commercial_register_number",
+      width: "50px",
     },
     {
-      title: "Short Address",
+      title: __("Short Address"),
       dataIndex: "short_address",
       key: "short_address",
     },
     {
-      title: "Building Number",
+      title: __("Building No"),
       dataIndex: "building_no",
       key: "building_no",
+      width: "20px",
     },
     {
-      title: "Street",
+      title: __("Street"),
       dataIndex: "address_line1",
       key: "address_line1",
     },
     {
-      title: "Secondary No",
+      title: __("Secondary No"),
       dataIndex: "address_line2",
       key: "address_line2",
     },
     {
-      title: "City",
+      title: __("City"),
       dataIndex: "city",
       key: "city",
     },
     {
-      title: "District",
+      title: __("District"),
       dataIndex: "district",
       key: "district",
     },
     {
-      title: "Postal Code",
+      title: __("Postal Code"),
       dataIndex: "pincode",
       key: "pincode",
+      width: "20px",
     },
     ...(!checked
       ? [
           {
-            title: "Action",
+            title: __("Action"),
             key: "action",
             render: (_: unknown, record: CommercialData) => (
-              <Space size="middle">
+              <Space size="middle" id="actions">
                 <EditOutlined
                   onClick={() => handleEditCommercial(record)}
                   className="cursor-pointer text-lg hover:text-blue-300"
@@ -102,49 +107,48 @@ const Step3 = () => {
     dispatch(activateEdit({ commercial: record }));
   };
 
-
-
-
+  useEffect(() => {
+    if (!dataState.commercial_register.length && currentPage === 4)
+      location.reload();
+  }, [dataState.commercial_register.length]);
 
   useEffect(() => {
-    if (!dataState.commercial_register.length) location.reload()
-
-  }, [dataState.commercial_register.length])
+    dispatch(setTourSteps(step3Tour));
+  }, []);
 
   return (
     <>
-      <Flex vertical className="w-full p-5">
-        <ConfigProvider
-          theme={{
-            components: {
-              Table: {
-                headerBg: "#483f61",
-                headerColor: "#ffffff",
-              },
-            },
-          }}
+      <Flex vertical className="w-full p-5 h-full overflow-y-auto">
+        <Table<CommercialData>
+          columns={columns}
+          id="branches_table"
+          scroll={{ x: 1100 }}
+          pagination={
+            dataState.commercial_register.length > 8 ? { pageSize: 8 } : false
+          }
+          dataSource={dataState.commercial_register || []}
+        />
+        <Flex
+          justify="space-between"
+          align="center"
+          className="mt-auto"
+          id="otp_check"
         >
-          <Table<CommercialData>
-            columns={columns}
-            pagination={false}
-            dataSource={dataState.commercial_register || []}
-          />
-        </ConfigProvider>
-        <Flex justify="space-between" align="center" className="mt-auto">
           <Checkbox className="text-lg" onChange={onChange} checked={checked}>
-            By checkign this box i fully acknowledge that this data is correct
-            and any errors is on my resposiblity
+            {__("By checking this box i fully acknowledge that this data is correct and any errors is on my resposiblity")}
           </Checkbox>
           <Button
             onClick={() => setOpen(true)}
             disabled={!checked}
             size="large"
-            className="bg-[#483f61] text-white w-1/12 disabled:opacity-85"
+            className={`bg-[#483f61] ${
+              !checked && "hidden"
+            } text-white w-1/12 disabled:opacity-85`}
           >
             OTP
           </Button>
         </Flex>
-          <OTPModal open={open} setOpen={setOpen} />
+        <OTPModal open={open} setOpen={setOpen} />
         {editState.edit && <EditingForm />}
       </Flex>
     </>

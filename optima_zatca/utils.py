@@ -210,7 +210,7 @@ def create_additional_fields() :
                 "label" : "Registration Type" ,
                 "insert_after" : "tax_id",
                 "options" : "Registration Type",
-                "depends_on" : "eval: doc.customer_type == 'Company' ",
+                "depends_on" : "",
                 "mandatory_depends_on" : "eval: doc.customer_type == 'Company' " ,
                 "default" : "CRN"
             },
@@ -219,7 +219,7 @@ def create_additional_fields() :
                 "fieldtype" : "Data" ,
                 "label" : "Registration Value" ,
                 "insert_after" : "registration_type",
-                "depends_on" : "eval: doc.customer_type == 'Company' ",
+                "depends_on" : "",
                 "mandatory_depends_on" : "eval: doc.customer_type == 'Company' " 
             }
         ], 
@@ -234,7 +234,7 @@ def create_additional_fields() :
         ]
     }
 
-    create_custom_fields(custom_fields , update=False)
+    create_custom_fields(custom_fields , update=True)
 
 
 
