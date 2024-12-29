@@ -35,7 +35,7 @@ frappe.ui.form.on("Sales Invoice" , {
 
 
     add_zatca_button(frm) {
-        if ( frm.is_new() || frm.doc.send_to_zatca == 1 ) return ;
+        if ( frm.is_new() || frm.doc.sent_to_zatca == 1  ) return ;
         
         frm.add_custom_button(__("Send To Zatca"), function () {
 
@@ -94,7 +94,7 @@ frappe.ui.form.on("Sales Invoice" , {
 
 
     add_default_commercial_register(frm) {
-        if(frm.doc.company) {
+        if(frm.doc.company && !frm.doc.commercial_register && [1,2].includes(frm.doc.docstatus)) {
             frappe.db.get_value("Commercial Register" , {"is_default" : 1 , "company" : frm.doc.company} , "name").then(r => {
                 if (r.message.name) {
                     frm.set_value("commercial_register" , r.message.name)

@@ -367,17 +367,24 @@ def get_invoice_counter_and_pih(endpoint , company_settings:_dict) :
 
     pih , icv = "idfhpoahfosanldhvusjnaljuidsuhahehah" , 1
 
-    last_doc = frappe.db.get_all("Optima Zatca Logs" , {
-        "status" : ["in" , ["Success" , "Warning"]] ,
-        "reference_doctype" : "Sales Invoice" ,
-        "company" : company_settings.company ,
-        "commercial_register" : company_settings.commercial_register ,
-        "environment" : company_settings.api_endpoints ,
-        "api_endpoint" : endpoint if endpoint == "complainace_checks" else ["in",["reporting" , "clearance"] ]
+    last_doc = frappe.db.sql(""" 
+        SELECT 
+            Max(icv) as icv , hash 
+        FROM `tabOptima Zatca Logs` 
+        WHERE status IN ( "Success" , "Warning" ) 
+            AND reference_doctype = "Sales Invoice" 
+            AND company = %(company)s AND commercial_register = %(commercial_register)s 
+            AND environment = %(environment)s 
+            AND api_endpoint IN %(api_endpoint)s 
+        LIMIT 1 """ , {
+            "company" : company_settings.company ,
+            "commercial_register" : company_settings.commercial_register , 
+            "environment" : company_settings.api_endpoints ,
+            "api_endpoint" : [endpoint] if endpoint == "complainace_checks" else ["reporting" , "clearance"]
+        } , 
+    as_dict=1)
 
-    } , ["hash" , "icv"] , order_by="creation desc" , limit=1 )
-
-    if last_doc :
+    if last_doc[0].get("icv") not in  ["" , None] :
         pih , icv = last_doc[0].get("hash") , last_doc[0].get("icv") + 1
         
     return pih , icv

@@ -30,7 +30,7 @@ class ZatcaInvoiceValidate :
         
     def validate_sales_invoice_sender(self) :
 
-        if self.sales_invoice.get("send_to_zatca") == 1 :
+        if self.sales_invoice.get("sent_to_zatca") == 1 :
             frappe.throw(_("Sales Invoice {0} Already Sent".format(self.sales_invoice.get("name"))))
         
         """ Validate IF Sales Invoice Sent Before Or Not """

@@ -43,23 +43,23 @@ def create_additional_fields() :
                 "insert_after" : "",
                 "description" : "This name must match the company name in the government commercial register."
             },
-            {
-                "fieldname" : "column_break88" ,
-                "fieldtype" : "Column Break" ,
-                "insert_after" : "company_name_in_arabic"
-            },
-            {
-                "fieldname" : "commercial_register" ,
-                "fieldtype" : "Link" ,
-                "label" : "Commercial Register" ,
-                "insert_after" : "column_break88",
-                "options" : "Commercial Register" ,
-                "description" : "this field should contain the 10-digit"
-            },
+            # {
+            #     "fieldname" : "column_break88" ,
+            #     "fieldtype" : "Column Break" ,
+            #     "insert_after" : "company_name_in_arabic"
+            # },
+            # {
+            #     "fieldname" : "commercial_register" ,
+            #     "fieldtype" : "Link" ,
+            #     "label" : "Commercial Register" ,
+            #     "insert_after" : "column_break88",
+            #     "options" : "Commercial Register" ,
+            #     "description" : "this field should contain the 10-digit"
+            # },
             {
                 "fieldname" : "section_break87956",
                 "fieldtype" : "Section Break",
-                "insert_after" : "commercial_register",
+                "insert_after" : "company_name_in_arabic",
             }
         ],
         "Address" : [
@@ -151,9 +151,9 @@ def create_additional_fields() :
                 "insert_after" : "ksa_einv_qr" ,
             },
             {
-                "fieldname" : "send_to_zatca" ,
+                "fieldname" : "sent_to_zatca" ,
                 "fieldtype" : "Check" ,
-                "label" : "Send To Zatca" ,
+                "label" : "Sent To Zatca" ,
                 "insert_after" : "is_discounted",
                 "read_only" : 1 ,
                 "no_copy" : 1
