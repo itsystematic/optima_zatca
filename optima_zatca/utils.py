@@ -151,9 +151,9 @@ def create_additional_fields() :
                 "insert_after" : "ksa_einv_qr" ,
             },
             {
-                "fieldname" : "send_to_zatca" ,
+                "fieldname" : "sent_to_zatca" ,
                 "fieldtype" : "Check" ,
-                "label" : "Send To Zatca" ,
+                "label" : "Sent To Zatca" ,
                 "insert_after" : "is_discounted",
                 "read_only" : 1 ,
                 "no_copy" : 1

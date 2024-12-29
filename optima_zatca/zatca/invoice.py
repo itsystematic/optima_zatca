@@ -31,7 +31,7 @@ def send_to_zatca(sales_invoice_name):
     if response.status_code in [200 , 202]: 
         ResponseJson = response.json()
         sales_invoice.db_set({
-            "send_to_zatca" : 1  ,
+            "sent_to_zatca" : 1  ,
             "clearance_or_reporting" : ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus")
         }, commit=True)
 
