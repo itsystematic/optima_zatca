@@ -117,16 +117,16 @@ class ZatcaInvoiceValidate :
         if self.customer_address.get("country") :
             country_code = frappe.db.get_value("Country" ,self.customer_address.get("country") , "code")
             if country_code == "SA" :
-                validate_commercial_register(self.customer_info.get("commercial_register"))
                 validate_tax_id_in_saudia_arabia(self.customer_info.get("tax_id"))
+                validate_commercial_register(self.customer_info.get("registration_type"),self.customer_info.get("registration_value"))
 
 
-def validate_commercial_register(commercial_register) :
+def validate_commercial_register(registration_type,registration_value) :
 
-    if commercial_register in ["",None] :
-        frappe.throw(_("Commercial Register is Required"))
+    if registration_value in ["",None] :
+        frappe.throw(_("Registration Value is Required in Customer"))
         
-    if len(str(commercial_register).strip()) != 10 :
+    if len(str(registration_value).strip()) != 10  and registration_type == "CRN":
         frappe.throw(_("Commercial Register Must 10 no"))
 
 # Main Function
