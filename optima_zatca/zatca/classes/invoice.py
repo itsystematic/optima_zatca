@@ -250,7 +250,7 @@ class ZatcaInvoiceData :
 
             # Accumulate the tax amount
             tax_categories[tax_category]["TaxAmount"] += abs(entry.tax_amount)
-            tax_categories[tax_category]["TaxableAmount"] = abs(entry.net_amount )
+            tax_categories[tax_category]["TaxableAmount"] += abs(entry.net_amount)
 
             if tax_category in ["O" , "Z" , "E"] :
                 tax_exemption = entry.get("tax_exemption")
