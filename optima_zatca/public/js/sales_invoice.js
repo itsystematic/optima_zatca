@@ -95,19 +95,22 @@ frappe.ui.form.on("Sales Invoice" , {
 
 
     add_default_commercial_register(frm) {
-        if(frm.doc.company && !frm.doc.commercial_register && [1,2].includes(frm.doc.docstatus)) {
-            frappe.db.get_value("Commercial Register" , {"is_default" : 1 , "company" : frm.doc.company} , "name").then(r => {
-                if (r.message.name) {
-                    frm.set_value("commercial_register" , r.message.name)
-                } else {
-                    frappe.show_alert({
-                        message : __("No default commercial register found for company {0}" , [frm.doc.company]),
-                        indicator : "yellow"
-                    })
-                }
-                
-            })
-        }
+        setTimeout(() => {
+            if(frm.doc.company && !frm.doc.commercial_register && [1,2].includes(frm.doc.docstatus)) {
+                frappe.db.get_value("Commercial Register" , {"is_default" : 1 , "company" : frm.doc.company} , "name").then(r => {
+                    if (r.message.name) {
+                        frm.set_value("commercial_register" , r.message.name)
+                    } else {
+                        frappe.show_alert({
+                            message : __("No default commercial register found for company {0}" , [frm.doc.company]),
+                            indicator : "yellow"
+                        })
+                    }
+                    
+                })
+            }    
+        }, 2000);
+
     },
 
     is_return(frm) {
