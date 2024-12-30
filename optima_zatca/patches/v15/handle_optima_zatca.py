@@ -58,7 +58,7 @@ def create_optima_zatca_settings(company , commercial_register):
     optima_zatca_setting.organization_unit_name = company.organization_unit
     optima_zatca_setting.organization_name = company.custom_organization_name
     optima_zatca_setting.common_name = company.common_name
-    optima_zatca_setting.serial_number = company.sn
+    optima_zatca_setting.egs_serial_number = company.sn
     optima_zatca_setting.registration_type = "CRN"
     optima_zatca_setting.country_name = "SA"
     optima_zatca_setting.industry = company.business_category
