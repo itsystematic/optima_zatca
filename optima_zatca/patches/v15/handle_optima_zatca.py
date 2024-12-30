@@ -5,7 +5,7 @@ from optima_zatca.zatca.utils import extract_details_from_certificate , make_aut
 
 
 def execute() :
-
+    print("Patches Runing")
     all_companies = get_all_companies()
 
     for company in all_companies :
