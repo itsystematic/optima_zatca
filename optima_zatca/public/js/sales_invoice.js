@@ -96,7 +96,7 @@ frappe.ui.form.on("Sales Invoice" , {
 
     add_default_commercial_register(frm) {
         setTimeout(() => {
-            if(frm.doc.company && !frm.doc.commercial_register && [1,2].includes(frm.doc.docstatus)) {
+            if(frm.doc.company && !frm.doc.commercial_register && ![1,2].includes(frm.doc.docstatus)) {
                 frappe.db.get_value("Commercial Register" , {"is_default" : 1 , "company" : frm.doc.company} , "name").then(r => {
                     if (r.message.name) {
                         frm.set_value("commercial_register" , r.message.name)
@@ -109,7 +109,7 @@ frappe.ui.form.on("Sales Invoice" , {
                     
                 })
             }    
-        }, 2000);
+        }, 200);
 
     },
 
