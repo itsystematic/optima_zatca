@@ -163,10 +163,12 @@ def validate_address(main_address: frappe._dict , address_type="Company") :
 
         frappe.throw(_("Seller Seller district exeeded maximum charachter limit '100' "))
 
-    if len(main_address.get("pincode")) != 5 :
+    country_code = frappe.db.get_value("Country" ,main_address.get("country") , "code")
+
+    if len(main_address.get("pincode")) != 5 and country_code == "SA" :
         frappe.throw(_("Postal Code should be 5 digits"))
 
-    if len(main_address.get("building_no")) != 4 :
+    if len(main_address.get("building_no")) != 4 and country_code == "SA" :
         frappe.throw(_("Building Number should be 4 digits"))
 
 
