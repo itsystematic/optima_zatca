@@ -43,19 +43,6 @@ def create_additional_fields() :
                 "insert_after" : "",
                 "description" : "This name must match the company name in the government commercial register."
             },
-            # {
-            #     "fieldname" : "column_break88" ,
-            #     "fieldtype" : "Column Break" ,
-            #     "insert_after" : "company_name_in_arabic"
-            # },
-            # {
-            #     "fieldname" : "commercial_register" ,
-            #     "fieldtype" : "Link" ,
-            #     "label" : "Commercial Register" ,
-            #     "insert_after" : "column_break88",
-            #     "options" : "Commercial Register" ,
-            #     "description" : "this field should contain the 10-digit"
-            # },
             {
                 "fieldname" : "section_break87956",
                 "fieldtype" : "Section Break",
@@ -202,6 +189,132 @@ def create_additional_fields() :
                 "options" : "Tax Exemption"
             },
         ],
+        "Quotation Item" : [
+            {
+                "fieldname" : "tax_category" ,
+                "fieldtype" : "Link" ,
+                "label" : "Tax Category" ,
+                "insert_after" : "item_tax_template",
+                "options" : "Tax Category",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_rate" ,
+                "fieldtype" : "Float" ,
+                "label" : "Tax Rate" ,
+                "insert_after" : "tax_category",
+                "read_only" : 1 ,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_amount" ,
+                "fieldtype" : "Float" ,
+                "label" : "Tax Amount" ,
+                "insert_after" : "tax_rate",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "total_amount" ,
+                "fieldtype" : "Currency" ,
+                "label" : "Total Amount" ,
+                "insert_after" : "tax_amount",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_exemption" ,
+                "fieldtype" : "Link" ,
+                "label" : "Tax Exemption" ,
+                "insert_after" : "total_amount" ,
+                "options" : "Tax Exemption"
+            },
+        ],
+        "Sales Order Item" : [
+            {
+                "fieldname" : "tax_category" ,
+                "fieldtype" : "Link" ,
+                "label" : "Tax Category" ,
+                "insert_after" : "item_tax_template",
+                "options" : "Tax Category",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_rate" ,
+                "fieldtype" : "Float" ,
+                "label" : "Tax Rate" ,
+                "insert_after" : "tax_category",
+                "read_only" : 1 ,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_amount" ,
+                "fieldtype" : "Float" ,
+                "label" : "Tax Amount" ,
+                "insert_after" : "tax_rate",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "total_amount" ,
+                "fieldtype" : "Currency" ,
+                "label" : "Total Amount" ,
+                "insert_after" : "tax_amount",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_exemption" ,
+                "fieldtype" : "Link" ,
+                "label" : "Tax Exemption" ,
+                "insert_after" : "total_amount" ,
+                "options" : "Tax Exemption"
+            },
+        ],
+        "Delivery Note Item" : [
+            {
+                "fieldname" : "tax_category" ,
+                "fieldtype" : "Link" ,
+                "label" : "Tax Category" ,
+                "insert_after" : "item_tax_template",
+                "options" : "Tax Category",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_rate" ,
+                "fieldtype" : "Float" ,
+                "label" : "Tax Rate" ,
+                "insert_after" : "tax_category",
+                "read_only" : 1 ,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_amount" ,
+                "fieldtype" : "Float" ,
+                "label" : "Tax Amount" ,
+                "insert_after" : "tax_rate",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "total_amount" ,
+                "fieldtype" : "Currency" ,
+                "label" : "Total Amount" ,
+                "insert_after" : "tax_amount",
+                "read_only" : 1,
+                "hidden" : 1,
+            },
+            {
+                "fieldname" : "tax_exemption" ,
+                "fieldtype" : "Link" ,
+                "label" : "Tax Exemption" ,
+                "insert_after" : "total_amount" ,
+                "options" : "Tax Exemption"
+            },
+        ],
         
         "Customer" : [
             {
@@ -234,7 +347,7 @@ def create_additional_fields() :
         ]
     }
 
-    create_custom_fields(custom_fields , update=True)
+    create_custom_fields(custom_fields , update=False)
 
 
 
@@ -265,6 +378,8 @@ def create_property_setter() :
             "value": json.dumps(ADDRESS_DOCTYPE_FIELDS),
             "property_type": "Data",
         },
+
+        # Section Discount , Round Total 
         {
             "doctype": "Sales Invoice",
             "doctype_or_field": "DocField",
@@ -297,6 +412,109 @@ def create_property_setter() :
             "value" : 1,
             "property_type": "Check",
         },
+        #  End Section Discount , Round Total
+        # Section Discount , Round Total 
+        {
+            "doctype": "Sales Order",
+            "doctype_or_field": "DocField",
+            "fieldname": "apply_discount_on",
+            "property": "read_only",
+            "value": 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Sales Order",
+            "doctype_or_field": "DocField",
+            "fieldname": "apply_discount_on",
+            "property": "default",
+            "value": "Net Total",
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Sales Order",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "default",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Sales Order",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        #  End Section Discount , Round Total
+        # Section Discount , Round Total 
+        {
+            "doctype": "Quotation",
+            "doctype_or_field": "DocField",
+            "fieldname": "apply_discount_on",
+            "property": "read_only",
+            "value": 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Quotation",
+            "doctype_or_field": "DocField",
+            "fieldname": "apply_discount_on",
+            "property": "default",
+            "value": "Net Total",
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Quotation",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "default",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Quotation",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        #  End Section Discount , Round Total
+        # Section Discount , Round Total 
+        {
+            "doctype": "Delivery Note",
+            "doctype_or_field": "DocField",
+            "fieldname": "apply_discount_on",
+            "property": "read_only",
+            "value": 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Delivery Note",
+            "doctype_or_field": "DocField",
+            "fieldname": "apply_discount_on",
+            "property": "default",
+            "value": "Net Total",
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Delivery Note",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "default",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Delivery Note",
+            "doctype_or_field": "DocField",
+            "fieldname" : "disable_rounded_total",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Check",
+        },
+        #  End Section Discount , Round Total
         {
             "doctype": "Sales Invoice",
             "doctype_or_field": "DocField",
@@ -307,6 +525,54 @@ def create_property_setter() :
         },
         {
             "doctype": "Sales Invoice",
+            "doctype_or_field": "DocField",
+            "fieldname" : "tax_category",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Sales Order",
+            "doctype_or_field": "DocField",
+            "fieldname" : "taxes_and_charges",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Sales Order",
+            "doctype_or_field": "DocField",
+            "fieldname" : "tax_category",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Quotation",
+            "doctype_or_field": "DocField",
+            "fieldname" : "taxes_and_charges",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Quotation",
+            "doctype_or_field": "DocField",
+            "fieldname" : "tax_category",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Delivery Note",
+            "doctype_or_field": "DocField",
+            "fieldname" : "taxes_and_charges",
+            "property": "hidden",
+            "value" : 1,
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Delivery Note",
             "doctype_or_field": "DocField",
             "fieldname" : "tax_category",
             "property": "hidden",
