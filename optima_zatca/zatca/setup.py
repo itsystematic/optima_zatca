@@ -38,8 +38,8 @@ def add_company_to_zatca(name):
         company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
     ]
 
-    #if settings.get("check_pcsid") == 0 and all(list_of_fields) :
-        #get_production_certificate(settings , company_details ) 
+    if settings.get("check_pcsid") == 0 and all(list_of_fields) :
+        get_production_certificate(settings , company_details ) 
 
 
     saving_data_to_company(name , company_details)

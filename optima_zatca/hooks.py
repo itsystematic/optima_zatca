@@ -146,7 +146,7 @@ doc_events = {
 	"Sales Invoice": {
 		"on_cancel": "optima_zatca.events.sales_invoice.sales_invoice_on_cancel",
 		"on_trash": "optima_zatca.events.sales_invoice.sales_invoice_on_trash",
-        "on_submit" : "optima_zataca.events.sales_invoice.sales_invoice_on_submit"
+        "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit"
 	}
 }
 
