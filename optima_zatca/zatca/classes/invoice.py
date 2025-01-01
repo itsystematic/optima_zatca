@@ -250,7 +250,7 @@ class ZatcaInvoiceData :
 
             # Accumulate the tax amount
             if tax_category in ["S"] :
-                tax_categories[tax_category]["TaxAmount"] = str(self.sales_invoice.get("total_taxes_and_charges"))
+                tax_categories[tax_category]["TaxAmount"] = str(abs(self.sales_invoice.get("total_taxes_and_charges")))
             else :
                 tax_categories[tax_category]["TaxAmount"] += abs(entry.tax_amount)
                 
