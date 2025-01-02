@@ -8,5 +8,6 @@ optima_zatca/zatca/__pycache__/
 __pycache__
 *.pyc
 
-
+optima_zatca/public/node_modules
 optima_zatca/public/zatca-onboarding/
+optima_zatca/public/zatca-onboarding/zatca_onboarding.js
