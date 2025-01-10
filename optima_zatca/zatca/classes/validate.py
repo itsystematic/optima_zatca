@@ -116,7 +116,7 @@ class ZatcaInvoiceValidate :
     def validate_customer_saudia_arabia(self) :
         if self.customer_address.get("country") :
             country_code = frappe.db.get_value("Country" ,self.customer_address.get("country") , "code")
-            if country_code == "SA" :
+            if country_code in ["sa" , "SA"] :
                 validate_tax_id_in_saudia_arabia(self.customer_info.get("tax_id"))
                 validate_commercial_register(self.customer_info.get("registration_type"),self.customer_info.get("registration_value"))
 
