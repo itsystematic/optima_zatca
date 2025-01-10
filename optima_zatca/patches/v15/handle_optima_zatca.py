@@ -20,7 +20,7 @@ def execute() :
 
             commercial_register = create_commercial_register(company)
             create_optima_zatca_settings(company , commercial_register)
-            handle_optima_logs(commercial_register)
+            handle_optima_logs(company , commercial_register)
 
             secho("Settings Created for Company => {} and commercial Register => {}".format(company.name , commercial_register) , fg="green")
         
@@ -91,9 +91,9 @@ def create_optima_zatca_settings(company , commercial_register):
     optima_zatca_setting.save(ignore_permissions=True)
 
 
-def handle_optima_logs(commercial_register):
+def handle_optima_logs(company ,commercial_register):
 
-    zatca_logs = frappe.get_all("Zatca Logs", fields=["*"], order_by="creation desc") 
+    zatca_logs = frappe.get_all("Zatca Logs", {"company" : company}, fields=["*"], order_by="creation desc") 
 
     for log in zatca_logs :
         optima_zatca_logs = frappe.new_doc("Optima Zatca Logs")
