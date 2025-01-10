@@ -83,7 +83,7 @@ def send_sample_sales_invoices(settings ,company_details) :
                 message = response.text ,
                 reference_doctype = "Sales Invoice",
                 company = settings.company ,
-                commercial_register = sales_invoice.get("commercial_register") ,
+                commercial_register =  company_info.get("company").get("ID") ,
                 uuid = sales_invoice.get("UUID"),
                 invoice = invoice_encoded,
                 hash = zatca_xml.hash ,
