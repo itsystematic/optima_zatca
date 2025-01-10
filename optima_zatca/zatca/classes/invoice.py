@@ -373,13 +373,14 @@ def get_invoice_counter_and_pih(endpoint , company_settings:_dict) :
 
     last_doc = frappe.db.sql(""" 
         SELECT 
-            Max(icv) as icv , hash 
+            icv , hash 
         FROM `tabOptima Zatca Logs` 
         WHERE status IN ( "Success" , "Warning" ) 
             AND reference_doctype = "Sales Invoice" 
             AND company = %(company)s AND commercial_register = %(commercial_register)s 
             AND environment = %(environment)s 
             AND api_endpoint IN %(api_endpoint)s 
+            WHERE icv = (SELECT MAX(icv) FROM `tabOptima Zatca Logs`)
         LIMIT 1 """ , {
             "company" : company_settings.company ,
             "commercial_register" : company_settings.commercial_register , 
@@ -388,8 +389,9 @@ def get_invoice_counter_and_pih(endpoint , company_settings:_dict) :
         } , 
     as_dict=1)
 
-    if last_doc[0].get("icv") not in  ["" , None] :
-        pih , icv = last_doc[0].get("hash") , last_doc[0].get("icv") + 1
-        
+    if last_doc :
+        if last_doc[0].get("icv") not in  ["" , None] :
+            pih , icv = last_doc[0].get("hash") , last_doc[0].get("icv") + 1
+            
     return pih , icv
 
