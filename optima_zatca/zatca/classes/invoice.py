@@ -380,7 +380,14 @@ def get_invoice_counter_and_pih(endpoint , company_settings:_dict) :
             AND company = %(company)s AND commercial_register = %(commercial_register)s 
             AND environment = %(environment)s 
             AND api_endpoint IN %(api_endpoint)s 
-            WHERE icv = (SELECT MAX(icv) FROM `tabOptima Zatca Logs`)
+            AND icv = (
+                SELECT MAX(icv) FROM `tabOptima Zatca Logs`
+                WHERE status IN ( "Success" , "Warning" ) 
+                    AND reference_doctype = "Sales Invoice" 
+                    AND company = %(company)s AND commercial_register = %(commercial_register)s 
+                    AND environment = %(environment)s 
+                    AND api_endpoint IN %(api_endpoint)s 
+            )
         LIMIT 1 """ , {
             "company" : company_settings.company ,
             "commercial_register" : company_settings.commercial_register , 
