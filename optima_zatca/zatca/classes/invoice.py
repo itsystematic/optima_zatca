@@ -302,12 +302,12 @@ class ZatcaInvoiceData :
         
     def add_sales_invoice_totals(self) :
         
-        if self.sales_invoice.get("mode_of_payments") :
-            paid_amount = "{:.2f}".format(sum(map(lambda x : abs(x.get("amount")) , self.sales_invoice.get("mode_of_payments"))))
-            payable_amount = "{:.2f}".format(abs(self.sales_invoice.get("grand_total")) - paid_amount )
-        else :
-            paid_amount = "0.00"
-            payable_amount = "{:.2f}".format(abs(self.sales_invoice.get("grand_total")))
+        # if self.sales_invoice.get("mode_of_payments") :
+        #     paid_amount = "{:.2f}".format(sum(map(lambda x : abs(x.get("amount")) , self.sales_invoice.get("mode_of_payments"))))
+        #     payable_amount = "{:.2f}".format(abs(self.sales_invoice.get("grand_total")) - paid_amount )
+        # else :
+        #     paid_amount = "0.00"
+        #     payable_amount = "{:.2f}".format(abs(self.sales_invoice.get("grand_total")))
             
         
         AllowanceTotalAmount = "{:.2f}".format(abs(self.sales_invoice.get("discount_amount" , 0))) if self.sales_invoice.get("discount_amount") else "0.00"
@@ -317,8 +317,8 @@ class ZatcaInvoiceData :
             "TaxExclusiveAmount" :  "{:.2f}".format(abs(self.sales_invoice.get("net_total"))) ,
             "TaxInclusiveAmount" :  "{:.2f}".format(abs(self.sales_invoice.get("net_total") + self.sales_invoice.get("total_taxes_and_charges"))) ,
             "AllowanceTotalAmount" :  AllowanceTotalAmount ,
-            "PrepaidAmount" :  paid_amount,
-            "PayableAmount" :  payable_amount ,
+            "PrepaidAmount" :  "0.00" , # Current Zero Until Handle advanced Payment
+            "PayableAmount" :   "{:.2f}".format(abs(self.sales_invoice.get("grand_total"))) ,
         })
         
     def add_sales_invoice_item(self) :
@@ -337,7 +337,7 @@ class ZatcaInvoiceData :
                 "TaxCategory" :  item.get("tax_category") or frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category") ,
                 "Percent" : "{:.2f}".format(item.get("tax_rate")) ,
                 "TaxScheme" : "VAT" ,
-                "PriceAmount" : "{:.2f}".format(abs(item.get("rate"))) ,
+                "PriceAmount" : "{:.2f}".format(abs(item.get("rate"))) ,  # Check Price List Rate IF Discount
                 "ChargeIndicator" : "false" ,
                 "Amount" : "{:.2f}".format(abs(item.get("discount_amount"))) if item.get("discount_amount") else "0.0"
             })

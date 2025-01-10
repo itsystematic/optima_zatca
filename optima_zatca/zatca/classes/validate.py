@@ -78,7 +78,7 @@ class ZatcaInvoiceValidate :
                 tax_category = frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category")
                 
                 if not tax_category :
-                    frappe.throw(_("Tax Category in Item Tax Template {0} Not Found").format(item.get("item_tax_template")))
+                    frappe.throw(_("Tax Category in Item Tax Template {0} Not Found in row {1}").format(item.get("item_tax_template") , item.get("idx")))
 
             if tax_category == "S" and item.get("tax_exemption") :
                 frappe.throw(_("You Should Delete Tax Exemption in Tax Category S in row {0}").format(item.get("idx")))
@@ -165,10 +165,10 @@ def validate_address(main_address: frappe._dict , address_type="Company") :
 
     country_code = frappe.db.get_value("Country" ,main_address.get("country") , "code")
 
-    if len(main_address.get("pincode")) != 5 and country_code == "SA" :
+    if len(main_address.get("pincode")) != 5 and country_code in ["sa","SA"] :
         frappe.throw(_("Postal Code should be 5 digits"))
 
-    if len(main_address.get("building_no")) != 4 and country_code == "SA" :
+    if len(main_address.get("building_no")) != 4 and country_code  in ["sa","SA"] :
         frappe.throw(_("Building Number should be 4 digits"))
 
 
@@ -195,6 +195,7 @@ def validate_tax_id_in_saudia_arabia(tax_id) -> None :
     if not bool(re.match(r'^3\d{13}3$' , tax_id))  :
         frappe.throw(title=_("Invalid Tax ID") , msg=_("Tax ID Must Only Number , Begin 3 , End 3  and Must be 15 Number Long"))
 
+# Validate API FOR Front end
 
 def validate_register_data(**kwargs) :
 

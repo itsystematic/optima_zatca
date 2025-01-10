@@ -42,7 +42,7 @@ def send_sample_sales_invoices(settings ,company_details) :
             
             zatca_xml = ZatcaXml(sales_invoice)
 
-            invoice_encoded = base64.b64encode(etree.tostring(zatca_xml.root)).decode()
+            invoice_encoded = base64.b64encode(etree.tostring(zatca_xml.root, encoding="utf-8")).decode("utf-8")
 
             response = make_invoice_request(
                 sales_invoice.get("Clearance-Status") , 
