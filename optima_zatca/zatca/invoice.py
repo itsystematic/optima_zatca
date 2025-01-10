@@ -16,7 +16,7 @@ def send_to_zatca(sales_invoice_name):
 
     sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
     invoice = ZatcaInvoiceData(sales_invoice)
-    invoice_encoded = base64.b64encode(etree.tostring(invoice.xml.root)).decode()
+    invoice_encoded = base64.b64encode(etree.tostring(invoice.xml.root , encoding="utf-8")).decode("utf-8")
 
     response = make_invoice_request(
         invoice.zatca_invoice.get("Clearance-Status") , 
