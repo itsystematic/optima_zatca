@@ -14,7 +14,7 @@ import {
   Flex,
   Space,
   Table,
-  TableProps
+  TableProps,
 } from "antd";
 import { useEffect, useState } from "react";
 
@@ -135,15 +135,15 @@ const Step3 = () => {
           id="otp_check"
         >
           <Checkbox className="text-lg" onChange={onChange} checked={checked}>
-            {__("By checking this box i fully acknowledge that this data is correct and any errors is on my resposiblity")}
+            {__(
+              "By checking this box i fully acknowledge that this data is correct and any errors is on my resposiblity"
+            )}
           </Checkbox>
           <Button
             onClick={() => setOpen(true)}
             disabled={!checked}
             size="large"
-            className={`bg-[#483f61] ${
-              !checked && "hidden"
-            } text-white w-1/12 disabled:opacity-85`}
+            className={`bg-[#483f61] text-white w-1/12 disabled:opacity-85`}
           >
             OTP
           </Button>

@@ -5,9 +5,6 @@ import proxyOptions from "./proxyOptions";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // define: {
-  //   __: `(text) => text`,
-  // },
   server: {
     port: 8200,
     proxy: proxyOptions,
@@ -26,6 +23,7 @@ export default defineConfig({
     outDir: "../optima_zatca/public/zatca-onboarding",
     emptyOutDir: true,
     target: "es2015",
+    
     rollupOptions: {
       input: path.resolve(__dirname, "src/main.tsx"),
       output: {

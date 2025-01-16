@@ -7,6 +7,7 @@ import { addCommercial } from "@/data/dataSlice";
 import { MainData } from "@/types";
 import { Button, ConfigProvider, Table, TableProps } from "antd";
 import React, { useEffect, useState } from "react";
+import { socket } from "../../socket";
 import MainPage from "./MainPage";
 import Welcome from "./Welcome";
 
@@ -18,7 +19,11 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    if (isDev) {setData([]); setLoading(false); return};
+    if (isDev) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
     frappe.call({
       method: "optima_zatca.zatca.api.get_companies_registered",
       callback: (r: { message: MainData[] }) => {
@@ -48,6 +53,14 @@ const Home: React.FC = () => {
         setLoading(false);
       },
     });
+  }, []);
+
+  useEffect(() => {
+    if (isDev) {
+      socket.on('connect', () => {
+        console.log('Connected to socket');
+    })
+    }
   }, []);
 
   const columns: TableProps<MainData>["columns"] = [

@@ -64,6 +64,9 @@ const CustomModal: React.FC<React.PropsWithChildren> = ({ children }) => {
             headerBg: "#483f61",
             headerColor: "#ffffff",
           },
+          Progress : {
+            defaultColor: "#483f61"
+          }
         },
       }}
     >

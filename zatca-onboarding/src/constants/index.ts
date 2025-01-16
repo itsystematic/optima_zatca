@@ -1,5 +1,5 @@
 import { CommercialData } from "@/types";
-
+const __ = (s: string) => s;
 const top_inputs = [
   {
     id: "commercial_register_name",

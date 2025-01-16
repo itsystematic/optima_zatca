@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/assets/optima_zatca_page/zatca-onboarding/",
+    "build": "vite build --base=/assets/optima_zatca/zatca-onboarding/",
     "lint": "eslint .",
     "preview": "vite preview",
-    "copy-html-entry": "cp ../optima_zatca_page/public/zatca-onboarding/index.html ../optima_zatca_page/www/zatca-onboarding.html"
+    "copy-html-entry": "cp ../optima_zatca/public/zatca-onboarding/index.html ../optima_zatca/www/zatca-onboarding.html"
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
@@ -19,7 +19,8 @@
     "motion": "^11.13.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-redux": "^9.1.2"
+    "react-redux": "^9.1.2",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

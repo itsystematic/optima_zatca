@@ -1,4 +1,5 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { store } from "@/app/store";
 import { setCurrentPage } from "@/data/currentPage";
 import { addOTP } from "@/data/dataSlice";
 import { CommercialData } from "@/types";
@@ -26,22 +27,22 @@ const OTPModal: React.FC<Props> = ({ open, setOpen }) => {
   };
 
   const handleSubmit = async (otpValues: any) => {
+    dispatch(addOTP(otpValues));
+    const updatedState = store.getState().dataReducer;
+
     try {
       if (isDev) {
         dispatch(setCurrentPage(204));
         return
       }
       setOtpLoading(true);
-      dispatch(addOTP(otpValues));
-      const data = await frappe.call({
+      dispatch(setCurrentPage(204));
+
+      await frappe.call({
         method: "optima_zatca.zatca.api.register_company",
-        args: dataState,
+        args: updatedState,
       });
 
-      if (data) {
-        setOtpLoading(false);
-        dispatch(setCurrentPage(200));
-      }
     } catch (err: any) {
       setOtpLoading(false);
       messageApi.error({
