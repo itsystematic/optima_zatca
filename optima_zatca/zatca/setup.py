@@ -45,9 +45,9 @@ def add_company_to_zatca(name):
     saving_data_to_company(name , company_details)
 
     if settings.get("check_pcsid") == 1 or company_details.get("check_pcsid") == 1 :
-        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Completed", "indicator" : "green" ,  "complete" : True  , "percentage" : 100})
+        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Completed", "commercial_register_name": settings.get('commercial_register') ,"indicator" : "green" ,  "complete" : True  , "percentage" : 100})
     else :
-        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Failed", "indicator" : "red" ,  "complete" : True , "percentage" : 50})
+        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Failed", "commercial_register_name": settings.get('commercial_register') , "indicator" : "red" ,  "complete" : True , "percentage" : 50})
 
 
 def get_certificate(settings ,company_csr , company_details:dict) :
@@ -66,7 +66,7 @@ def get_certificate(settings ,company_csr , company_details:dict) :
     })
 
     extract_details_from_certificate(certificate , company_details)
-    frappe.publish_realtime("zatca" , {"message" :"CSID Created Successfully", "indicator" : "green" , "percentage" : 20})
+    frappe.publish_realtime("zatca" , {"message" :"CSID Created Successfully", "commercial_register_name": settings.get('commercial_register'), "indicator" : "green" , "percentage" : 20})
 
 
 def get_production_certificate(settings , company_details:dict ) :
