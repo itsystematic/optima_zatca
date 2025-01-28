@@ -36,7 +36,7 @@ const Phases = () => {
   return (
     <Flex align="center" vertical className="h-full">
       <Flex className="h-1/3" align="center">
-        <Typography.Title>{__("Company Phase?")}</Typography.Title>
+        <Typography.Title className="text-[#483f61]">{__("Company Phase?")}</Typography.Title>
       </Flex>
       <Flex gap={16} justify="center" align="center" className="mt-6">
         {phases.map((phase) => (

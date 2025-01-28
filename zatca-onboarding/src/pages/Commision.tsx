@@ -10,12 +10,12 @@ const Commission = () => {
     {
       id: "main",
       img: !isDev ? "/assets/optima_zatca/zatca-onboarding/MainCommision.png" :"MainCommision.png",
-      name: "Main Commission Register",
+      name: "Main CRN",
     },
     {
       id: "multi",
       img: !isDev ? "/assets/optima_zatca/zatca-onboarding/MultipleCommision.png"  : "MultipleCommision.png",
-      name: "Multiple Commission Registers",
+      name: "Multiple CRNs",
     },
   ];
 
@@ -27,7 +27,7 @@ const Commission = () => {
   return (
     <Flex vertical align="center" className="h-full">
       <Flex className="h-1/3" align="center">
-      <Typography.Title >{__("Commission Type?")}</Typography.Title>
+      <Typography.Title className="text-[#483f61]" >{__("Commercial Register Type?")}</Typography.Title>
       </Flex>
       <Flex gap={16} justify="center" align="center" className="mt-6">
         {commissions.map((phase) => (
@@ -48,7 +48,7 @@ const Commission = () => {
                   className="transition-all duration-300"
                 />
               </div>
-              <Typography.Text className="text-2xl font-medium text-center text-white group-hover:text-[#2a2439]">
+              <Typography.Text className="text-xl font-medium text-center text-white group-hover:text-[#2a2439]">
                 {__(phase.name)}
               </Typography.Text>
             </div>

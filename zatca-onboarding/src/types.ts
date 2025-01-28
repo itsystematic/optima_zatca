@@ -1,16 +1,16 @@
 export type CommercialData = {
-  [k in
-    | "commercial_register_name"
-    | "commercial_register_number"
-    | "short_address"
-    | "building_no"
-    | "address_line1"
-    | "address_line2"
-    | "city"
-    | "district"
-    | "pincode"
-    | "otp"
-    | "more_info"]: string;
+  commercial_register_name: string;
+  commercial_register_number: string;
+  short_address: string;
+  building_no: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  district: string;
+  pincode: string;
+  otp: string;
+  more_info: string;
+  phase?: string; // Make only 'phase' optional
 };
 
 export type DataState = {
@@ -40,7 +40,8 @@ export type DataState = {
 //   };
 // };
 
-export type MainData = Omit<DataState, "commercial_register" | "adding"> & CommercialData;
+export type MainData = Omit<DataState, "commercial_register" | "adding"> &
+  CommercialData;
 
 export type Company = {
   [k in

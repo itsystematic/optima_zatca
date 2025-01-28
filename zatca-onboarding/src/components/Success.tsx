@@ -1,5 +1,4 @@
 import { useAppDispatch } from "@/app/hooks";
-import { setCurrentPage } from "@/data/currentPage";
 import { resetData } from "@/data/dataSlice";
 import { WhatsAppOutlined } from "@ant-design/icons";
 import { Button, Flex, Result } from "antd";
@@ -11,7 +10,7 @@ const Success = () => {
   const handleHome = () => {
     // window.location.pathname = "/app";
     dispatch(resetData());
-    dispatch(setCurrentPage(0));
+    location.reload()
   };
   const handleWhatsapp = () => {
     const url = `https://wa.me/${phoneNumber}`;

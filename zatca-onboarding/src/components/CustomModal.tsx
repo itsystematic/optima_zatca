@@ -4,7 +4,7 @@ import { setStep } from "@/data/currentStep";
 import { resetData } from "@/data/dataSlice";
 import { closeTour, openTour } from "@/data/tour";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
-import { ConfigProvider, Flex, Tooltip, Tour, Typography } from "antd";
+import { ConfigProvider, Flex, Tour, Typography } from "antd";
 import React from "react";
 
 const CustomModal: React.FC<React.PropsWithChildren> = ({ children }) => {
@@ -42,6 +42,32 @@ const CustomModal: React.FC<React.PropsWithChildren> = ({ children }) => {
     dispatch(closeTour());
   };
 
+  const checkStepHelperText = (): {
+    text: string;
+    href: string;
+    href_text: string;
+  } => {
+    return currentStep === 0
+      ? {
+          text: __("Please Verify the Data from the"),
+          href: "https://zatca.gov.sa/ar/eServices/Pages/TaxpayerLookup.aspx",
+          href_text: __("ZATCA website"),
+        }
+      : currentStep === 1
+      ? {
+          text: __("Please Verify the Data from the Ministry of"),
+          href: "https://mc.gov.sa/ar/eservices/Pages/Commercial-data.aspx",
+          href_text: __("Commerce website"),
+        }
+      : {
+          text: __("Please Verify the Saudi National Address Components from the"),
+          href: "https://splonline.com.sa/en/national-address-1/",
+          href_text: __("National Address"),
+        };
+  };
+
+  const { text, href, href_text } = checkStepHelperText();
+
   return (
     <ConfigProvider
       theme={{
@@ -63,10 +89,11 @@ const CustomModal: React.FC<React.PropsWithChildren> = ({ children }) => {
           Table: {
             headerBg: "#483f61",
             headerColor: "#ffffff",
+            stickyScrollBarBg: "#483f61",
           },
-          Progress : {
-            defaultColor: "#483f61"
-          }
+          Progress: {
+            defaultColor: "#483f61",
+          },
         },
       }}
     >
@@ -86,21 +113,21 @@ const CustomModal: React.FC<React.PropsWithChildren> = ({ children }) => {
         />
         <Flex
           vertical
-          className="h-[80vh] w-[65vw] p-2 bg-[#483f6140] relative overflow-hidden"
+          className="h-[90vh] w-[75vw] p-2 bg-[#483f6140] relative overflow-hidden"
         >
           <div className="h-[4%]">
             {lang === "ar" ? (
               <RightOutlined
                 onClick={handleBackButton}
                 className={`transition-all duration-300 cursor-pointer hover:bg-gray-400 hover:rounded p-2 ${
-                  currentPage === 200 && "hidden"
+                  currentPage === 200 || (currentPage === 204 && "hidden")
                 }`}
               />
             ) : (
               <LeftOutlined
                 onClick={handleBackButton}
                 className={`transition-all duration-300 cursor-pointer hover:bg-gray-400 hover:rounded p-2 ${
-                  currentPage === 200 && "hidden"
+                  currentPage === 200 || (currentPage === 204 && "hidden")
                 }`}
               />
             )}
@@ -111,34 +138,29 @@ const CustomModal: React.FC<React.PropsWithChildren> = ({ children }) => {
               currentPage !== 4 && "hidden"
             }`}
           >
+            <img
+              onClick={handleHelper}
+              className="cursor-pointer bg-white border-[#483f61] border-2 rounded-full"
+              src={
+                isDev
+                  ? "MiniHelper.png"
+                  : "/assets/optima_zatca/zatca-onboarding/MiniHelper.png"
+              }
+              alt="MiniHelper"
+              height={50}
+              width={50}
+            />
             <Typography.Text className="text-xl font-medium text-[#483f61] text-center">
-              معلومات عن &nbsp;
+              {text}
+              &nbsp;
               <Typography.Link
                 target="_blank"
-                href="https://www.optima.ae"
+                href={href}
                 className="text-xl font-medium"
               >
-                موقع هيئه الذكاه
+                {href_text}
               </Typography.Link>
             </Typography.Text>
-            <Tooltip
-              placement={lang === 'ar' ? 'left' : 'right'}
-              title="Click me if you need help!!"
-              color="#483f61"
-            >
-              <img
-                onClick={handleHelper}
-                className="cursor-pointer bg-white border-[#483f61] border-2 rounded-full"
-                src={
-                  isDev
-                    ? "MiniHelper.png"
-                    : "/assets/optima_zatca/zatca-onboarding/MiniHelper.png"
-                }
-                alt="MiniHelper"
-                height={50}
-                width={50}
-              />
-            </Tooltip>
           </div>
         </Flex>
         <Tour

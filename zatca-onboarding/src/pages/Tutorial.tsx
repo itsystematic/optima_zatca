@@ -89,9 +89,6 @@ const Tutorial: React.FC = () => {
         <Button type="default" className={`${isLastIndex && 'hidden'} w-1/3 p-6 font-bold`} onClick={() => handleNext(true)}>
           {__("Skip")}
         </Button>
-        <Typography.Text className="text-red-700">
-          {__("Continuing Means That You Agree To Our Terms Aand Conditions")}
-        </Typography.Text>
       </div>
     </Flex>
   );

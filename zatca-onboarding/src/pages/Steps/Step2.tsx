@@ -66,46 +66,48 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
   ].filter(Boolean);
 
   const items: CollapseProps["items"] = [
-    ...dataState.commercial_register.flatMap((c, index) => ({
-      key: index,
-      label: c.commercial_register_name,
-      children: (
-        <Descriptions bordered size="small">
-          <Descriptions.Item span={3} label={__("Commercial Name")}>
-            {c.commercial_register_name}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("Commercial Number")}>
-            {c.commercial_register_number}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("Short Address")}>
-            {c.short_address}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("Building No")}>
-            {c.building_no}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("Street")}>
-            {c.address_line1}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("Secondary No")}>
-            {c.address_line2}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("City")}>
-            {c.city}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("District")}>
-            {c.district}
-          </Descriptions.Item>
-          <Descriptions.Item span={3} label={__("Postal Code")}>
-            {c.pincode}
-          </Descriptions.Item>
-          {c.more_info ? (
-            <Descriptions.Item span={3} label={__("More Info")}>
-              {c.more_info}
+    ...dataState.commercial_register
+      .filter((c) => !c.phase)
+      .flatMap((c, index) => ({
+        key: index,
+        label: c.commercial_register_name,
+        children: (
+          <Descriptions bordered size="small">
+            <Descriptions.Item span={3} label={__("Commercial Name")}>
+              {c.commercial_register_name}
             </Descriptions.Item>
-          ) : null}
-        </Descriptions>
-      ),
-    })),
+            <Descriptions.Item span={3} label={__("Commercial Number")}>
+              {c.commercial_register_number}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label={__("Short Address")}>
+              {c.short_address}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label={__("Building No")}>
+              {c.building_no}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label={__("Street")}>
+              {c.address_line1}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label={__("Secondary No")}>
+              {c.address_line2}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label={__("City")}>
+              {c.city}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label={__("District")}>
+              {c.district}
+            </Descriptions.Item>
+            <Descriptions.Item span={3} label={__("Postal Code")}>
+              {c.pincode}
+            </Descriptions.Item>
+            {c.more_info ? (
+              <Descriptions.Item span={3} label={__("More Info")}>
+                {c.more_info}
+              </Descriptions.Item>
+            ) : null}
+          </Descriptions>
+        ),
+      })),
   ];
 
   const isValid = () => {
@@ -135,22 +137,22 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
       form.setFieldsValue(commercial);
     }
 
-    if (isDev) {
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.ctrlKey && event.key === "v") {
-          const commercials = generateCommercials();
-          commercials.map((c) => {
-            dispatch(addCommercial(c));
-          });
-        }
-      };
+    // if (isDev) {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.key === "v") {
+        const commercials = generateCommercials();
+        commercials.map((c) => {
+          dispatch(addCommercial(c));
+        });
+      }
+    };
 
-      addEventListener("keydown", handleKeyDown);
+    addEventListener("keydown", handleKeyDown);
 
-      return () => {
-        removeEventListener("keydown", handleKeyDown);
-      };
-    }
+    return () => {
+      removeEventListener("keydown", handleKeyDown);
+    };
+    // }
   }, []);
 
   useEffect(() => {
@@ -158,11 +160,11 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
   }, []);
 
   return (
-    <Flex flex={1} align="center" justify="center">
+    <Flex className="p-2" flex={1} align="center" justify="center">
       {(commission === "multi" && !edit) || isAdding ? (
         <div
           id="commission_list"
-          className="bg-[#00000027] rounded-md h-[600px] overflow-y-auto w-[350px]"
+          className="bg-[#00000027] rounded-md h-full overflow-y-auto w-[350px]"
         >
           <Collapse accordion items={items} ghost className=" bg-[#483f61]" />
         </div>
@@ -189,7 +191,7 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
             }  p-6 ${!edit && "mt-5"} rounded-md h-full flex flex-col gap-3`}
           >
             {isValid() ? (
-              <Typography.Text className="text-lg self-center">
+              <Typography.Text className="text-md self-center">
                 Commercial Information &nbsp;{" "}
                 <CheckCircleFilled className="text-green-700" />
               </Typography.Text>
@@ -212,7 +214,7 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
             ))}
             {isValid() ? (
               <>
-                <Typography.Text className="text-lg self-center">
+                <Typography.Text className="text-md self-center">
                   {__("Saudi National Address Components")}
                 </Typography.Text>
                 <Flex gap={5}>

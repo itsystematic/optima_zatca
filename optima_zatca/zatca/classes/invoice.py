@@ -339,7 +339,8 @@ class ZatcaInvoiceData :
                 "TaxScheme" : "VAT" ,
                 "PriceAmount" : "{:.2f}".format(abs(item.get("rate"))) ,  # Check Price List Rate IF Discount
                 "ChargeIndicator" : "false" ,
-                "Amount" : "{:.2f}".format(abs(item.get("discount_amount"))) if item.get("discount_amount") else "0.0"
+                # "Amount" : "{:.2f}".format(abs(item.get("discount_amount"))) if item.get("discount_amount") else "0.0"
+                "Amount" : "{:.2f}".format(item.get("discount_amount")) if item.get("discount_amount") > 0 else "0.0"
             })
             
         self.zatca_invoice['items'] = items

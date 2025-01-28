@@ -13,7 +13,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
     "@reduxjs/toolkit": "^2.4.0",
-    "antd": "^5.22.5",
+    "antd": "^5.23.2",
     "framer-motion": "^11.14.4",
     "frappe-react-sdk": "^1.9.0",
     "motion": "^11.13.1",
