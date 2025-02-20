@@ -7,6 +7,7 @@ node_modules
 optima_zatca/zatca/__pycache__/
 __pycache__/
 *.pyc
+*.cpython-310.pyc
 
 optima_zatca/public/node_modules
 optima_zatca/public/zatca-onboarding/
