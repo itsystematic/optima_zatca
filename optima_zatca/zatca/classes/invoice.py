@@ -19,8 +19,11 @@ class ZatcaInvoiceData :
         self.company_address = frappe.get_doc("Address", sales_invoice.get("company_address")) if sales_invoice.get("company_address")  else {}
         self.customer_info = frappe.get_doc("Customer", sales_invoice.get("customer")) if sales_invoice.get("customer")  else {}
         self.customer_address = frappe.get_doc("Address", sales_invoice.get("customer_address")) if sales_invoice.get("customer_address")  else {}
-
+        self.customer_country_code = "SA"
         self.validate_invoice()
+
+        self.included_in_print_rate = any(map(lambda x : x.get("included_in_print_rate") , self.sales_invoice.get("taxes")))
+
         self.handle_data_to_xml()
         self.make_xml()
         
@@ -42,17 +45,15 @@ class ZatcaInvoiceData :
     def handle_data_to_xml(self) :
         
         self.add_sales_invoice_basic_data()
-        self.add_type_of_invoice()
         self.add_other_info_about_invoice()
         self.add_details_for_debit_or_credit()
         self.add_company_information()
         self.add_customer_type_company()
         self.add_customer_type_individual()
+        self.add_type_of_invoice()
         self.add_global_taxes()
-        self.add_subtotals_taxes()
-        self.add_sales_invoice_discount()
-        self.add_sales_invoice_item()
         self.add_sales_invoice_totals()
+        self.add_invoice_lines_and_tax_categories()
         self.add_additional_data()
         
     def add_company_information(self) :
@@ -79,15 +80,14 @@ class ZatcaInvoiceData :
     def add_customer_type_company(self) :
         
         if self.customer_info.get("customer_type") == "Company" :
-
-            country_code: str =  frappe.db.get_value("Country" ,self.customer_address.get("country") , "code")
+            self.customer_country_code = ( frappe.db.get_value("Country" ,self.customer_address.get("country") , "code") or "SA" ).upper() 
             self.zatca_invoice.update({
                 "customer" : _dict({
                     "ID" : self.customer_info.get("registration_value") , 
                     "schemeID" : self.customer_info.get("registration_type")  , # type of registration tax_id , commercial_register
                     "CompanyID" : self.customer_info.get("tax_id"),
                     "RegistrationName" : self.customer_info.get("customer_name_in_arabic")  or self.customer_info.get("name"),
-                    "IdentificationCode" : country_code.upper() if country_code else "SA" ,
+                    "IdentificationCode" : self.customer_country_code ,
                     "CitySubdivisionName" : self.customer_address.get("district"),
                     "BuildingNumber" : self.customer_address.get("building_no"),
                     "StreetName" : self.customer_address.get("address_line1"),
@@ -102,14 +102,21 @@ class ZatcaInvoiceData :
     def add_customer_type_individual(self) :
         
         if self.customer_info.get("customer_type") == "Individual" :
-            self.zatca_invoice.update({
-                "customer" : _dict({
-                    "TaxSchemeID" : "VAT" ,
-                    "ID" : self.customer_info.get("registration_value") ,
-                    "schemeID" : self.customer_info.get("registration_type") ,
-                    "RegistrationName" : self.sales_invoice.get("customer_name")
-                })
-            })
+
+            customer_details = {
+                "TaxSchemeID" : "VAT" ,
+                "ID" : self.customer_info.get("registration_value") ,
+                "schemeID" : self.customer_info.get("registration_type") ,
+                "RegistrationName" : self.sales_invoice.get("customer_name")
+            }
+
+            if self.customer_address.get("country") :
+                self.customer_country_code = ( frappe.db.get_value("Country" ,self.customer_address.get("country") , "code") or "SA" ).upper()
+
+
+            self.zatca_invoice["customer"] = customer_details
+
+
             
             
     def add_details_for_debit_or_credit(self) :
@@ -156,6 +163,10 @@ class ZatcaInvoiceData :
         elif self.customer_info.get("customer_type") == "Individual" :
             
             InvoiceTypeCodeName , InvoiceStatus , ClearanceStatus=  "0200000" , "Simplified" , "0"
+
+
+        if self.customer_country_code != "SA" :
+            InvoiceTypeCodeName = "0200100" if self.customer_info.get("customer_type") == "Individual" else "0100100"
             
         if self.sales_invoice.get("is_return") == 1 :
             InvoiceSubStatus = "credit"
@@ -205,145 +216,107 @@ class ZatcaInvoiceData :
         
     def add_global_taxes(self) :
         # Allow One TAX ONly
-        # TaxAmount , Percent = self.get_tax_amount_and_tax_rate()
         self.zatca_invoice.update({
-            "TaxableAmount" : "{:.2f}".format(abs(self.sales_invoice.get("net_total") )),
             "TaxAmount" : "{:.2f}".format(abs(self.sales_invoice.get("total_taxes_and_charges"))),
             "TaxTotalTaxAmount" : "{:.2f}".format(abs(self.sales_invoice.get("base_total_taxes_and_charges"))), #in Qrcode and IF Difference in currency 
-            "GrandTotalAmount" : "{:.2f}".format(abs(self.sales_invoice.get("base_grand_total"))), # in Qrcode 
-            "GrandTotal" : "{:.2f}".format(abs(self.sales_invoice.get("grand_total"))), # in Qrcode 
             "TaxCategorySchemeID" : "UNCL5305" ,
         })
 
-    def add_subtotals_taxes(self) :
 
-        list_of_subtotals = self.get_calculation_of_tax_category()
-        for row in list_of_subtotals:
-            for key, value in row.items():
-                if isinstance(value, (int, float)):  # Check if the value is a number
-                    row[key] = "{:.2f}".format(value)
-
-        self.zatca_invoice["TaxSubtotal"] = list_of_subtotals
-
-    def get_calculation_of_tax_category(self) :
-
-        tax_categories = {}
-        for entry in self.sales_invoice.get("items"):
-            tax_category = entry.tax_category
-
-            if not tax_category :
-                tax_category = frappe.db.get_value("Item Tax Template" , entry.get("item_tax_template") , "tax_category")
-
-            # If the tax category is not in the result, initialize it
-            if entry.get("tax_category") not in tax_categories:
-                tax_categories[tax_category] = {
-                    "TaxCategory": tax_category, 
-                    "Percent": "{:.2f}".format(abs(entry.tax_rate)), 
-                    "TaxAmount": 0 , 
-                    "TaxableAmount" : 0,
-                    "TaxCategorySchemeID" : "UNCL5305" ,
-                    "TaxSchemeID" : "VAT" ,
-                    "schemeAgencyID" : "6" ,
-                    "TaxExemptionReasonCode" : "",
-                    "TaxExemptionReason" : ""
-                }
-
-            # Accumulate the tax amount
-            if tax_category in ["S"] :
-                tax_categories[tax_category]["TaxAmount"] = str(abs(self.sales_invoice.get("total_taxes_and_charges")))
-            else :
-                tax_categories[tax_category]["TaxAmount"] += abs(entry.tax_amount)
-                
-            tax_categories[tax_category]["TaxableAmount"] += abs(entry.net_amount)
-
-            if tax_category in ["O" , "Z" , "E"] :
-                tax_exemption = entry.get("tax_exemption")
-                tax_categories[tax_category]["TaxExemptionReasonCode"] = tax_exemption
-                tax_categories[tax_category]["TaxExemptionReason"] = frappe.db.get_value("Tax Exemption" , tax_exemption , "description").strip()
-
-        return list(tax_categories.values())
-
-    def add_sales_invoice_discount(self) : 
-        
-        if self.sales_invoice.get("discount_amount") :
-            tax_categories = {}
-            for entry in self.sales_invoice.get("items"):
-                tax_category = entry.tax_category
-
-                if not tax_category :
-                    tax_category = frappe.db.get_value("Item Tax Template" , entry.get("item_tax_template") , "tax_category")
-
-                # If the tax category is not in the result, initialize it
-                if entry.get("tax_category") not in tax_categories:
-                    tax_categories[tax_category] = {
-                        "TaxCategory": tax_category, 
-                        "TaxCategorySchemeID" : "UNCL5305",
-                        "Percent": "{:.2f}".format(abs(entry.tax_rate)), 
-                        "ChargeIndicator" :"false" ,
-                        "AllowanceChargeReason" : "discount" ,
-                        "AllowanceChargeAmount" : 0.00,
-                    }
-
-                tax_categories[tax_category]["AllowanceChargeAmount"] += flt(abs(entry.amount) - abs(entry.net_amount) ,2 )
-
-                #amount = abs(entry.amount) / ( 1 + (entry.tax_rate / 100 ))
-
-                #tax_categories[tax_category]["AllowanceChargeAmount"] += flt(amount * abs(self.sales_invoice.get("additional_discount_percentage")) /100 ,2 )
-
-            list_of_allowance_charge = list(tax_categories.values())
-            for row in list_of_allowance_charge:
-                for key, value in row.items():
-                    if isinstance(value, (int, float)):  # Check if the value is a number
-                        row[key] = str(value)
-
-            self.zatca_invoice["AllowanceCharge"] = list_of_allowance_charge
             
-
         
     def add_sales_invoice_totals(self) :
-        
-        # if self.sales_invoice.get("mode_of_payments") :
-        #     paid_amount = "{:.2f}".format(sum(map(lambda x : abs(x.get("amount")) , self.sales_invoice.get("mode_of_payments"))))
-        #     payable_amount = "{:.2f}".format(abs(self.sales_invoice.get("grand_total")) - paid_amount )
-        # else :
-        #     paid_amount = "0.00"
-        #     payable_amount = "{:.2f}".format(abs(self.sales_invoice.get("grand_total")))
-            
-        
         AllowanceTotalAmount = "{:.2f}".format(abs(self.sales_invoice.get("discount_amount" , 0))) if self.sales_invoice.get("discount_amount") else "0.00"
         
+        LineExtensionAmount = str(flt(abs(
+            self.sales_invoice.get("net_total") + self.sales_invoice.get("discount_amount") 
+            if self.included_in_print_rate 
+            else self.sales_invoice.get("total")
+        ) , 2 ))
+
+
         self.zatca_invoice.update({
-            "LineExtensionAmount" : "{:.2f}".format(abs(self.sales_invoice.get("total"))) ,
-            "TaxExclusiveAmount" :  "{:.2f}".format(abs(self.sales_invoice.get("net_total"))) ,
-            "TaxInclusiveAmount" :  "{:.2f}".format(abs(self.sales_invoice.get("net_total") + self.sales_invoice.get("total_taxes_and_charges"))) ,
+            "LineExtensionAmount" : LineExtensionAmount ,
+            "TaxExclusiveAmount" :  str(flt(abs(self.sales_invoice.get("net_total")) , 2)) ,
+            "TaxInclusiveAmount" :  str(flt(abs(self.sales_invoice.get("grand_total") ), 2)) ,
             "AllowanceTotalAmount" :  AllowanceTotalAmount ,
             "PrepaidAmount" :  "0.00" , # Current Zero Until Handle advanced Payment
-            "PayableAmount" :   "{:.2f}".format(abs(self.sales_invoice.get("grand_total"))) ,
+            "PayableAmount" :  str(flt(abs(self.sales_invoice.get("grand_total") ), 2)) ,
         })
-        
-    def add_sales_invoice_item(self) :
-        
-        items = []
+
+    def add_invoice_lines_and_tax_categories(self) :
+
+        tax_subtotals = {}
+        invoice_line = []
+
         for item in self.sales_invoice.get("items") :
-            tax_amount = item.get("amount") * item.get("tax_rate") / 100
-            rounding_amount = item.get("amount") + tax_amount
-            items.append({
-                "ID" : str(item.get("idx")) ,
-                "InvoicedQuantity" : str(abs(item.get("qty"))) ,
-                "LineExtensionAmount" :"{:.2f}".format(abs(item.get("amount"))) ,
-                "TaxAmount" : "{:.2f}".format(abs(tax_amount)) ,
-                "RoundingAmount" : "{:.2f}".format(abs(rounding_amount)),
-                "Name" : item.get("item_code") ,
-                "TaxCategory" :  item.get("tax_category") or frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category") ,
-                "Percent" : "{:.2f}".format(item.get("tax_rate")) ,
-                "TaxScheme" : "VAT" ,
-                "PriceAmount" : "{:.2f}".format(abs(item.get("rate"))) ,  # Check Price List Rate IF Discount
-                "ChargeIndicator" : "false" ,
-                # "Amount" : "{:.2f}".format(abs(item.get("discount_amount"))) if item.get("discount_amount") else "0.0"
-                "Amount" : "{:.2f}".format(item.get("discount_amount")) if item.get("discount_amount") > 0 else "0.0"
-            })
+
+            self.add_invoice_item(item , invoice_line )
+            self.add_tax_cateogry(item , tax_subtotals)
+
+        
+        self.zatca_invoice['items'] = invoice_line
+        self.zatca_invoice["TaxSubtotal"] = list(tax_subtotals.values())
+
+
+
+    def add_invoice_item(self, item:dict , invoice_line:list) :
+
+        item_row = {
+            "ID" : str(item.get("idx")) ,
+            "InvoicedQuantity" : str(abs(item.get("qty"))) ,
+            "LineExtensionAmount" : str(flt(abs(item.get("line_extension_amount") )  , 2)) ,
+            "TaxAmount" : str(flt(abs(item.get("tax_amount") ) , 2 ))  ,
+            "RoundingAmount" : str(flt(abs(item.get("total_amount") ) , 2) ) ,
+            "Name" : item.get("item_code") ,
+            "TaxCategory" :  item.get("tax_category") or frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category") ,
+            "Percent" : str(flt(abs(item.get("tax_rate") ) , 2) )  ,
+            "TaxScheme" : "VAT" ,
+            "PriceAmount" : str(flt(abs(item.get("price_amount") ), 2 ) ) , 
             
-        self.zatca_invoice['items'] = items
+        }    
+
+        if item.get("discount_amount") :
+            item_row.update({
+                "ChargeIndicator" : "false" ,
+                "Amount" : str(flt(abs(item.get("discount_amount"))  , 2))
+            })
+
+        invoice_line.append(item_row)
+
+
+    def add_tax_cateogry(self , item , tax_subtotals) :
+
+        tax_category = item.get("tax_category") or  frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category") 
+
+        if tax_category not in tax_subtotals :
+            tax_subtotals[tax_category] = {
+                "TaxCategory": tax_category, 
+                "Percent": str(abs(item.tax_rate)), 
+                "TaxAmount": "0.00" , 
+                "TaxableAmount" : abs(item.net_amount) ,
+                "TaxCategorySchemeID" : "UNCL5305" ,
+                "TaxSchemeID" : "VAT" ,
+                "schemeAgencyID" : "6" ,
+                "TaxExemptionReasonCode" : "",
+                "TaxExemptionReason" : "" ,
+                "ChargeIndicator" : "false" ,
+                "AllowanceChargeReason" : "discount" ,
+                "AllowanceChargeAmount" : abs(item.get("item_discount")),
+            }
+
+            if tax_category == "S" :
+                tax_subtotals[tax_category]["TaxAmount"] = str(abs(self.sales_invoice.get("total_taxes_and_charges")))
+
+            else :
+                tax_subtotals[tax_category]["TaxExemptionReasonCode"] = item.get("tax_exemption")
+                tax_subtotals[tax_category]["TaxExemptionReason"] =  frappe.db.get_value("Tax Exemption" , item.get("tax_exemption") , "description").strip()
+            
+        else :
+            tax_subtotals[tax_category]["TaxableAmount"] += abs(item.net_amount)
+            tax_subtotals[tax_category]["AllowanceChargeAmount"] += abs(item.get("item_discount"))
+
+
 
     def add_additional_data(self) :
         

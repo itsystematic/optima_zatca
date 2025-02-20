@@ -15,6 +15,76 @@ ADDRESS_DOCTYPE_FIELDS = [
     "is_shipping_address", "disabled", "linked_with", "is_your_company_address", "links"
 ]
 
+SellingChildTable = [
+    {
+        "fieldname" : "tax_category" ,
+        "fieldtype" : "Link" ,
+        "label" : "Tax Category" ,
+        "insert_after" : "item_tax_template",
+        "options" : "Tax Category",
+        "read_only" : 1,
+        "hidden" : 1,
+    },
+    {
+        "fieldname" : "price_amount" ,
+        "label" : "Price Amount" ,
+        "fieldtype" : "Float" ,
+        "insert_after" : "tax_category",
+        "read_only" : 1,
+        "hidden" : 1,
+        "no_copy" : 1,
+    },
+    {
+        "fieldname" : "line_extension_amount" ,
+        "label" : "Line Extension Amount" ,
+        "fieldtype" : "Float" ,
+        "insert_after" : "price_amount",
+        "read_only" : 1,
+        "hidden" : 1,
+        "no_copy" : 1,
+    },
+    {
+        "fieldname" : "item_discount" ,
+        "label" : "Item Discount" ,
+        "fieldtype" : "Float" ,
+        "insert_after" : "line_extension_amount",
+        "read_only" : 1,
+        "hidden" : 1,
+        "no_copy" : 1,
+    },
+    {
+        "fieldname" : "tax_rate" ,
+        "fieldtype" : "Float" ,
+        "label" : "Tax Rate" ,
+        "insert_after" : "item_discount",
+        "read_only" : 1 ,
+        "hidden" : 1,
+    },
+    {
+        "fieldname" : "tax_amount" ,
+        "fieldtype" : "Float" ,
+        "label" : "Tax Amount" ,
+        "insert_after" : "tax_rate",
+        "read_only" : 1,
+        "hidden" : 1,
+    },
+    {
+        "fieldname" : "total_amount" ,
+        "fieldtype" : "Currency" ,
+        "label" : "Total Amount" ,
+        "insert_after" : "tax_amount",
+        "read_only" : 1,
+        "hidden" : 1,
+    },
+    {
+        "fieldname" : "tax_exemption" ,
+        "fieldtype" : "Link" ,
+        "label" : "Tax Exemption" ,
+        "insert_after" : "total_amount" ,
+        "options" : "Tax Exemption"
+    },
+]
+
 def after_app_install(app_name) :
 
     if app_name != "optima_zatca" : return 
@@ -147,174 +217,11 @@ def create_additional_fields() :
             },
 
         ],
-        "Sales Invoice Item" : [
-            {
-                "fieldname" : "tax_category" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Category" ,
-                "insert_after" : "item_tax_template",
-                "options" : "Tax Category",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_rate" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Rate" ,
-                "insert_after" : "tax_category",
-                "read_only" : 1 ,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_amount" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Amount" ,
-                "insert_after" : "tax_rate",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "total_amount" ,
-                "fieldtype" : "Currency" ,
-                "label" : "Total Amount" ,
-                "insert_after" : "tax_amount",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_exemption" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Exemption" ,
-                "insert_after" : "total_amount" ,
-                "options" : "Tax Exemption"
-            },
-        ],
-        "Quotation Item" : [
-            {
-                "fieldname" : "tax_category" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Category" ,
-                "insert_after" : "item_tax_template",
-                "options" : "Tax Category",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_rate" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Rate" ,
-                "insert_after" : "tax_category",
-                "read_only" : 1 ,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_amount" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Amount" ,
-                "insert_after" : "tax_rate",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "total_amount" ,
-                "fieldtype" : "Currency" ,
-                "label" : "Total Amount" ,
-                "insert_after" : "tax_amount",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_exemption" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Exemption" ,
-                "insert_after" : "total_amount" ,
-                "options" : "Tax Exemption"
-            },
-        ],
-        "Sales Order Item" : [
-            {
-                "fieldname" : "tax_category" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Category" ,
-                "insert_after" : "item_tax_template",
-                "options" : "Tax Category",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_rate" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Rate" ,
-                "insert_after" : "tax_category",
-                "read_only" : 1 ,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_amount" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Amount" ,
-                "insert_after" : "tax_rate",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "total_amount" ,
-                "fieldtype" : "Currency" ,
-                "label" : "Total Amount" ,
-                "insert_after" : "tax_amount",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_exemption" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Exemption" ,
-                "insert_after" : "total_amount" ,
-                "options" : "Tax Exemption"
-            },
-        ],
-        "Delivery Note Item" : [
-            {
-                "fieldname" : "tax_category" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Category" ,
-                "insert_after" : "item_tax_template",
-                "options" : "Tax Category",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_rate" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Rate" ,
-                "insert_after" : "tax_category",
-                "read_only" : 1 ,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_amount" ,
-                "fieldtype" : "Float" ,
-                "label" : "Tax Amount" ,
-                "insert_after" : "tax_rate",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "total_amount" ,
-                "fieldtype" : "Currency" ,
-                "label" : "Total Amount" ,
-                "insert_after" : "tax_amount",
-                "read_only" : 1,
-                "hidden" : 1,
-            },
-            {
-                "fieldname" : "tax_exemption" ,
-                "fieldtype" : "Link" ,
-                "label" : "Tax Exemption" ,
-                "insert_after" : "total_amount" ,
-                "options" : "Tax Exemption"
-            },
-        ],
+        "Sales Invoice Item" : SellingChildTable ,
+        "Quotation Item" : SellingChildTable ,
+        "Sales Order Item" : SellingChildTable ,
+        "Delivery Note Item" : SellingChildTable ,
+        "POS Invoice Item" : SellingChildTable ,
         
         "Customer" : [
             {

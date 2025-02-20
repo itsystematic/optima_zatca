@@ -10,7 +10,7 @@ from frappe import _ , _dict
 from optima_zatca.zatca.utils import generate_qr_code
 from bs4 import BeautifulSoup
 import xml.dom.minidom as mini
-from frappe.utils import  get_bench_relative_path
+from frappe.utils import  get_bench_relative_path , flt
 from optima_zatca.zatca.utils import sign_invoice
 
 
@@ -516,43 +516,45 @@ class ZatcaXml :
         if self.sales_invoice.get("ActualDeliveryDate") :
             place += 1
 
-        for allowance_charge in self.sales_invoice.get("AllowanceCharge" , []) :
-            parent_allowance_charge = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
-            parent_allowance_charge.tail = "\n    "
-            charge_indicator = etree.SubElement(parent_allowance_charge,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ChargeIndicator")
-            charge_indicator.text = "false"
+        for allowance_charge in self.sales_invoice.get("TaxSubtotal" , []) :
 
-            allowance_charge_reason = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason")
-            allowance_charge_reason.text = allowance_charge.get("AllowanceChargeReason")
+            if allowance_charge.get("AllowanceChargeAmount" , 0.00) > 0 :
+                parent_allowance_charge = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
+                parent_allowance_charge.tail = "\n    "
+                charge_indicator = etree.SubElement(parent_allowance_charge,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ChargeIndicator")
+                charge_indicator.text =  allowance_charge.get("ChargeIndicator")
 
-            allowance_charge_amount = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
-            allowance_charge_amount.text = allowance_charge.get("AllowanceChargeAmount")
-            allowance_charge_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                allowance_charge_reason = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason")
+                allowance_charge_reason.text = allowance_charge.get("AllowanceChargeReason")
 
-            allowance_charge_tax_category = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxCategory")
+                allowance_charge_amount = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
+                allowance_charge_amount.text = str(flt(allowance_charge.get("AllowanceChargeAmount") , 2))
+                allowance_charge_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
-            tax_category_id = etree.SubElement(allowance_charge_tax_category , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
-            tax_category_id.text = allowance_charge.get("TaxCategory")
-            tax_category_id.set("schemeAgencyID" , "6")
-            tax_category_id.set("schemeID", allowance_charge.get("TaxCategorySchemeID"))
+                allowance_charge_tax_category = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxCategory")
 
-            tax_category_percent = etree.SubElement(allowance_charge_tax_category , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Percent")
-            tax_category_percent.text = allowance_charge.get("Percent")
+                tax_category_id = etree.SubElement(allowance_charge_tax_category , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                tax_category_id.text = allowance_charge.get("TaxCategory")
+                tax_category_id.set("schemeAgencyID" , "6")
+                tax_category_id.set("schemeID", allowance_charge.get("TaxCategorySchemeID"))
 
-            tax_scheme = etree.SubElement(allowance_charge_tax_category , "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxScheme")
-            tax_scheme_id = etree.SubElement(tax_scheme , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
-            tax_scheme_id.text = "VAT"
-            tax_scheme_id.set("schemeAgencyID" , "6")
-            tax_scheme_id.set("schemeID" , "UN/ECE 5153")
-            
-            etree.indent(parent_allowance_charge, space="    ", level=1)
+                tax_category_percent = etree.SubElement(allowance_charge_tax_category , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Percent")
+                tax_category_percent.text = allowance_charge.get("Percent")
 
-            customer.getparent().insert(
-                customer
-                .getparent()
-                .index(customer) + place ,
-                parent_allowance_charge,
-            )
+                tax_scheme = etree.SubElement(allowance_charge_tax_category , "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxScheme")
+                tax_scheme_id = etree.SubElement(tax_scheme , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                tax_scheme_id.text = "VAT"
+                tax_scheme_id.set("schemeAgencyID" , "6")
+                tax_scheme_id.set("schemeID" , "UN/ECE 5153")
+                
+                etree.indent(parent_allowance_charge, space="    ", level=1)
+
+                customer.getparent().insert(
+                    customer
+                    .getparent()
+                    .index(customer) + place ,
+                    parent_allowance_charge,
+                )
 
         # tax total amount in company currency (We deal mainly with ksa) , rhera is two tax total amounts one in invoice currency and one in company curreny
         tax_total_tax_amount = self.root.find(".//cac:TaxTotal/cbc:TaxAmount", namespaces=NameSpace)
@@ -617,7 +619,7 @@ class ZatcaXml :
             # taxable amount for this tax (items net price (that has the tax cat) - document level discount (with same tax cat) + charge (with same tax cat)
             taxable_amount = etree.SubElement(tax_subtotal,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxableAmount")
             taxable_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
-            taxable_amount.text = sub_total_element.get("TaxableAmount")
+            taxable_amount.text = str(flt(sub_total_element.get("TaxableAmount") , 2 ))
 
             # tax amount
             tax_category_amount = etree.SubElement(tax_subtotal,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxAmount")
@@ -740,21 +742,22 @@ class ZatcaXml :
             item_base_qauntity.set("unitCode", "PCE")
             item_base_qauntity.text = "1"
 
+            if item.get("Amount") :
             # charge or allowance on item price not item net line (discount for now)
-            item_price_allowance = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
+                item_price_allowance = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
 
-            # discount or charge indicator (false for discount , true for charge)
-            item_price_allowance_indicator = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ChargeIndicator")
-            item_price_allowance_indicator.text = item.get("ChargeIndicator")
+                # discount or charge indicator (false for discount , true for charge)
+                item_price_allowance_indicator = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ChargeIndicator")
+                item_price_allowance_indicator.text = item.get("ChargeIndicator")
 
-            # discount or charge reason , for now not important , important in charge
-            item_price_allowance_reason = etree.SubElement(item_price_allowance, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason")
-            item_price_allowance_reason.text = "discount"
+                # discount or charge reason , for now not important , important in charge
+                item_price_allowance_reason = etree.SubElement(item_price_allowance, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason")
+                item_price_allowance_reason.text = "discount"
 
-            # item price discount amount
-            item_price_allowance_amount = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
-            item_price_allowance_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
-            item_price_allowance_amount.text = item.get("Amount")
+                # item price discount amount
+                item_price_allowance_amount = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
+                item_price_allowance_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                item_price_allowance_amount.text = item.get("Amount")
 
             # indent the elements
             etree.indent(invoice_line, space="    ", level=1)
@@ -833,7 +836,7 @@ class ZatcaXml :
             self.sales_invoice.get("company").get("CompanyID"),
             self.sales_invoice.get("IssueDate"),
             self.sales_invoice.get("IssueTime") ,
-            invoice_total=self.sales_invoice.get("GrandTotal"),
+            invoice_total=self.sales_invoice.get("TaxInclusiveAmount"),
             vat_total=self.sales_invoice.get("TaxAmount"),
             invoice_hash= self.hash ,
             invoice_signature=signature_encoded ,

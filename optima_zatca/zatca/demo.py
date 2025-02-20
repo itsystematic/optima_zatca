@@ -92,7 +92,8 @@ def send_sample_sales_invoices(settings ,company_details) :
                 api_endpoint = "complainace_checks" ,
                 environment = settings.get("api_endpoints"),
                 pih = zatca_xml.hash,
-                icv = sales_invoice.get("InvoiceCounter")
+                icv = sales_invoice.get("InvoiceCounter"),
+                xml_content = etree.tostring(zatca_xml.root, encoding="utf-8") ,
             )
 
             time.sleep(5)

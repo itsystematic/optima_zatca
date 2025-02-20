@@ -37,6 +37,7 @@ def add_company_to_zatca(name):
         company_details.get("invoice_three", False) , company_details.get("invoice_four" , False) , 
         company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
     ]
+    # This Not Applicable in SandBox 
 
     if settings.get("check_pcsid") == 0 and all(list_of_fields) :
         get_production_certificate(settings , company_details ) 
