@@ -1,4 +1,5 @@
 
+import frappe
 import json
 from os import listdir
 from click import secho
@@ -92,6 +93,7 @@ def after_app_install(app_name) :
     create_additional_fields()
     create_property_setter()
     add_standard_data()
+    add_zatca_role()
 
 
 
@@ -493,3 +495,9 @@ def create_property_setter() :
         make_property_setter(setter , ignore_validate=False , is_system_generated=True)
 
 
+def add_zatca_role() :
+    if frappe.db.exists("Role" , "Zatca Role") :return
+    frappe.get_doc({
+        "doctype": "Role",
+        "role_name": "Zatca Role",
+    }).insert(ignore_permissions=True)  
