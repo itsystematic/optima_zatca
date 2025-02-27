@@ -43,6 +43,7 @@ def send_to_zatca(sales_invoice_name):
         frappe.db.set_value("Sales Invoice", sales_invoice.name ,{"ksa_einv_qr" : qrcode_url})
         manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
         if not manual_submit : # Auto Submit
+            sales_invoice.reload()
             sales_invoice.submit()
 
     else :

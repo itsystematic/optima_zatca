@@ -3,7 +3,6 @@
 
 frappe.ui.form.on("Sales Invoice" , {
     refresh(frm) {
-        frm.trigger('hide_submit_button_untill_sent')
         frm.trigger("add_zatca_button") ;
         frm.trigger('remove_send_to_zatca_button') ;
         frm.trigger("setup_query_filters") ;
@@ -123,19 +122,7 @@ frappe.ui.form.on("Sales Invoice" , {
         }
     },
 
-    hide_submit_button_untill_sent(frm) {
-        //Check if sales invoice already sent
-        if (frm.doc.clearance_or_reporting == "REPORTED" || frm.doc.clearance_or_reporting == "CLEARED") return;
-        // Selecting Submit Button
-        const btn = $('[data-label="Submit"]')
-        // Deleting All Event Listeners
-        btn.off()
-        btn.hide()
-        // Adding Custom Event Listener
-        btn.click(() => {
-            frappe.msgprint('You have NO Permission for sumbit , Please Try to Send it to Zatca')
-        })
-    } ,
+
 
     remove_send_to_zatca_button(frm) {
         //Check if user got access
