@@ -3,7 +3,9 @@
 
 frappe.ui.form.on("Sales Invoice" , {
     refresh(frm) {
+        frm.trigger('hide_submit_button_untill_sent')
         frm.trigger("add_zatca_button") ;
+        frm.trigger('remove_send_to_zatca_button') ;
         frm.trigger("setup_query_filters") ;
         // frm.trigger("add_default_commercial_register");
     },
@@ -119,8 +121,35 @@ frappe.ui.form.on("Sales Invoice" , {
         } else {
             frm.set_df_property("return_against" , "reqd" , 0);
         }
-    }
+    },
 
+    hide_submit_button_untill_sent(frm) {
+        //Check if sales invoice already sent
+        if (frm.doc.clearance_or_reporting == "REPORTED" || frm.doc.clearance_or_reporting == "CLEARED") return;
+        // Selecting Submit Button
+        const btn = $('[data-label="Submit"]')
+        // Deleting All Event Listeners
+        btn.off()
+        btn.hide()
+        // Adding Custom Event Listener
+        btn.click(() => {
+            frappe.msgprint('You have NO Permission for sumbit , Please Try to Send it to Zatca')
+        })
+    } ,
+
+    remove_send_to_zatca_button(frm) {
+        //Check if user got access
+        if (frappe.user.has_role('Zatca Role')) return;
+        // Selecting Send To Zatca Button
+        const btn = $('[data-label="Send%20To%20Zatca"]')
+        // Deleting All Event Listeners
+        btn.off()
+        btn.hide()
+        // Adding Custom Event Listener
+        btn.click(() => {
+            frappe.msgprint('You have NO Permission for send to Zatca , Please Try to Connect with your Manager')
+        })
+    }
 })
 
 
