@@ -36,7 +36,7 @@ frappe.ui.form.on("Sales Invoice" , {
                 }
             })
         }).css({
-            "background-color" : "red",
+            "background-color" : "#0b002e",
             "color" : "white"
         })
     } ,
