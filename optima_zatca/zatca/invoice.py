@@ -41,6 +41,9 @@ def send_to_zatca(sales_invoice_name):
         qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
         qrcode_url = create_qr_code_for_invoice(sales_invoice.name , qrcode)
         frappe.db.set_value("Sales Invoice", sales_invoice.name ,{"ksa_einv_qr" : qrcode_url})
+        manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
+        if not manual_submit : # Auto Submit
+            sales_invoice.submit()
 
     else :
         frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=  _("Rejected"), indicator="red" , alert=True)

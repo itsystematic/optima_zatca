@@ -8,6 +8,7 @@
   "enable_optima_zatca",
   "enable_cancel_invoice",
   "enable_delete_invoice",
+  "manual_submit",
   "column_break_cehc",
   "phase"
  ],
@@ -39,12 +40,18 @@
   {
    "fieldname": "column_break_cehc",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "manual_submit",
+   "fieldtype": "Check",
+   "label": "Manual Submit"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-24 10:32:21.369497",
+ "modified": "2025-02-27 14:29:30.781573",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Zatca Main Settings",
