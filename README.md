@@ -127,5 +127,5 @@ Optima ZATCA is licensed under the **GNU General Public License (v3)**. See the 
 
 Explore other powerful apps developed by the IT Systematic team:
 
-- **Optima Payment**: Streamline ERPNext payments with integrated PDC (post-dated Cheque), Company expenses, and LC (bank guarantee) management.  
-- **Optima HR**: Transform HR in Saudi Arabia with our innovative ERPNext-powered solution.  
+- **[Optima HR](https://github.com/itsystematic/optima_payment):**  Streamline ERPNext payments with integrated PDC (post-dated Cheque), Company expenses, and LC (bank guarantee) management.  
+- **[Optima HR](https://github.com/itsystematic/optima-hr):** Transform HR in Saudi Arabia with our innovative ERPNext-powered solution.  
