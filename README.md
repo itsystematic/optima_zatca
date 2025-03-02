@@ -61,7 +61,7 @@ Follow these steps to install Optima ZATCA on your ERPNext setup:
 
 1. Get the app:
    ```bash
-   bench get-app https://github.com/itsystematc/optima-zatca.git
+   bench get-app https://github.com/itsystematic/optima_zatca.git
    ```
 2. Setup requirements:
    ```bash
@@ -104,7 +104,7 @@ We offer comprehensive support to ensure you have the best experience with Optim
 
 ### **Issue Reporting**
 - Found a bug or need a new feature? Create an issue after checking existing ones:  
-  [GitHub Issues](https://github.com/itsystematic/optima-zatca/issues)
+  [GitHub Issues](https://github.com/itsystematic/optima_zatca/issues)
 
 ---
   
@@ -119,7 +119,7 @@ Guidelines
 
 ## 📜 License
 
-Optima ZATCA is licensed under the **GNU General Public License (v3)**. See the full license in the [LICENSE](https://github.com/itsystematic/optima-zatca/LICENSE) file.
+Optima ZATCA is licensed under the **GNU General Public License (v3)**. See the full license in the [LICENSE](https://github.com/itsystematic/optima_zatca/blob/version-15/LICENSE) file.
 
 ---
 
