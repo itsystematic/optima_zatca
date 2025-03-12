@@ -246,7 +246,7 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
                         validateTrigger="onSubmit"
                       >
                         <Input
-                          placeholder={i.name}
+                          placeholder={i.name === "Pincode" ? "Postal Code" : i.name}
                           maxLength={i.maxlength ?? undefined}
                         />
                       </Form.Item>
