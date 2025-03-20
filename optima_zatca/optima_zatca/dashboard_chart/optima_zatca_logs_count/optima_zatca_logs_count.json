@@ -1,0 +1,36 @@
+{
+ "chart_name": "Optima Zatca Logs Count",
+ "chart_type": "Report",
+ "creation": "2025-03-20 12:48:44.000167",
+ "custom_options": "{\"colors\": [\"#CBF7CD\", \"#F7CBCB\"]}",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{}",
+ "group_by_type": "Count",
+ "idx": 0,
+ "is_public": 0,
+ "is_standard": 1,
+ "modified": "2025-03-20 14:47:37.341919",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Optima Zatca Logs Count",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "report_name": "Zatca Logs",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Zatca Role"
+  }
+ ],
+ "time_interval": "Yearly",
+ "timeseries": 0,
+ "timespan": "Last Year",
+ "type": "Pie",
+ "use_report_chart": 1,
+ "x_field": "",
+ "y_axis": []
+}

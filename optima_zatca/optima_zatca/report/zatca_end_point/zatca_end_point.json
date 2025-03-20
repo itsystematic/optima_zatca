@@ -1,0 +1,30 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2025-03-20 14:25:15.769058",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letterhead": null,
+ "modified": "2025-03-20 14:41:51.724245",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Zatca End Point",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Optima Zatca Logs",
+ "report_name": "Zatca End Point",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Zatca Role"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "timeout": 0
+}

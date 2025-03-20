@@ -1,0 +1,42 @@
+{
+ "aggregate_function_based_on": "icv",
+ "based_on": "",
+ "chart_name": "Zatca End Point Count",
+ "chart_type": "Report",
+ "creation": "2025-03-20 14:33:01.315154",
+ "custom_options": "{\"colors\": [\"#EDF7CB\", \"#A6A5F2\"]}",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "document_type": "Optima Zatca Logs",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{}",
+ "group_by_type": "Count",
+ "idx": 0,
+ "is_public": 0,
+ "is_standard": 1,
+ "modified": "2025-03-20 14:44:47.350777",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Zatca End Point Count",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "parent_document_type": "",
+ "report_name": "Zatca End Point",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Zatca Role"
+  }
+ ],
+ "source": "",
+ "time_interval": "Yearly",
+ "timeseries": 0,
+ "timespan": "Last Year",
+ "type": "Pie",
+ "use_report_chart": 1,
+ "value_based_on": "",
+ "x_field": "",
+ "y_axis": []
+}
