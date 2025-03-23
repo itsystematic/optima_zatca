@@ -27,9 +27,9 @@ def sales_invoice_on_trash(doc , event) :
 
 def sales_invoice_on_submit(doc , event) :
 
-    enable_phase_one = frappe.db.get_single_value("Zatca Main Settings" , "phase") == "Phase One"
+    enable_phase_one = frappe.db.get_single_value("Zatca Main Settings" , "phase")
 
-    if not enable_phase_one  or doc.get("sent_to_zatca") == 1 : return 
+    if enable_phase_one  == "Phase One" or doc.get("sent_to_zatca") == 1 : return 
 
     if doc.clearance_or_reporting not in  ["REPORTED" ,"CLEARED"]:
         frappe.throw(_("Invoice Not Reported Yet") , title=_("Zatca Error"))
