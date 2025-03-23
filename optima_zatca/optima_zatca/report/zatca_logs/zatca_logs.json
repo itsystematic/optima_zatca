@@ -6,10 +6,10 @@
  "docstatus": 0,
  "doctype": "Report",
  "filters": [],
- "idx": 3,
+ "idx": 7,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2025-03-20 14:41:39.255700",
+ "modified": "2025-03-23 12:42:05.849642",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Zatca Logs",
@@ -21,10 +21,10 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "role": "Zatca Role"
+   "role": "System Manager"
   },
   {
-   "role": "System Manager"
+   "role": "Zatca Manager"
   }
  ],
  "timeout": 0

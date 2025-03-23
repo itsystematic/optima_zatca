@@ -22,7 +22,7 @@
  "is_hidden": 0,
  "label": "ZATCA",
  "links": [],
- "modified": "2025-03-20 14:48:35.559795",
+ "modified": "2025-03-23 12:40:17.638826",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "ZATCA",
@@ -36,7 +36,7 @@
    "role": "System Manager"
   },
   {
-   "role": "Zatca Role"
+   "role": "Zatca Manager"
   }
  ],
  "sequence_id": 28.0,

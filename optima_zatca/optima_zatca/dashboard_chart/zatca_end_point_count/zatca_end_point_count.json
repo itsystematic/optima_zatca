@@ -11,10 +11,10 @@
  "dynamic_filters_json": "{}",
  "filters_json": "{}",
  "group_by_type": "Count",
- "idx": 0,
+ "idx": 4,
  "is_public": 0,
  "is_standard": 1,
- "modified": "2025-03-20 14:44:47.350777",
+ "modified": "2025-03-23 12:41:00.111447",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Zatca End Point Count",
@@ -27,7 +27,7 @@
    "role": "System Manager"
   },
   {
-   "role": "Zatca Role"
+   "role": "Zatca Manager"
   }
  ],
  "source": "",
