@@ -495,9 +495,20 @@ def create_property_setter() :
         make_property_setter(setter , ignore_validate=False , is_system_generated=True)
 
 
-def add_zatca_role() :
-    if frappe.db.exists("Role" , "Zatca Role") :return
-    frappe.get_doc({
-        "doctype": "Role",
-        "role_name": "Zatca Role",
-    }).insert(ignore_permissions=True)  
+def add_zatca_role():
+    """
+    Add the ZATCA roles to the system.
+    """
+    roles_to_add = ["Zatca Role", "Zatca Manager"]
+    try:
+        for role in roles_to_add:
+            if not frappe.db.exists("Role", role):
+                frappe.get_doc({
+                    "doctype": "Role",
+                    "role_name": role,
+                }).insert(ignore_permissions=True)
+
+                secho(f"{role} created successfully")
+
+    except Exception as e:
+        secho(f"Error adding ZATCA roles: {str(e)}")
