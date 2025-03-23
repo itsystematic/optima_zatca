@@ -27,20 +27,19 @@ def sales_invoice_on_trash(doc , event) :
 
 def sales_invoice_on_submit(doc , event) :
 
-    enable_phase_one = frappe.db.get_single_value("Zatca Main Settings" , "phase")  == "Phase One"
+    # Check if Phase One is disabled and handle conditions
+    if frappe.db.get_single_value("Zatca Main Settings", "phase") != "Phase One":
+        if doc.get("sent_to_zatca") == 1:
+            return
+        if doc.clearance_or_reporting not in ["REPORTED", "CLEARED"]:
+            frappe.throw(_("Invoice Not Reported Yet"), title=_("Zatca Error"))
 
-    if not enable_phase_one and doc.get("sent_to_zatca") == 1 : return 
-
-    if not enable_phase_one and doc.clearance_or_reporting not in  ["REPORTED" ,"CLEARED"]:
-        frappe.throw(_("Invoice Not Reported Yet") , title=_("Zatca Error"))
-
-    region = get_region(doc.company)
-    if region not in ['Saudi Arabia']:
+    # Validate Saudi Arabia region
+    if get_region(doc.company) != 'Saudi Arabia':
         return
 
-    # Don't create QR Code if it already exists
-    qr_code = doc.get("ksa_einv_qr")
-    if qr_code and frappe.db.exists({"doctype": "File", "file_url": qr_code}):
+    # Skip if QR code already exists
+    if doc.ksa_einv_qr and frappe.db.exists("File", {"file_url": doc.ksa_einv_qr}):
         return
 
     tlv_array = []
