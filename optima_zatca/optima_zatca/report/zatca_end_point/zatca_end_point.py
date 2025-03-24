@@ -23,8 +23,8 @@ def execute(filters=None):
 	# SQL Query to fetch the data in one command
 	data = frappe.db.sql("""
 		SELECT
-			SUM(CASE WHEN api_endpoint = 'reporting' THEN 1 ELSE 0 END) AS reported,
-			SUM(CASE WHEN api_endpoint = 'cleared' THEN 1 ELSE 0 END) AS cleared
+			SUM(CASE WHEN api_endpoint IN ('reporting', 'reported') THEN 1 ELSE 0 END) AS reported,
+			SUM(CASE WHEN api_endpoint IN ('clearance','cleared') THEN 1 ELSE 0 END) AS cleared
 		FROM `tabOptima Zatca Logs`
 	""", as_dict=1)
 
