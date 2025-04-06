@@ -10,6 +10,7 @@ from optima_zatca.zatca.utils import (
 )
 
 from optima_zatca.zatca.demo import send_sample_sales_invoices
+from optima_zatca.zatca.keys import GenerateCSR
 
 
 
@@ -20,13 +21,21 @@ def add_company_to_zatca(name):
 
     settings = frappe.get_doc("Optima Zatca Setting" , name)
 
-    company_csr = create_company_csr(settings , company_details)
+    # company_csr = create_company_csr(settings , company_details)
 
+    keys = GenerateCSR(settings.get("company") , frappe.local.site)
+
+    private_key , public_key  ,  csr_key  = keys.read_files()
+
+
+    res = get_certificate(settings ,csr_key , company_details)
+
+    return res
     if settings.get("otp") and settings.get("check_csid") == 0 :
 
-        get_certificate(settings ,company_csr , company_details)
         saving_data_to_company(name , company_details)
         settings = frappe.get_doc("Optima Zatca Setting" , name)
+        
 
 
     if settings.get("check_csid") == 1 :
@@ -53,7 +62,8 @@ def add_company_to_zatca(name):
 
 def get_certificate(settings ,company_csr , company_details:dict) :
 
-    request_id , binary_security_token , secret  = get_zatca_csid(settings.name , settings.otp , company_csr )
+    res  = get_zatca_csid(settings.name , settings.otp , company_csr )
+    return res
     certificate = base64.b64decode(binary_security_token).decode("utf-8")
     authorization = make_auth_header_for_request(binary_security_token, secret )
 

@@ -28,7 +28,7 @@ def get_zatca_csid(setting:str, otp:str , csr:str) -> dict:
     
     res = response.json()
     
-    return res.get("requestID") , res.get("binarySecurityToken") , res.get("secret")
+    return res
         
 
 @frappe.whitelist()

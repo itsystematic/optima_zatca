@@ -48,16 +48,16 @@ def create_private_keys(company_details) -> str :
 # @frappe.whitelist(allow_guest=True)
 def create_company_csr(settings , company_details:dict):
 
-    if settings.get("check_csr") == 1 :
-        company_details.update({
-            "egs_serial_number" : settings.get("egs_serial_number") ,
-            "common_name" : settings.get("common_name") ,
-            "private_key" : settings.get('private_key') ,
-            "csr" : settings.get("csr") ,
-            "organization_name"  : settings.get("organization_name"),
-            "check_csr" : 1
-        })
-        return settings.get("csr")
+    # if settings.get("check_csr") == 1 :
+    #     company_details.update({
+    #         "egs_serial_number" : settings.get("egs_serial_number") ,
+    #         "common_name" : settings.get("common_name") ,
+    #         "private_key" : settings.get('private_key') ,
+    #         "csr" : settings.get("csr") ,
+    #         "organization_name"  : settings.get("organization_name"),
+    #         "check_csr" : 1
+    #     })
+    #     return settings.get("csr")
     
     company_name_in_arabic  , tax_id = get_company_info(settings.get("company")).values()
     common_name = str(frappe.generate_hash(length=15))
