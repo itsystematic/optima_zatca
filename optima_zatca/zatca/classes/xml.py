@@ -192,9 +192,7 @@ class ZatcaXml :
         )
         
         seller_crn.text = self.sales_invoice.get("company").get("ID")
-        print(self.sales_invoice.get("company").get("schemeID"))
         seller_crn.set("schemeID", self.sales_invoice.get("company").get("schemeID"))
-        print("*#"*20)
 
         # Fill Seller Street Name From Comapny Address address_line1
         seller_street_name = self.root.find(
