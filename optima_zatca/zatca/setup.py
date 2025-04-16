@@ -23,20 +23,20 @@ def add_company_to_zatca(name):
 
     # company_csr = create_company_csr(settings , company_details)
 
-    keys = GenerateCSR(settings.get("company") , frappe.local.site)
+    keys = GenerateCSR(settings.get("company") , frappe.local.site, **company_details)
+    
+    private_key ,public_key, csr_key  = keys.read_files()
+    
+    company_details = keys.get_company_details()
 
-    private_key , public_key  ,  csr_key  = keys.read_files()
-
-
-    res = get_certificate(settings ,csr_key , company_details)
-
-    return res
     if settings.get("otp") and settings.get("check_csid") == 0 :
+        
+        get_certificate(settings ,csr_key , company_details)
 
         saving_data_to_company(name , company_details)
-        settings = frappe.get_doc("Optima Zatca Setting" , name)
-        
 
+        settings = frappe.get_doc("Optima Zatca Setting" , name)
+    
 
     if settings.get("check_csid") == 1 :
         send_sample_sales_invoices(settings ,company_details)
@@ -46,6 +46,7 @@ def add_company_to_zatca(name):
         company_details.get("invoice_three", False) , company_details.get("invoice_four" , False) , 
         company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
     ]
+
     # This Not Applicable in SandBox 
 
     if settings.get("check_pcsid") == 0 and all(list_of_fields) :
@@ -62,8 +63,7 @@ def add_company_to_zatca(name):
 
 def get_certificate(settings ,company_csr , company_details:dict) :
 
-    res  = get_zatca_csid(settings.name , settings.otp , company_csr )
-    return res
+    request_id , binary_security_token , secret  = get_zatca_csid(settings.name , settings.otp , company_csr )
     certificate = base64.b64decode(binary_security_token).decode("utf-8")
     authorization = make_auth_header_for_request(binary_security_token, secret )
 

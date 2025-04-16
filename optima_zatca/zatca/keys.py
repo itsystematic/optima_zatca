@@ -7,7 +7,7 @@ import time
 import base64
 from frappe import _
 import re
-
+from optima_zatca.zatca.utils import generate_serial_number, get_company_info
 
 FIELDSDESCRIPTION = {
     "C" : "Country Code",
@@ -23,12 +23,13 @@ FIELDSDESCRIPTION = {
 }
 class GenerateCSR: 
     
-    def __init__(self, company, site=None ):
+    def __init__(self, company, site=None, **kwargs ):
         
         self.FIELDSMENDATOY = [ "CN" , "O" , "OU" , "SN" , "UID" , "title" , "businessCategory" , "registeredAddress" , "C" , "emailAddress" , "certificateTemplateName" ]
         
         self.site = site 
         self.company = company
+        self.company_details = kwargs
         self.create_csr_and_private_key()
             
 
@@ -136,7 +137,24 @@ businessCategory = Commercial"""
         
         return private_key , public_key , csr_key
     
-    
+    def get_company_details(self) :
+
+        private_key, public_key, csr_key = self.read_files()
+        serial_number = generate_serial_number(self.company)
+        common_name = str(frappe.generate_hash(length=15))
+        company_name_in_arabic  , tax_id = get_company_info(self.company).values()
+
+        self.company_details.update({
+            "private_key" : private_key,
+            "public_key" : public_key,
+            "csr" : csr_key,
+            "egs_serial_number" : serial_number,
+            "common_name" : common_name,
+            "organization_name"  : company_name_in_arabic,
+            "check_csr" : 1
+        })
+        
+        return self.company_details
     
     def make_process(self , command) :
         time.sleep(5)
