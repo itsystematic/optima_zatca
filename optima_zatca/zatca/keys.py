@@ -25,13 +25,30 @@ class GenerateCSR:
     
     def __init__(self, company, site=None, **kwargs ):
         
-        self.FIELDSMENDATOY = [ "CN" , "O" , "OU" , "SN" , "UID" , "title" , "businessCategory" , "registeredAddress" , "C" , "emailAddress" , "certificateTemplateName" ]
+        self.FIELDSMENDATOY = [ "common_name" , "organization_name" , "organization_unit_name" , "egs_serial_number" , "organization_identifier" , "invoice_type" , "industry" , "address" ]
         
         self.site = site 
         self.company = company
         self.company_details = kwargs
+        self.validate()
         self.create_csr_and_private_key()
             
+    def validate(self) :
+        self.check_of_fields_mendatory()
+        # self.check_serial_format()
+
+    def check_of_fields_mendatory(self) :
+        
+        for field in self.FIELDSMENDATOY :
+            if not self.company_details.get(field) :
+                frappe.throw(_("Please Fill the field '{0}' data in 'Comapny' Doc.").format(FIELDSDESCRIPTION.get(field)))
+
+    # def check_serial_format(self) :
+        
+    #     pattern = r'^\d+-[^|]+\|\d+-[^|]+\|\d+-[^|]+$'
+        
+    #     if not  re.match(pattern, self.company_details.get("SN")) :
+    #         frappe.throw(_("Error Format in Serial Number"))
 
     def get_path_name(self) :
         
@@ -60,7 +77,7 @@ certificateTemplateName = 1.3.6.1.4.1.311.20.2
 
 [req]
 default_bits 	= 2048
-emailAddress 	= test@gmail.com
+emailAddress 	= test@zatca.com
 req_extensions	= v3_req
 x509_extensions 	= v3_Ca
 prompt = no
@@ -71,9 +88,9 @@ utf8 = yes
 
 [ dn ]
 C= SA
-OU= شركة اي تي سيستمتك
-O= شركة اي تي سيستمتك
-CN= ISb4102873-1982-4dc1-85f9-e95d86fb32ef
+OU= {organization_unit_name}
+O= {organization_name}
+CN= {common_name}
 
 [ v3_req ]
 basicConstraints = CA:FALSE
@@ -85,11 +102,11 @@ subjectAltName = dirName:alt_names
 
 
 [alt_names]
-SN = 1-ISb4102873-1uy|2-ISb4102873-1nt|3-ISb4102873-1pu
-UID = 310094010300003
-title = 1100
-registeredAddress = it systematic-Billing
-businessCategory = Commercial"""
+SN = {egs_serial_number}
+UID = {organization_identifier}
+title = {invoice_type}
+registeredAddress = {address}
+businessCategory = {industry}""".format(**self.company_details)
         
         location = self.get_path_name()
         print(location)

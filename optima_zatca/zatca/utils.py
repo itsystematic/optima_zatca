@@ -297,3 +297,27 @@ def create_qr_code_for_invoice(invoice_id , qrcode_encode):
     })
     invoice_qrcode.save()
     return invoice_qrcode.file_url
+
+def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict :
+    
+    company = frappe.get_doc("Company", settings.get("company"))
+    key = ( company.get("abbr") or "TNT-" ) + str(uuid.uuid4())
+    
+    company_dict.update({
+        # "CN": company.get("common_name" , ''),
+        "common_name" :key,
+        "organization_name": settings.get("organization_name" , '') ,
+        "organization_unit_name": settings.get("organization_unit_name" , ''),
+        # "SN": settings.get("sn" , ''),
+        "egs_serial_number" : "1-{0}uy|2-{1}nt|3-{2}pu".format(key[:12],"ERPNEXT",key[:12]),
+        "organization_identifier": company.get("tax_id" , ''),
+        "invoice_type": settings.get("invoice_type" , ''),
+        "industry": settings.get("industry" , ''),
+        "address": settings.get("address" , ''),
+        # "C": frappe.get_doc("Country", settings.get("country")).code.upper(),
+        # "emailAddress" : settings.get("email" , 'test@zatca.com'),
+        # "certificateTemplateName" : "ZATCA-Code-Signing" if settings.get("api_endpoints" , '') == "production" else "PREZATCA-Code-Signing"
+    })
+    
+    
+    return company_dict

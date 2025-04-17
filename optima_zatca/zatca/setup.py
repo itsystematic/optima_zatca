@@ -6,7 +6,8 @@ from optima_zatca.zatca.api import get_zatca_csid , get_production_csid , renew_
 from optima_zatca.zatca.utils import (
     create_company_csr , 
     extract_details_from_certificate ,
-    make_auth_header_for_request 
+    make_auth_header_for_request ,
+    get_company_data_to_config
 )
 
 from optima_zatca.zatca.demo import send_sample_sales_invoices
@@ -23,7 +24,9 @@ def add_company_to_zatca(name):
 
     # company_csr = create_company_csr(settings , company_details)
 
-    keys = GenerateCSR(settings.get("company") , frappe.local.site, **company_details)
+    company_info = get_company_data_to_config(settings, company_details)
+
+    keys = GenerateCSR(settings.get("company") , frappe.local.site, **company_info)
     
     private_key ,public_key, csr_key  = keys.read_files()
     
