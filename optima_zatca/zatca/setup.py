@@ -3,8 +3,7 @@ import json
 import base64
 # from optima_zatca.zatca.validate import validate_company_address
 from optima_zatca.zatca.api import get_zatca_csid , get_production_csid , renew_production_csid
-from optima_zatca.zatca.utils import (
-    create_company_csr , 
+from optima_zatca.zatca.utils import ( 
     extract_details_from_certificate ,
     make_auth_header_for_request ,
     get_company_data_to_config

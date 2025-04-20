@@ -8,11 +8,9 @@ import hashlib
 import binascii
 from datetime import datetime
 from cryptography import x509
-from cryptography.hazmat._oid import NameOID
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.bindings._rust import ObjectIdentifier
 from cryptography.hazmat.primitives import serialization, hashes
 
 
@@ -44,81 +42,6 @@ def create_private_keys(company_details) -> str :
     )
 
     return private_key_pem
-
-# @frappe.whitelist(allow_guest=True)
-def create_company_csr(settings , company_details:dict):
-
-    # if settings.get("check_csr") == 1 :
-    #     company_details.update({
-    #         "egs_serial_number" : settings.get("egs_serial_number") ,
-    #         "common_name" : settings.get("common_name") ,
-    #         "private_key" : settings.get('private_key') ,
-    #         "csr" : settings.get("csr") ,
-    #         "organization_name"  : settings.get("organization_name"),
-    #         "check_csr" : 1
-    #     })
-    #     return settings.get("csr")
-    
-    company_name_in_arabic  , tax_id = get_company_info(settings.get("company")).values()
-    common_name = str(frappe.generate_hash(length=15))
-    serial_number = generate_serial_number(company_name_in_arabic)
-
-    company_details["egs_serial_number"] = serial_number
-    company_details['common_name'] = common_name
-
-    if settings.api_endpoints == "sandbox":
-        customoid = encode_customoid("TESTZATCA-Code-Signing")
-    elif settings.api_endpoints == "simulation":
-        customoid = encode_customoid("PREZATCA-Code-Signing")
-    else:
-        customoid = encode_customoid("ZATCA-Code-Signing")
-    
-    private_key_pem = create_private_keys(company_details)
-
-    company_details["private_key"] = private_key_pem.decode('utf-8')
-
-    private_key = serialization.load_pem_private_key(private_key_pem, password=None, backend=default_backend())
-
-    custom_oid_string = "1.3.6.1.4.1.311.20.2"
-    oid = ObjectIdentifier(custom_oid_string)
-    custom_extension = x509.extensions.UnrecognizedExtension(oid, customoid) 
-    
-    dn = x509.Name([
-        x509.NameAttribute(NameOID.COUNTRY_NAME, "SA"),
-        x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, settings.organization_unit_name),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, company_name_in_arabic),
-        x509.NameAttribute(NameOID.COMMON_NAME, common_name),
-    ])
-    
-    alt_name = x509.SubjectAlternativeName([
-        x509.DirectoryName(x509.Name([
-            x509.NameAttribute(NameOID.SURNAME, serial_number),
-            x509.NameAttribute(NameOID.USER_ID, tax_id),
-            x509.NameAttribute(NameOID.TITLE, "1100"),
-            x509.NameAttribute(ObjectIdentifier("2.5.4.26"), settings.location),
-            x509.NameAttribute(NameOID.BUSINESS_CATEGORY, settings.industry),
-        ])),
-    ])
-    
-    csr = (
-        x509.CertificateSigningRequestBuilder()
-        .subject_name(dn)
-        .add_extension(custom_extension, critical=False)
-        .add_extension(alt_name, critical=False)
-        .sign(private_key, hashes.SHA256(), backend=default_backend())
-    )
-    mycsr = csr.public_bytes(serialization.Encoding.PEM)
-    base64csr = base64.b64encode(mycsr)
-    encoded_string = base64csr.decode('utf-8').strip()
-
-    company_details["csr"] = encoded_string
-    company_details["organization_name"] = company_name_in_arabic
-    company_details["check_csr"] = 1
-
-    frappe.publish_realtime("zatca" , {"message" :"ZATCA CSR Generated", "commercial_register_name": settings.get('commercial_register') ,"indicator" : "green" , "percentage" : 10})
-
-    return encoded_string
-
 
 def encode_customoid(custom_string):
     # Create an encoder
