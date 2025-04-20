@@ -22,11 +22,9 @@ def add_company_to_zatca(name):
 
     settings = frappe.get_doc("Optima Zatca Setting" , name)
 
-    # company_csr = create_company_csr(settings , company_details)
-
     company_info = get_company_data_to_config(settings, company_details)
 
-    keys = GenerateCSR(settings.get("company") , frappe.local.site, **company_info)
+    keys = GenerateCSR(settings, frappe.local.site, **company_info)
     
     private_key ,public_key, csr_key  = keys.read_files()
     

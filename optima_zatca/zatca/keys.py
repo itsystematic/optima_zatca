@@ -23,32 +23,40 @@ FIELDSDESCRIPTION = {
 }
 class GenerateCSR: 
     
-    def __init__(self, company, site=None, **kwargs ):
+    def __init__(self, settings, site=None, **kwargs ):
         
-        self.FIELDSMENDATOY = [ "common_name" , "organization_name" , "organization_unit_name" , "egs_serial_number" , "organization_identifier" , "invoice_type" , "industry" , "address" ]
+        self.FIELDSMENDATOY = [ "certificateTemplateName", "emailAddress" , "common_name" , "organization_name" , "organization_unit_name" , "egs_serial_number" , "organization_identifier" , "invoice_type" , "industry" , "address" ]
         
         self.site = site 
-        self.company = company
+        self.company = settings.get("company")
+        self.settings = settings
         self.company_details = kwargs
         self.validate()
         self.create_csr_and_private_key()
             
     def validate(self) :
+        self.check_company_info()
         self.check_of_fields_mendatory()
-        # self.check_serial_format()
 
     def check_of_fields_mendatory(self) :
         
         for field in self.FIELDSMENDATOY :
             if not self.company_details.get(field) :
-                frappe.throw(_("Please Fill the field '{0}' data in 'Comapny' Doc.").format(FIELDSDESCRIPTION.get(field)))
+                frappe.throw(_("Please Fill the field '{0}' data.").format(FIELDSDESCRIPTION.get(field)))
 
-    # def check_serial_format(self) :
-        
-    #     pattern = r'^\d+-[^|]+\|\d+-[^|]+\|\d+-[^|]+$'
-        
-    #     if not  re.match(pattern, self.company_details.get("SN")) :
-    #         frappe.throw(_("Error Format in Serial Number"))
+    def check_company_info(self) :
+        if self.settings.api_endpoints == "sandbox" :
+            certificateTemplateName = "TESTZATCA-Code-Signing"
+        elif self.settings.api_endpoints == "simulation" :
+            certificateTemplateName = "PREZATCA-Code-Signing"
+        else :
+            certificateTemplateName = "ZATCA-Code-Signing"
+
+
+        self.company_details.update({
+            "emailAddress": self.company_details.get("emailAddress") or "test@zatca.com",
+            "certificateTemplateName": certificateTemplateName,
+        })
 
     def get_path_name(self) :
         
@@ -77,7 +85,7 @@ certificateTemplateName = 1.3.6.1.4.1.311.20.2
 
 [req]
 default_bits 	= 2048
-emailAddress 	= test@zatca.com
+emailAddress 	= {emailAddress}
 req_extensions	= v3_req
 x509_extensions 	= v3_Ca
 prompt = no
@@ -97,7 +105,7 @@ basicConstraints = CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment
 
 [req_ext]
-certificateTemplateName = ASN1:PRINTABLESTRING:PREZATCA-Code-Signing
+certificateTemplateName = ASN1:PRINTABLESTRING:{certificateTemplateName}
 subjectAltName = dirName:alt_names
 
 
@@ -171,6 +179,10 @@ businessCategory = {industry}""".format(**self.company_details)
             "check_csr" : 1
         })
         
+        # these were required for creating config file only, if tried to company details in optima zatca setting will throw error
+        del self.company_details["emailAddress"] 
+        del self.company_details["certificateTemplateName"]
+
         return self.company_details
     
     def make_process(self , command) :

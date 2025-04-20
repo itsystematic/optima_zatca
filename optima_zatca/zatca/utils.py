@@ -143,15 +143,21 @@ def extract_details_from_certificate(certificate , company_details:dict):
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     ).decode()  
 
+    isser_name = get_isser_name(cert.issuer.rfc4514_string()) # return with comma + space separated string
+
     certificate_hash = hashlib.sha256(certificate.encode()).hexdigest()
     certificate_encoded = base64.b64encode(certificate_hash.encode())
 
     company_details['certificate_hash'] = certificate_encoded.decode()
     company_details["public_key"] = public_key_pem
-    company_details["issuer_name"] = cert.issuer.rfc4514_string()
+    company_details["issuer_name"] = isser_name
     company_details['serial_number509'] = cert.serial_number
     company_details["signature"] = binascii.hexlify(cert.signature).decode("utf-8")
 
+def get_isser_name(certificate: str) -> str:
+    """ Function To Get Issuer Name in comma + space separated string """
+    parts = certificate.split(',')
+    return ', '.join(parts)
 
 def load_private_key(string_private_key):
     """ Function Return private key After Serialization """
