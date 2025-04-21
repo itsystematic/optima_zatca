@@ -1,3 +1,4 @@
+import binascii
 import frappe
 import json
 import base64
@@ -16,94 +17,179 @@ from optima_zatca.zatca.keys import GenerateCSR
 
 @frappe.whitelist()
 def add_company_to_zatca(name):
+    try:
+        settings = frappe.get_doc("Optima Zatca Setting", name)
+        company_details = {}
 
-    company_details = {}
+        # 1. Generate CSR and Keys
+        print("Generating CSR and Keys...")
+        company_info = get_company_data_to_config(settings, company_details)
+        csr_generator = GenerateCSR(settings, frappe.local.site, **company_info)
+        company_details = csr_generator.get_generated_details()
+        print("CSR and Keys generated successfully.")
 
-    settings = frappe.get_doc("Optima Zatca Setting" , name)
+        # 2. Handle Certificate Generation
+        print("Handling Certificate Generation...")
+        if settings.otp and not settings.check_csid:
+            get_certificate(settings, company_details["csr"], company_details)
+            saving_data_to_company(name, company_details)
+            settings.reload()
+            print("Certificate Generation completed.")
 
-    company_info = get_company_data_to_config(settings, company_details)
+        # 3. Send Sample Invoices if required
+        print("Sending Sample Invoices...")
+        if settings.check_csid:
+            send_sample_sales_invoices(settings, company_details)
+            print("Sample Invoices sent successfully.")
 
-    keys = GenerateCSR(settings, frappe.local.site, **company_info)
-    
-    private_key ,public_key, csr_key  = keys.read_files()
-    
-    company_details = keys.get_company_details()
+        # 4. Handle Production Certificate
+        print("Handling Production Certificate...")
+        if not settings.check_pcsid and all_invoice_fields_present(company_details):
+            get_production_certificate(settings, company_details)
+            print("Production Certificate handled.")
 
-    if settings.get("otp") and settings.get("check_csid") == 0 :
+        # 5. Final Save and Notification
+        print("Final Save and Notification...")
+        saving_data_to_company(name, company_details)
+        notify_completion_status(settings, company_details)
+        print("Data saved and Notification sent.")
+
+    except Exception as e:
+        handle_zatca_error(settings, e)
+        frappe.log_error(f"ZATCA Setup Failed for {name}", str(e))
+        print(f"Error occurred: {e}")
+
+def all_invoice_fields_present(company_details):
+    invoice_fields = [f"invoice_{i}" for i in range(1, 7)]
+    return all(company_details.get(field) for field in invoice_fields)
+
+def notify_completion_status(settings, company_details):
+    status = {
+        "message": "ZATCA Setup Completed" if company_details.get("check_pcsid") else "ZATCA Setup Partially Completed",
+        "commercial_register_name": settings.commercial_register,
+        "indicator": "green" if company_details.get("check_pcsid") else "yellow",
+        "complete": True,
+        "percentage": 100 if company_details.get("check_pcsid") else 50
+    }
+    frappe.publish_realtime("zatca", status)
+
+def handle_zatca_error(settings, error):
+    error_status = {
+        "message": f"ZATCA Setup Failed: {str(error)}",
+        "commercial_register_name": settings.commercial_register,
+        "indicator": "red",
+        "complete": True,
+        "percentage": 0
+    }
+    frappe.publish_realtime("zatca", error_status)
+
+def get_certificate(settings: frappe._dict, company_csr: str, company_details: dict) -> None:
+    """Handles initial certificate generation from ZATCA CSID"""
+    print("settings ==>>", settings)
+    try:
+        print("Getting initial certificate from ZATCA...")
+        response = get_zatca_csid(
+            settings.name,
+            settings.otp,
+            company_csr
+        )
+        request_id, binary_token, secret = response
+
+        print("Processing certificate data...")
+        certificate = _decode_certificate(binary_token)
+        auth_header = _create_auth_header(binary_token, secret)
+
+        print("Updating company details...")
+        company_details.update({
+            "binary_security_token": binary_token,
+            "request_id": request_id,
+            "secret": secret,
+            "certificate": certificate,
+            "authorization": auth_header,
+            "check_csid": 1
+        })
+
+        print("Extracting and validating certificate details...")
+        extract_details_from_certificate(certificate, company_details)
         
-        get_certificate(settings ,csr_key , company_details)
+        print("Notifying success...")
+        _publish_status(settings, "CSID Created Successfully", "green", 20)
 
-        saving_data_to_company(name , company_details)
+    except Exception as e:
+        _handle_cert_error(settings, e, "CSID creation")
+        raise
 
-        settings = frappe.get_doc("Optima Zatca Setting" , name)
-    
+def get_production_certificate(settings: frappe._dict, company_details: dict) -> None:
+    """Handles production certificate generation from ZATCA"""
+    try:
+        # 1. Get production certificate from ZATCA
+        response = get_production_csid(
+            settings.name,
+            settings.binary_security_token,
+            settings.secret,
+            settings.request_id
+        )
 
-    if settings.get("check_csid") == 1 :
-        send_sample_sales_invoices(settings ,company_details)
+        # 2. Process production certificate data
+        binary_token = response.get("binarySecurityToken")
+        certificate = _decode_certificate(binary_token)
+        auth_header = _create_auth_header(binary_token, response.get("secret"))
 
-    list_of_fields = [
-        company_details.get("invoice_one" , False),company_details.get("invoice_two" , False), 
-        company_details.get("invoice_three", False) , company_details.get("invoice_four" , False) , 
-        company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
-    ]
+        # 3. Update company details
+        company_details.update({
+            "binary_security_token": binary_token,
+            "production_request_id": response.get("requestID"),
+            "secret": response.get("secret"),
+            "certificate": certificate,
+            "token_type": response.get("tokenType"),
+            "authorization": auth_header,
+            "check_pcsid": 1
+        })
 
-    # This Not Applicable in SandBox 
+        # 4. Extract and validate certificate details
+        extract_details_from_certificate(certificate, company_details)
+        
+        # 5. Notify success
+        _publish_status(settings, "Production CSID Created Successfully", "green", 95)
 
-    if settings.get("check_pcsid") == 0 and all(list_of_fields) :
-        get_production_certificate(settings , company_details ) 
+    except Exception as e:
+        _handle_cert_error(settings, e, "production CSID creation")
+        raise
 
+# Helper functions
+def _decode_certificate(b64_string: str) -> str:
+    """Decode base64 encoded certificate string"""
+    try:
+        return base64.b64decode(b64_string).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError) as e:
+        frappe.throw(frappe._("Invalid certificate format: {0}").format(str(e)))
 
-    saving_data_to_company(name , company_details)
+def _create_auth_header(token: str, secret: str) -> str:
+    """Generate authorization header for ZATCA API"""
+    return make_auth_header_for_request(token, secret)
 
-    if settings.get("check_pcsid") == 1 or company_details.get("check_pcsid") == 1 :
-        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Completed", "commercial_register_name": settings.get('commercial_register') ,"indicator" : "green" ,  "complete" : True  , "percentage" : 100})
-    else :
-        frappe.publish_realtime("zatca" , {"message" :"Zatca Setup Failed", "commercial_register_name": settings.get('commercial_register') , "indicator" : "red" ,  "complete" : True , "percentage" : 50})
-
-
-def get_certificate(settings ,company_csr , company_details:dict) :
-
-    request_id , binary_security_token , secret  = get_zatca_csid(settings.name , settings.otp , company_csr )
-    certificate = base64.b64decode(binary_security_token).decode("utf-8")
-    authorization = make_auth_header_for_request(binary_security_token, secret )
-
-    company_details.update({
-        "binary_security_token" : binary_security_token ,
-        "request_id" : request_id ,
-        "secret" : secret,
-        "certificate" : certificate,
-        "authorization" : authorization ,
-        "check_csid" : 1,
+def _publish_status(settings: frappe._dict, message: str, indicator: str, percentage: int) -> None:
+    """Publish realtime status updates"""
+    frappe.publish_realtime("zatca", {
+        "message": message,
+        "commercial_register_name": settings.commercial_register,
+        "indicator": indicator,
+        "percentage": percentage,
+        "complete": percentage == 100
     })
 
-    extract_details_from_certificate(certificate , company_details)
-    frappe.publish_realtime("zatca" , {"message" :"CSID Created Successfully", "commercial_register_name": settings.get('commercial_register'), "indicator" : "green" , "percentage" : 20})
+def _handle_cert_error(settings: frappe._dict, error: Exception, stage: str) -> None:
+    """Handle certificate generation errors"""
+    error_msg = frappe._("Failed during {0}: {1}").format(stage, str(error))
+    frappe.log_error(title="ZATCA Certificate Error", message=error_msg)
+    _publish_status(settings, error_msg, "red", 0)
 
 
-def get_production_certificate(settings , company_details:dict ) :
-    response = get_production_csid(
-        settings,
-        settings.get("binary_security_token") ,
-        settings.get("secret") ,
-        settings.get("request_id")
-    )
-    
-    certificate = base64.b64decode(response.get("binarySecurityToken")).decode("utf-8")
-    authorization = make_auth_header_for_request(response.get("binarySecurityToken"), response.get("secret"))
-        
-    company_details.update({
-        "binary_security_token" : response.get("binarySecurityToken")  ,
-        "production_request_id" : response.get("requestID") ,
-        "secret" : response.get("secret"),
-        "certificate" : certificate,
-        "token_type" : response.get("tokenType"),
-        "authorization" : authorization,
-        "check_pcsid" : 1 ,
-    })
 
-    extract_details_from_certificate(certificate , company_details)
-    frappe.publish_realtime("zatca" , {"message" :"Production CSID Created Successfully", "indicator" : "green" , "percentage" : 95})
-    
+
+
+
+    # ----------------------------------------------------------------
 
 
 @frappe.whitelist()

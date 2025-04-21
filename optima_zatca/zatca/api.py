@@ -8,7 +8,7 @@ from optima_zatca.zatca.request import make_post_request , make_get_request , ma
 
 @frappe.whitelist()
 def get_zatca_csid(setting:str, otp:str , csr:str) -> dict:
-
+    print("Sending request to get ZATCA CSID...")
     response = make_post_request(
         setting= setting ,
         endpoint= "compliance" ,
@@ -28,6 +28,7 @@ def get_zatca_csid(setting:str, otp:str , csr:str) -> dict:
     
     res = response.json()
     
+    print("ZATCA CSID request successful. Processing response...")
     return res.get("requestID") , res.get("binarySecurityToken") , res.get("secret")
         
 
