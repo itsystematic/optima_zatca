@@ -6,30 +6,27 @@ from optima_zatca.zatca.classes.validate import validate_register_data
 from optima_zatca.zatca.request import make_post_request , make_get_request , make_patch_request
 
 
-@frappe.whitelist()
-def get_zatca_csid(setting:str, otp:str , csr:str) -> dict:
-    print("Sending request to get ZATCA CSID...")
+def get_zatca_csid(setting: str, otp: str, csr: str) -> dict:
+    
     response = make_post_request(
-        setting= setting ,
-        endpoint= "compliance" ,
+        setting=setting,
+        endpoint="compliance",
         header={
             "OTP": otp,
             "Accept-Version": "V2",
             "Content-Type": "application/json",
-            "accept" : "application/json",
+            "accept": "application/json",
         },
         json_data={
             "csr": csr,
         }
     )
-
-    if not  response.status_code == 200 :
+    
+    if response.status_code != 200:
         frappe.throw(str(response.text))
     
     res = response.json()
-    
-    print("ZATCA CSID request successful. Processing response...")
-    return res.get("requestID") , res.get("binarySecurityToken") , res.get("secret")
+    return res.get("requestID"), res.get("binarySecurityToken"), res.get("secret")
         
 
 @frappe.whitelist()

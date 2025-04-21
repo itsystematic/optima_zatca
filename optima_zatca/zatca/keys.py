@@ -93,26 +93,27 @@ class GenerateCSR:
 
     def create_config_file(self):
         config = f"""oid_section = OIDS
-[OIDS]
+[ OIDS ]
 certificateTemplateName = 1.3.6.1.4.1.311.20.2
 
 [req]
-default_bits = 2048
-emailAddress = {self.company_details['emailAddress']}
-req_extensions = v3_req
-x509_extensions = v3_Ca
+default_bits 	= 2048
+emailAddress 	= test@zatca.com
+req_extensions	= v3_req
+x509_extensions 	= v3_Ca
 prompt = no
 default_md = sha256
+req_extensions = req_ext
 distinguished_name = dn
 utf8 = yes
 
-[dn]
-C = SA
-OU = {self.company_details['organization_unit_name']}
-O = {self.company_details['organization_name']}
-CN = {self.company_details['common_name']}
+[ dn ]
+C= SA
+OU= {self.company_details['organization_unit_name']}
+O= {self.company_details['organization_name']}
+CN= {self.company_details['common_name']}
 
-[v3_req]
+[ v3_req ]
 basicConstraints = CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment
 

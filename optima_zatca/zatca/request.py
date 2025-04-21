@@ -41,18 +41,13 @@ def get_base_url(setting:str=None , endpoint:str=None) -> str :
 
 
 def make_post_request(setting, endpoint, header, json_data):
-    print("Making a POST request...")
     
     url = get_base_url(setting, endpoint)
-    print(f"URL: {url}")
-    
     try:
         response = requests.post(url, headers=header, json=json_data)
-        print(f"Response: {response}")
         return response
         
     except Exception as e:
-        print(f"Error: {e}")
         frappe.throw(_("Zatca Is Not Responding Please Try Again Later"))
 
 

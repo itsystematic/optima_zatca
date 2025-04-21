@@ -22,42 +22,41 @@ def add_company_to_zatca(name):
         company_details = {}
 
         # 1. Generate CSR and Keys
-        print("Generating CSR and Keys...")
+
         company_info = get_company_data_to_config(settings, company_details)
         csr_generator = GenerateCSR(settings, frappe.local.site, **company_info)
         company_details = csr_generator.get_generated_details()
-        print("CSR and Keys generated successfully.")
+        
 
         # 2. Handle Certificate Generation
-        print("Handling Certificate Generation...")
         if settings.otp and not settings.check_csid:
             get_certificate(settings, company_details["csr"], company_details)
             saving_data_to_company(name, company_details)
             settings.reload()
-            print("Certificate Generation completed.")
 
         # 3. Send Sample Invoices if required
-        print("Sending Sample Invoices...")
         if settings.check_csid:
             send_sample_sales_invoices(settings, company_details)
-            print("Sample Invoices sent successfully.")
+
 
         # 4. Handle Production Certificate
-        print("Handling Production Certificate...")
-        if not settings.check_pcsid and all_invoice_fields_present(company_details):
+        list_of_fields = [
+            company_details.get("invoice_one" , False),company_details.get("invoice_two" , False), 
+            company_details.get("invoice_three", False) , company_details.get("invoice_four" , False) , 
+            company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
+        ]
+        if not settings.check_pcsid and all(list_of_fields):
             get_production_certificate(settings, company_details)
-            print("Production Certificate handled.")
 
         # 5. Final Save and Notification
-        print("Final Save and Notification...")
+
         saving_data_to_company(name, company_details)
         notify_completion_status(settings, company_details)
-        print("Data saved and Notification sent.")
+        
 
     except Exception as e:
         handle_zatca_error(settings, e)
         frappe.log_error(f"ZATCA Setup Failed for {name}", str(e))
-        print(f"Error occurred: {e}")
 
 def all_invoice_fields_present(company_details):
     invoice_fields = [f"invoice_{i}" for i in range(1, 7)]
@@ -85,9 +84,7 @@ def handle_zatca_error(settings, error):
 
 def get_certificate(settings: frappe._dict, company_csr: str, company_details: dict) -> None:
     """Handles initial certificate generation from ZATCA CSID"""
-    print("settings ==>>", settings)
     try:
-        print("Getting initial certificate from ZATCA...")
         response = get_zatca_csid(
             settings.name,
             settings.otp,
@@ -95,11 +92,9 @@ def get_certificate(settings: frappe._dict, company_csr: str, company_details: d
         )
         request_id, binary_token, secret = response
 
-        print("Processing certificate data...")
         certificate = _decode_certificate(binary_token)
         auth_header = _create_auth_header(binary_token, secret)
 
-        print("Updating company details...")
         company_details.update({
             "binary_security_token": binary_token,
             "request_id": request_id,
@@ -109,10 +104,8 @@ def get_certificate(settings: frappe._dict, company_csr: str, company_details: d
             "check_csid": 1
         })
 
-        print("Extracting and validating certificate details...")
         extract_details_from_certificate(certificate, company_details)
         
-        print("Notifying success...")
         _publish_status(settings, "CSID Created Successfully", "green", 20)
 
     except Exception as e:
@@ -122,7 +115,6 @@ def get_certificate(settings: frappe._dict, company_csr: str, company_details: d
 def get_production_certificate(settings: frappe._dict, company_details: dict) -> None:
     """Handles production certificate generation from ZATCA"""
     try:
-        # 1. Get production certificate from ZATCA
         response = get_production_csid(
             settings.name,
             settings.binary_security_token,
@@ -130,12 +122,12 @@ def get_production_certificate(settings: frappe._dict, company_details: dict) ->
             settings.request_id
         )
 
-        # 2. Process production certificate data
         binary_token = response.get("binarySecurityToken")
+
         certificate = _decode_certificate(binary_token)
+
         auth_header = _create_auth_header(binary_token, response.get("secret"))
 
-        # 3. Update company details
         company_details.update({
             "binary_security_token": binary_token,
             "production_request_id": response.get("requestID"),
@@ -146,10 +138,8 @@ def get_production_certificate(settings: frappe._dict, company_details: dict) ->
             "check_pcsid": 1
         })
 
-        # 4. Extract and validate certificate details
         extract_details_from_certificate(certificate, company_details)
-        
-        # 5. Notify success
+
         _publish_status(settings, "Production CSID Created Successfully", "green", 95)
 
     except Exception as e:

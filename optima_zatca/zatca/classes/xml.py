@@ -61,9 +61,8 @@ class ZatcaXml :
 
         self.__final_invoice(signature_encoded)
 
-        print("before xml created")
         create_xml_file(self.tree , self.sales_invoice.get("ID") , self.sales_invoice.get("UUID"))
-        print("after xml created")
+
 
     def create_xml_tree(self) :
 
@@ -297,7 +296,6 @@ class ZatcaXml :
             },
         )
         seller_name.text = self.sales_invoice.get("company").get("RegistrationName")
-        print("finishes")
 
     def add_customer_information(self):
         """

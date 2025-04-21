@@ -21,8 +21,6 @@ DEMO_INVOICE  = {
 
 def send_sample_sales_invoices(settings ,company_details) :
 
-    print("*"*25)
-    print('starting send_sample_sales_invoices')
     PIH = "gSNPKCpoXIlSvtP2p5JwDXLOaEWfkevQ2pbtnkosqjE="
         
     with open(get_app_path("optima_zatca") + "/zatca/Samples/Invoices/sales_invoices.json" , "r" ) as file : 
@@ -44,7 +42,7 @@ def send_sample_sales_invoices(settings ,company_details) :
             sales_invoice.update(invoice_info)
             
             zatca_xml = ZatcaXml(sales_invoice)
-            print("after zatca xml")
+
             invoice_encoded = base64.b64encode(etree.tostring(zatca_xml.root, encoding="utf-8")).decode("utf-8")
 
             response = make_invoice_request(
