@@ -1,6 +1,6 @@
 import { useAppDispatch } from "@/app/hooks";
 import { setCurrentPage } from "@/data/currentPage";
-import { Button, Carousel, Flex, Typography } from "antd";
+import { Button, Carousel, Flex } from "antd";
 import React, { useRef, useState } from "react";
 
 const Tutorial: React.FC = () => {
@@ -41,9 +41,9 @@ const Tutorial: React.FC = () => {
 
   const handleNext = (skip? : boolean)=> {
     if (skip) {
+      setCurrentIndex(items.length - 1);
       //@ts-ignore
       carouselRef.current?.goTo(items.length - 1);
-      setCurrentIndex(items.length - 1);
       return;
     }
     if (isLastIndex) {
@@ -57,7 +57,7 @@ const Tutorial: React.FC = () => {
   };
 
 
-  const handleAfterChange = (current: number) => {
+  const handleBeforeChange = (current: number) => {
     setCurrentIndex(current);
   };
 
@@ -70,7 +70,7 @@ const Tutorial: React.FC = () => {
 
   return (
     <Flex vertical justify="space-between" className="h-[96%]">
-      <Carousel afterChange={handleAfterChange} ref={carouselRef}>
+      <Carousel beforeChange={handleBeforeChange} ref={carouselRef}>
         {items.map((item, index) => (
           <div key={index}>
             <img src={item.src} alt={item.id.toString()} />
