@@ -162,7 +162,7 @@ const Step3 = () => {
         >
           <Checkbox className="text-lg text-[#483f61] font-light" onChange={onChange} checked={checked}>
             {__(
-              "By Checking This Box I Fully Acknowledge This Data Is Correct And Any Errors Is On My Responsibility"
+              "By Checking this Box I Fully Acknowledge that this Data is Correct and any Input Mistakes is on my Responsibility"
             )}
           </Checkbox>
           <Button

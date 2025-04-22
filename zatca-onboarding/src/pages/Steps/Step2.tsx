@@ -1,9 +1,8 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import {
-  generateCommercials,
   LHSinputs,
   RHSinputs,
-  top_inputs,
+  top_inputs
 } from "@/constants";
 import { setStep } from "@/data/currentStep";
 import { addCommercial } from "@/data/dataSlice";
@@ -137,21 +136,6 @@ const Step2: React.FC<Props> = ({ edit, commercial }) => {
       form.setFieldsValue(commercial);
     }
 
-    // if (isDev) {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.key === "v") {
-        const commercials = generateCommercials();
-        commercials.map((c) => {
-          dispatch(addCommercial(c));
-        });
-      }
-    };
-
-    addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      removeEventListener("keydown", handleKeyDown);
-    };
     // }
   }, []);
 

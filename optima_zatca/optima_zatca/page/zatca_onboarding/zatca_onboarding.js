@@ -8,6 +8,7 @@ frappe.pages['zatca-onboarding'].on_page_load = function (wrapper) {
     $('#body').append('<div id="root"></div>');
     $('header').remove();
     $('.content.page-container').remove()
+    $('link[href^="/assets/optima/css/css-rtl/translations_ar_eg.css"]').remove();
 
     frappe.require('/assets/optima_zatca/zatca-onboarding/zatca_onboarding.js', () => {
         console.log('React online');
