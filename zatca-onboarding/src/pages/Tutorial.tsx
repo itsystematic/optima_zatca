@@ -39,25 +39,28 @@ const Tutorial: React.FC = () => {
     },
   ];
 
-  const handleNext = (skip? : boolean)=> {
+  const handleNext = (skip?: boolean) => {
+    const lastIndex = items.length - 1;
+
     if (skip) {
-      setCurrentIndex(items.length - 1);
+      setCurrentIndex(lastIndex);
       //@ts-ignore
-      carouselRef.current?.goTo(items.length - 1);
+      carouselRef.current?.goTo(lastIndex);
       return;
     }
-    if (isLastIndex) {
+
+    if (currentIndex >= lastIndex) {
       onOk();
       return;
     }
-    if (carouselRef.current) {    
-      // @ts-ignore
-      carouselRef.current.next();
-    }
+
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
+    //@ts-ignore
+    carouselRef.current?.goTo(nextIndex);
   };
 
-
-  const handleBeforeChange = (current: number) => {
+  const handleAfterChange = (current: number) => {
     setCurrentIndex(current);
   };
 
@@ -65,28 +68,32 @@ const Tutorial: React.FC = () => {
     dispatch(setCurrentPage(2));
   };
 
-  const isLastIndex = currentIndex === items.length - 1;
-
+  const isLast = currentIndex === items.length - 1;
 
   return (
     <Flex vertical justify="space-between" className="h-[96%]">
-      <Carousel beforeChange={handleBeforeChange} ref={carouselRef}>
+      <Carousel afterChange={handleAfterChange} ref={carouselRef}>
         {items.map((item, index) => (
           <div key={index}>
             <img src={item.src} alt={item.id.toString()} />
           </div>
         ))}
       </Carousel>
-      {/* Center the button vertically and horizontally */}
+
       <div className="flex flex-col gap-2 bg-transparent justify-center items-center">
         <Button
-        type="primary"
-          className={` ${isLastIndex && 'bg-[#39b54a]'} w-1/3 p-6 font-bold`}
+          type="primary"
+          className={`${isLast ? "bg-[#39b54a]" : ""} w-1/3 p-6 font-bold`}
           onClick={() => handleNext()}
         >
-          {isLastIndex ? __("Get Started") : __("Next")}
+          {isLast ? __("Get Started") : __("Next")}
         </Button>
-        <Button type="default" className={`${isLastIndex && 'hidden'} w-1/3 p-6 font-bold`} onClick={() => handleNext(true)}>
+
+        <Button
+          type="default"
+          className={`${isLast ? "hidden" : ""} w-1/3 p-6 font-bold`}
+          onClick={() => handleNext(true)}
+        >
           {__("Skip")}
         </Button>
       </div>
