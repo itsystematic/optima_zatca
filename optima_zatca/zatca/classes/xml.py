@@ -34,9 +34,11 @@ class ZatcaXml :
         
         
     def create_zatca_xml(self) :
+        # print(self.sales_invoice).get('company').get("ID")
         
         self.create_xml_tree()
         self.add_general_data()
+
         self.add_supplier_information()
         self.add_customer_information()
         # self.add_allowance_charges()
@@ -60,7 +62,8 @@ class ZatcaXml :
         self.__final_invoice(signature_encoded)
 
         create_xml_file(self.tree , self.sales_invoice.get("ID") , self.sales_invoice.get("UUID"))
-        
+
+
     def create_xml_tree(self) :
 
         place = "simplified_invoice.xml" if self.sales_invoice.get("InvoiceStatus") == "Simplified" else "standard_invoice.xml"
@@ -180,7 +183,6 @@ class ZatcaXml :
         
         
     def add_supplier_information(self) :
-        
         seller_crn = self.root.find(".//cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID",
             namespaces={
                 "cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
@@ -294,7 +296,6 @@ class ZatcaXml :
             },
         )
         seller_name.text = self.sales_invoice.get("company").get("RegistrationName")
-
 
     def add_customer_information(self):
         """

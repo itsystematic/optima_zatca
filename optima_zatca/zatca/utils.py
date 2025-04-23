@@ -8,11 +8,9 @@ import hashlib
 import binascii
 from datetime import datetime
 from cryptography import x509
-from cryptography.hazmat._oid import NameOID
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.bindings._rust import ObjectIdentifier
 from cryptography.hazmat.primitives import serialization, hashes
 
 
@@ -45,81 +43,6 @@ def create_private_keys(company_details) -> str :
 
     return private_key_pem
 
-# @frappe.whitelist(allow_guest=True)
-def create_company_csr(settings , company_details:dict):
-
-    if settings.get("check_csr") == 1 :
-        company_details.update({
-            "egs_serial_number" : settings.get("egs_serial_number") ,
-            "common_name" : settings.get("common_name") ,
-            "private_key" : settings.get('private_key') ,
-            "csr" : settings.get("csr") ,
-            "organization_name"  : settings.get("organization_name"),
-            "check_csr" : 1
-        })
-        return settings.get("csr")
-    
-    company_name_in_arabic  , tax_id = get_company_info(settings.get("company")).values()
-    common_name = str(frappe.generate_hash(length=15))
-    serial_number = generate_serial_number(company_name_in_arabic)
-
-    company_details["egs_serial_number"] = serial_number
-    company_details['common_name'] = common_name
-
-    if settings.api_endpoints == "sandbox":
-        customoid = encode_customoid("TESTZATCA-Code-Signing")
-    elif settings.api_endpoints == "simulation":
-        customoid = encode_customoid("PREZATCA-Code-Signing")
-    else:
-        customoid = encode_customoid("ZATCA-Code-Signing")
-    
-    private_key_pem = create_private_keys(company_details)
-
-    company_details["private_key"] = private_key_pem.decode('utf-8')
-
-    private_key = serialization.load_pem_private_key(private_key_pem, password=None, backend=default_backend())
-
-    custom_oid_string = "1.3.6.1.4.1.311.20.2"
-    oid = ObjectIdentifier(custom_oid_string)
-    custom_extension = x509.extensions.UnrecognizedExtension(oid, customoid) 
-    
-    dn = x509.Name([
-        x509.NameAttribute(NameOID.COUNTRY_NAME, "SA"),
-        x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, settings.organization_unit_name),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, company_name_in_arabic),
-        x509.NameAttribute(NameOID.COMMON_NAME, common_name),
-    ])
-    
-    alt_name = x509.SubjectAlternativeName([
-        x509.DirectoryName(x509.Name([
-            x509.NameAttribute(NameOID.SURNAME, serial_number),
-            x509.NameAttribute(NameOID.USER_ID, tax_id),
-            x509.NameAttribute(NameOID.TITLE, "1100"),
-            x509.NameAttribute(ObjectIdentifier("2.5.4.26"), settings.location),
-            x509.NameAttribute(NameOID.BUSINESS_CATEGORY, settings.industry),
-        ])),
-    ])
-    
-    csr = (
-        x509.CertificateSigningRequestBuilder()
-        .subject_name(dn)
-        .add_extension(custom_extension, critical=False)
-        .add_extension(alt_name, critical=False)
-        .sign(private_key, hashes.SHA256(), backend=default_backend())
-    )
-    mycsr = csr.public_bytes(serialization.Encoding.PEM)
-    base64csr = base64.b64encode(mycsr)
-    encoded_string = base64csr.decode('utf-8').strip()
-
-    company_details["csr"] = encoded_string
-    company_details["organization_name"] = company_name_in_arabic
-    company_details["check_csr"] = 1
-
-    frappe.publish_realtime("zatca" , {"message" :"ZATCA CSR Generated", "commercial_register_name": settings.get('commercial_register') ,"indicator" : "green" , "percentage" : 10})
-
-    return encoded_string
-
-
 def encode_customoid(custom_string):
     # Create an encoder
     encoder = asn1.Encoder()
@@ -143,15 +66,21 @@ def extract_details_from_certificate(certificate , company_details:dict):
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     ).decode()  
 
+    isser_name = get_isser_name(cert.issuer.rfc4514_string()) # return with comma + space separated string
+
     certificate_hash = hashlib.sha256(certificate.encode()).hexdigest()
     certificate_encoded = base64.b64encode(certificate_hash.encode())
 
     company_details['certificate_hash'] = certificate_encoded.decode()
     company_details["public_key"] = public_key_pem
-    company_details["issuer_name"] = cert.issuer.rfc4514_string()
+    company_details["issuer_name"] = isser_name
     company_details['serial_number509'] = cert.serial_number
     company_details["signature"] = binascii.hexlify(cert.signature).decode("utf-8")
 
+def get_isser_name(certificate: str) -> str:
+    """ Function To Get Issuer Name in comma + space separated string """
+    parts = certificate.split(',')
+    return ', '.join(parts)
 
 def load_private_key(string_private_key):
     """ Function Return private key After Serialization """
@@ -297,3 +226,27 @@ def create_qr_code_for_invoice(invoice_id , qrcode_encode):
     })
     invoice_qrcode.save()
     return invoice_qrcode.file_url
+
+def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict :
+    
+    company = frappe.get_doc("Company", settings.get("company"))
+    key = ( company.get("abbr") or "TNT-" ) + str(uuid.uuid4())
+    
+    company_dict.update({
+        # "CN": company.get("common_name" , ''),
+        "common_name" :key,
+        "organization_name": settings.get("organization_name" , '') ,
+        "organization_unit_name": settings.get("organization_unit_name" , ''),
+        # "SN": settings.get("sn" , ''),
+        "egs_serial_number" : "1-{0}uy|2-{1}nt|3-{2}pu".format(key[:12],"ERPNEXT",key[:12]),
+        "organization_identifier": company.get("tax_id" , ''),
+        "invoice_type": settings.get("invoice_type" , ''),
+        "industry": settings.get("industry" , ''),
+        "address": settings.get("address" , ''),
+        # "C": frappe.get_doc("Country", settings.get("country")).code.upper(),
+        # "emailAddress" : settings.get("email" , 'test@zatca.com'),
+        # "certificateTemplateName" : "ZATCA-Code-Signing" if settings.get("api_endpoints" , '') == "production" else "PREZATCA-Code-Signing"
+    })
+    
+    
+    return company_dict

@@ -36,6 +36,7 @@ def send_sample_sales_invoices(settings ,company_details) :
                 company_details[DEMO_INVOICE.get(f"{idx}")] = True
                 continue
 
+
             sales_invoice['PIH'] = PIH
             sales_invoice.update(company_info)
             sales_invoice.update(invoice_info)

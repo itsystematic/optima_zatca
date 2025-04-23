@@ -40,15 +40,14 @@ def get_base_url(setting:str=None , endpoint:str=None) -> str :
     return BASEURL.get(environment).get(endpoint)
 
 
-def make_post_request(setting,endpoint , header , json_data):
+def make_post_request(setting, endpoint, header, json_data):
     
-    url = get_base_url(setting , endpoint)
-    
-    try : 
-        response = requests.post(url , headers=header , json=json_data)
+    url = get_base_url(setting, endpoint)
+    try:
+        response = requests.post(url, headers=header, json=json_data)
         return response
         
-    except :
+    except Exception as e:
         frappe.throw(_("Zatca Is Not Responding Please Try Again Later"))
 
 
