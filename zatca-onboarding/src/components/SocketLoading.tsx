@@ -2,75 +2,75 @@ import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { setCurrentPage } from "@/data/currentPage";
 import { ReloadOutlined } from "@ant-design/icons";
 import { Button, Flex, Progress } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const SocketLoading = () => {
   const [realTimeData, setRealTimeData] = useState<any>({});
-  const dataState = useAppSelector((state) => {
-    return {
-      ...state.dataReducer,
-      commercial_register: state.dataReducer.commercial_register.filter(
-        (i) => !i.phase
-      ),
-    };
-  });
-  const [error, setError] = useState<boolean>();
+  const [error, setError] = useState<boolean>(false);
+  const [failedCommercial, setFailedCommercial] = useState<any>(null);
   const dispatch = useAppDispatch();
-  
-  const totalCrCount = dataState.commercial_register.filter(
-    (c) => !c.phase
-  ).length;
+
+  const dataState = useAppSelector((state) => ({
+    ...state.dataReducer,
+    commercial_register: state.dataReducer.commercial_register.filter((i) => !i.phase),
+  }));
+
+  const totalCrCount = dataState.commercial_register.length;
 
   const completedCrCount = dataState.commercial_register.filter((cr) => {
     const crData = realTimeData[cr.commercial_register_number];
-    return crData?.complete && crData?.indicator === "green"; // Completed CR
+    return crData?.complete && crData?.indicator === "green";
   }).length;
-  
-  const currentCommercial = dataState.commercial_register.find((cr) => {
-    const crData = realTimeData[cr.commercial_register_number];
-    return crData && !crData.complete; // Ensure we're finding CRs that are in progress
-  });
+
+  const currentCommercial = useMemo(() => {
+    return dataState.commercial_register.find((cr) => {
+      const crData = realTimeData[cr.commercial_register_number];
+      return crData && !crData.complete;
+    });
+  }, [realTimeData, dataState.commercial_register]);
 
   const currentPercentage = currentCommercial
     ? realTimeData[currentCommercial.commercial_register_number]?.percentage
-    : 0; // If no CR is found, set default to 0
+    : 0;
 
   const remainingCrCount = totalCrCount - completedCrCount;
 
-  const isError = (cr: any) => {
-    const data = realTimeData[cr.commercial_register_number];
-    if (data && data.complete && data.indicator === "red") {
-      frappe.realtime.off("zatca");
-      setError(true);
-      return;
-    }
-    setError(false);
-  };
-
   const handleRetry = async () => {
     setError(false);
-    ActivateIO();
+    setFailedCommercial(null);
     await frappe.call({
       method: "optima_zatca.zatca.api.register_company",
       args: dataState,
     });
   };
 
-  const ActivateIO = () => {
-    frappe.realtime.on("zatca", (data: any) => {
-      console.log(data);
-      if (data.commercial_register_name) {
-        setRealTimeData((prevData: any) => ({
-          ...prevData,
-          [data.commercial_register_name]: data,
-        }));
-      }
-    });
-  };
-
   useEffect(() => {
     if (isDev) return;
-    ActivateIO();
+
+    frappe.realtime.on("zatca", (data: any) => {
+      console.log(data);
+
+      if (data.commercial_register_name) {
+        setRealTimeData((prevData: any) => {
+          const updated = {
+            ...prevData,
+            [data.commercial_register_name]: data,
+          };
+
+          const cr = dataState.commercial_register.find(
+            (cr) => cr.commercial_register_number === data.commercial_register_name
+          );
+
+          if (cr && data.indicator === "red") {
+            setError(true);
+            setFailedCommercial(cr); // store failed CR
+          }
+
+          return updated;
+        });
+      }
+    });
+
     const apiCall = async () => {
       try {
         if (isDev) {
@@ -82,19 +82,20 @@ const SocketLoading = () => {
           args: dataState,
         });
       } catch (err) {
+        console.log("API Error:", err);
         setError(true);
       }
     };
 
     apiCall();
+
+    return () => frappe.realtime.off("zatca");
   }, []);
 
   useEffect(() => {
     if (!remainingCrCount) {
       if (completedCrCount === totalCrCount) {
         dispatch(setCurrentPage(200));
-      } else {
-        isError(currentCommercial);
       }
     }
   }, [remainingCrCount]);
@@ -108,7 +109,7 @@ const SocketLoading = () => {
         className="h-full w-full"
         vertical
       >
-        {/* Single Progress Bar */}
+        {/* Progress Bar */}
         <Progress
           status={
             completedCrCount === totalCrCount
@@ -118,7 +119,7 @@ const SocketLoading = () => {
               : "exception"
           }
           className="text-[10px] w-full text-[#f3f3f3]"
-          percent={currentPercentage} // Overall progress
+          percent={currentPercentage}
           percentPosition={{ align: "center", type: "inner" }}
           size={{ height: 50 }}
           strokeColor="#483f61"
@@ -126,10 +127,12 @@ const SocketLoading = () => {
             remainingCrCount > 0
               ? dataState.commercial_register[completedCrCount]
                   .commercial_register_name
-              : "Successfully integerated with Zatca..."
+              : "Successfully integrated with ZATCA..."
           }
         />
-        {currentCommercial && error ? (
+
+        {/* Retry Button */}
+        {failedCommercial && error ? (
           <div className="my-2">
             <Button onClick={handleRetry} className="bg-[#f3f3f3]">
               Try Again
@@ -137,8 +140,9 @@ const SocketLoading = () => {
             </Button>
           </div>
         ) : null}
-        {/* Summary: Total, Completed, Remaining CRs */}
       </Flex>
+
+      {/* Summary */}
       <div className="w-full flex justify-center">
         <div className="bg-[#483f61] w-fit text-[#f3f3f3] font-bold flex justify-center items-center gap-8 p-5 rounded-md">
           <p className="text-lg">

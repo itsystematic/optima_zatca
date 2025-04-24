@@ -66,7 +66,7 @@ def notify_completion_status(settings, company_details):
     status = {
         "message": "ZATCA Setup Completed" if company_details.get("check_pcsid") else "ZATCA Setup Partially Completed",
         "commercial_register_name": settings.commercial_register,
-        "indicator": "green" if company_details.get("check_pcsid") else "yellow",
+        "indicator": "green" if company_details.get("check_pcsid") else "red",
         "complete": True,
         "percentage": 100 if company_details.get("check_pcsid") else 50
     }
@@ -297,8 +297,9 @@ def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_regist
         "industry" : "Commercial" ,
         "address" : company_address ,
         "invoice_type" : "1100" ,
+        "phases": "Phase 2",
         "otp" : kwargs.get("otp") or "12356",
-        "api_endpoints" : kwargs.get("api_endpoints")
+        "api_endpoints" : "simulation",
     }).insert(ignore_if_duplicate=True , ignore_permissions=True)
 
     return settings.name

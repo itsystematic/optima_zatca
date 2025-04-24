@@ -131,8 +131,6 @@ const Step3 = () => {
   }, []);
 
   useEffect(() => {
-
-    console.log(innerWidth);
       if (1366 < innerWidth && innerWidth < 1600) {
       setLapTop(true);
       return
