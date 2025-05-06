@@ -136,7 +136,29 @@ frappe.ui.form.on("Sales Invoice" , {
         btn.click(() => {
             frappe.msgprint('You have NO Permission for send to Zatca , Please Try to Connect with your Manager')
         })
-    }
+    },
+
+    // Advance Payment
+    sales_invoice_type(frm) {
+        if (frm.doc.sales_invoice_type === "Elementary Advance Payment") {
+            // Clear existing items
+            frm.clear_table("items");
+            
+            // Add advance payment item
+            frm.add_child("items", {
+                item_code: "Advance Payment",
+                item_name: "Advance Payment",
+                uom: "Nos",
+                qty: 1,
+                rate: 0  // Default to 0, user must enter amount
+            });
+            
+            // Disable stock updates
+            frm.set_value("update_stock", 0);
+            
+            frm.refresh_field("items");
+        }
+    },
 })
 
 

@@ -4,3 +4,4 @@
 
 [post_model_sync]
 optima_zatca.patches.v15.create_zatca_additoinal_role
+optima_zatca.patches.v15.create_advance_payment_fields
