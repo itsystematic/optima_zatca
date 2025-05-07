@@ -128,7 +128,7 @@ class ZatcaInvoiceValidate :
             sales_invoice (dict): Sales Invoice Data
 
         Raises:
-            frappe.ValidationError: If Sales Invoice Type is not Elementary Advance Payment 
+            frappe.throw: If Sales Invoice Type is not Elementary Advance Payment 
                                     or Advance Payment Item is not in Items List
         """
         if self.sales_invoice.get("sales_invoice_type") != "Elementary Advance Payment":
