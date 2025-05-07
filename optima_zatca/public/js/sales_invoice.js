@@ -138,28 +138,112 @@ frappe.ui.form.on("Sales Invoice" , {
         })
     },
 
-    // Advance Payment
+    // Advance Payment ********
     sales_invoice_type(frm) {
-        if (frm.doc.sales_invoice_type === "Elementary Advance Payment") {
-            // Clear existing items
-            frm.clear_table("items");
-            
-            // Add advance payment item
-            frm.add_child("items", {
-                item_code: "Advance Payment",
-                item_name: "Advance Payment",
-                uom: "Nos",
-                qty: 1,
-                rate: 0  // Default to 0, user must enter amount
-            });
-            
-            // Disable stock updates
-            frm.set_value("update_stock", 0);
-            
-            frm.refresh_field("items");
+        if (frm.doc.sales_invoice_type == "Elementary Advance Payment") {
+            handleAdvancePaymentInvoice(frm);
+        } else {
+            handleStandardInvoice(frm);
         }
-    },
+    }
+
 })
+
+// Advance Payment Handler
+function handleAdvancePaymentInvoice(frm) {
+    clearChildTables(frm);
+    
+    const item_row = frm.add_child("items", {
+        item_code: "advance payment",
+        qty: 1
+    });
+
+    fetchAdvancePaymentItemDetails(frm, item_row).then(() => {
+        frm.set_value("update_stock", 0);
+        refreshFormFields(frm);
+    });
+}
+
+// Standard Invoice Handler
+function handleStandardInvoice(frm) {
+    clearChildTables(frm);
+    resetStockSettings(frm);
+    refreshFormFields(frm);
+}
+
+// Core Functions
+function fetchAdvancePaymentItemDetails(frm, item_row) {
+    return new Promise((resolve) => {
+        frappe.call({
+            method: "erpnext.stock.get_item_details.get_item_details",
+            args: {
+                doc: frm.doc,
+                args: {
+                    item_code: "advance payment",
+                    set_warehouse: frm.doc.set_warehouse,
+                    customer: frm.doc.customer || frm.doc.party_name,
+                    quotation_to: frm.doc.quotation_to,
+                    supplier: frm.doc.supplier,
+                    currency: frm.doc.currency,
+                    is_internal_supplier: frm.doc.is_internal_supplier,
+                    is_internal_customer: frm.doc.is_internal_customer,
+                    conversion_rate: frm.doc.conversion_rate,
+                    price_list: frm.doc.selling_price_list || frm.doc.buying_price_list,
+                    price_list_currency: frm.doc.price_list_currency,
+                    plc_conversion_rate: frm.doc.plc_conversion_rate,
+                    company: frm.doc.company,
+                    order_type: frm.doc.order_type,
+                    is_pos: cint(frm.doc.is_pos),
+                    is_return: cint(frm.doc.is_return),
+                    is_subcontracted: frm.doc.is_subcontracted,
+                    ignore_pricing_rule: frm.doc.ignore_pricing_rule,
+                    doctype: frm.doc.doctype,
+                    name: frm.doc.name,
+                    qty: frm.doc.qty || 1,
+                    uom: frm.doc.uom,
+                    pos_profile: cint(frm.doc.is_pos) ? frm.doc.pos_profile : "",
+                    tax_category: frm.doc.tax_category,
+                    child_doctype: frm.doc.doctype + " Item",
+                    is_old_subcontracting_flow: frm.doc.is_old_subcontracting_flow,
+                }
+            },
+            callback: (r) => {
+                Object.assign(item_row, r.message);
+                item_row.rate = 0;
+                triggerTaxRefresh(frm, item_row);
+                resolve();
+            }
+        });
+    });
+}
+
+function clearChildTables(frm) {
+    // Clear data but maintain field structure
+    frm.clear_table("items");
+    frm.clear_table("taxes");
+    
+    // Reset calculated fields
+    frm.set_value("total", 0);
+    frm.set_value("net_total", 0);
+    frm.set_value("grand_total", 0);
+    frm.set_value("outstanding_amount", 0);
+    frm.set_value("total_taxes_and_charges", 0);
+}
+
+function resetStockSettings(frm) {
+    frm.set_value("update_stock", 1);
+}
+
+function refreshFormFields(frm) {
+    ["items", "taxes", "total", "grand_total"].forEach(field => {
+        frm.refresh_field(field);
+    });
+}
+
+function triggerTaxRefresh(frm, item_row) {
+    frm.script_manager.trigger("item_code", item_row.doctype, item_row.name);
+}
+// End of Advance Payment ********
 
 
 frappe.ui.form.on("Sales Invoice Item" , {
