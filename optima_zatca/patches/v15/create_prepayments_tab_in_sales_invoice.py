@@ -26,7 +26,7 @@ def create_prepayments_tab_in_sales_invoice():
                 "fieldname" : "previous_sales_invoice",
                 "fieldtype" : "Link",
                 "label" : "Previous Sales Invoice",
-                "insert_after" : "prepayments",
+                "insert_after" : "prepayments_tab",
             },
             {
                 "fieldname" : "prepayments",
