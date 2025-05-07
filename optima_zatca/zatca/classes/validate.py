@@ -26,6 +26,7 @@ class ZatcaInvoiceValidate :
         self.validate_credit_or_debit_invoice()
         self.validate_items_fields()
         self.validate_customer_info()
+        self.validate_advance_payment()
 
         
     def validate_sales_invoice_sender(self) :
@@ -119,6 +120,23 @@ class ZatcaInvoiceValidate :
             if country_code in ["sa" , "SA"] :
                 validate_tax_id_in_saudia_arabia(self.customer_info.get("tax_id"))
                 validate_commercial_register(self.customer_info.get("registration_type"),self.customer_info.get("registration_value"))
+
+    def validate_advance_payment(self) -> None:
+        """Validate Sales Invoice Elementary Advance Payment
+
+        Args:
+            sales_invoice (dict): Sales Invoice Data
+
+        Raises:
+            frappe.ValidationError: If Sales Invoice Type is not Elementary Advance Payment 
+                                    or Advance Payment Item is not in Items List
+        """
+        if self.sales_invoice.get("sales_invoice_type") != "Elementary Advance Payment":
+            return
+
+        items = self.sales_invoice.get("items")
+        if len(items) != 1 or items[0].get("item_code") != "Advance Payment" or items[0].get("qty") != 1:
+            frappe.throw(title=_("Avance Payment Error"), msg=_("Elementary Advance Payment Must Have One Item with Advance Payment Item and Quantity 1"))
 
 
 def validate_commercial_register(registration_type,registration_value) :
