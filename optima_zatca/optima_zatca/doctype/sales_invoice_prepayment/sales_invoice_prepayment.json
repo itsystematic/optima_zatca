@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "creation": "2025-05-07 14:55:02.190000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_invoice",
+  "net_amount",
+  "grand_amount"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "reference_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Reference Invoice",
+   "no_copy": 1,
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "net_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Net amount",
+   "no_copy": 1,
+   "print_width": "120px",
+   "read_only": 1,
+   "width": "120px"
+  },
+  {
+   "columns": 2,
+   "fieldname": "grand_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Grand amount",
+   "no_copy": 1,
+   "print_width": "120px",
+   "read_only": 1,
+   "width": "120px"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-07 15:03:12.321714",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Sales Invoice Prepayment",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
