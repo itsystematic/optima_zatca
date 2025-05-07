@@ -17,7 +17,7 @@ def create_prepayments_tab_in_sales_invoice():
     custom_fields = {
         "Sales Invoice": [
             {
-                "fieldname" : "prepayments",
+                "fieldname" : "prepayments_tab",
                 "fieldtype" : "Tab Break",
                 "label" : "Prepayments",
                 "insert_after" : "Connections",
