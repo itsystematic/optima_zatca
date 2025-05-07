@@ -152,54 +152,52 @@ class ZatcaInvoiceData :
         })
         
         
-    def add_type_of_invoice(self) :
-        
-        InvoiceTypeCodeName , InvoiceTypeCode , InvoiceStatus , InvoiceSubStatus , ClearanceStatus = "" , "" , "" , "" , ""
+    def add_type_of_invoice(self):
+        """
+        Set the type of invoice based on the customer type and other settings.
 
-        if self.customer_info.get("customer_type") == "Company" :
-            
-            InvoiceTypeCodeName , InvoiceStatus  , ClearanceStatus =  "0100000" , "Standard" , "1"
-                
-        elif self.customer_info.get("customer_type") == "Individual" :
-            
-            InvoiceTypeCodeName , InvoiceStatus , ClearanceStatus=  "0200000" , "Simplified" , "0"
+        The type of invoice is determined by the customer type, whether the invoice is a return or debit note, and the company settings.
+        """
+        sales_invoice_type = self.sales_invoice.get("sales_invoice_type")
+        customer_type = self.customer_info.get("customer_type")
+        is_company = customer_type == "Company"
+        is_individual = customer_type == "Individual"
+        is_return = self.sales_invoice.get("is_return") == 1
+        is_debit_note = self.sales_invoice.get("is_debit_note") == 1
+        is_foreign_customer = self.customer_country_code != "SA"
+        check_pcsid = self.company_settings.get("check_pcsid") == 1
+        check_csid = self.company_settings.get("check_csid") == 1
+        check_csr = self.company_settings.get("check_csr") == 1
 
+        # The invoice type code is determined by the customer type and whether the customer is foreign or not
+        InvoiceTypeCodeName = "0200100" if is_foreign_customer and is_individual else "0100100" if is_foreign_customer else "0100000" if is_company else "0200000"
+        # The invoice status is determined by the customer type
+        InvoiceStatus = "Standard" if is_company else "Simplified"
+        # The clearance status is determined by the invoice status
+        ClearanceStatus = "1" if is_company else "0"
+        # The invoice sub status is determined by whether the invoice is a return or debit note
+        InvoiceSubStatus, InvoiceTypeCode = ("credit", "381") if is_return else ("debit", "383") if is_debit_note else ("normal", "388")
 
-        if self.customer_country_code != "SA" :
-            InvoiceTypeCodeName = "0200100" if self.customer_info.get("customer_type") == "Individual" else "0100100"
-            
-        if self.sales_invoice.get("is_return") == 1 :
-            InvoiceSubStatus = "credit"
-            InvoiceTypeCode = "381"
-            
-        elif self.sales_invoice.get("is_debit_note") == 1 :
-            InvoiceSubStatus = "debit"
-            InvoiceTypeCode = "383"
-            
-        else :
-            InvoiceSubStatus = "normal"
-            InvoiceTypeCode = "388"
-            
-        if self.company_settings.get("check_pcsid") == 1 and self.company_settings.get("check_csid") == 1:
-            
-            EndPoint = "clearance"  if InvoiceStatus == "Standard" else "reporting"
-            
-        elif self.company_settings.get("check_csid") == 1 and self.company_settings.get("check_csr") == 1 :
-            
-            EndPoint = "complainace_checks"
-            
-        pih , icv = get_invoice_counter_and_pih(EndPoint ,self.company_settings)
-        
+        # override the invoice type code if Advance Payment is selected
+        if sales_invoice_type in ["Elementary Advance Payment", "Advance Payment"]:
+            InvoiceTypeCode = "386"
+        # The endpoint is determined by the company settings
+        EndPoint = "clearance" if check_pcsid and check_csid and InvoiceStatus == "Standard" else "reporting" if check_pcsid and check_csid else "complainace_checks" if check_csid and check_csr else ""
+
+        # Get the invoice counter and pih from the database
+        pih, icv = get_invoice_counter_and_pih(EndPoint, self.company_settings)
+
+        # Update the invoice with the type of invoice, status, and endpoint
         self.zatca_invoice.update({
-            "InvoiceTypeCode" : InvoiceTypeCode ,
-            "InvoiceTypeCodeName" : InvoiceTypeCodeName ,
-            "InvoiceStatus" : InvoiceStatus ,
-            "InvoiceSubStatus" : InvoiceSubStatus ,
-            "Clearance-Status" : ClearanceStatus ,
-            "EndPoint" : EndPoint ,
-            "Environment" : self.company_settings.get("api_endpoints"),
-            "InvoiceCounter" : str(icv) ,
-            "PIH" : str(pih) ,
+            "InvoiceTypeCode": InvoiceTypeCode,
+            "InvoiceTypeCodeName": InvoiceTypeCodeName,
+            "InvoiceStatus": InvoiceStatus,
+            "InvoiceSubStatus": InvoiceSubStatus,
+            "Clearance-Status": ClearanceStatus,
+            "EndPoint": EndPoint,
+            "Environment": self.company_settings.get("api_endpoints"),
+            "InvoiceCounter": str(icv),
+            "PIH": str(pih),
         })
 
     def add_other_info_about_invoice(self) :
