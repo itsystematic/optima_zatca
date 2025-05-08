@@ -252,11 +252,43 @@ class ZatcaInvoiceData :
             self.add_invoice_item(item , invoice_line )
             self.add_tax_cateogry(item , tax_subtotals)
 
+        # Advance Payments
+        if self.sales_invoice.get("sales_invoice_type") == "Adjust Payment":
+            # go through prepaymentss
+            self.prepayment_idx = len(self.sales_invoice.get("items")) + 1 # start from last item index
+
+            for prepayment_invoice in self.sales_invoice.get("prepayments_invcoies"):
+                self.add_prepayment_item(prepayment_invoice , invoice_line)
         
         self.zatca_invoice['items'] = invoice_line
         self.zatca_invoice["TaxSubtotal"] = list(tax_subtotals.values())
 
 
+    def add_prepayment_item(self, prepayment_invoice: dict, invoice_line: list):
+
+        prepayment_row = {
+            "ID": str(self.prepayment_idx),
+            "InvoicedQuantity": str(0.000000),
+            "LineExtensionAmount": str(0.00),
+            "TaxAmount": str(0), # ********** to be reviewed
+            "RoundingAmount": str(0),
+            "TaxableAmount": str(0), # ********** to be calculated
+            "Name": str, # ******* to be reviewed
+            "TaxCategory": str(), #******* to be calculated
+            "Percent": str(0), # ****** to be calculated
+            "TaxScheme": "VAT",
+            "PriceAmount": str(0.00),
+            "PrepaymentID": prepayment_invoice.get("name"), # ***
+            "PrepaymentUUID": prepayment_invoice.get("uuid"), # ***
+            "PrepaymentIssueDate": prepayment_invoice.get("IssueDate"), # ***
+            "PrepaymentIssueTime": prepayment_invoice.get("IssueTime"), # ***
+            "PrepaymentTypeCode": "386" # **
+
+            # To figure out what item should be put, The Default one "Advance Payment" or the acutall sold one
+        }
+
+        self.prepayment_idx += 1 # keep increasing counter for next prepayment
+        invoice_line.append(prepayment_row)
 
     def add_invoice_item(self, item:dict , invoice_line:list) :
 
