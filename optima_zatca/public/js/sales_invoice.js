@@ -155,7 +155,9 @@ function handleAdvancePaymentInvoice(frm) {
     
     const item_row = frm.add_child("items", {
         item_code: "advance payment",
-        qty: 1
+        qty: 1,
+        conversion_factor: 1.0,
+        price_list_rate : 0,
     });
 
     fetchAdvancePaymentItemDetails(frm, item_row).then(() => {
@@ -210,6 +212,7 @@ function fetchAdvancePaymentItemDetails(frm, item_row) {
             callback: (r) => {
                 Object.assign(item_row, r.message);
                 item_row.rate = 0;
+                item_row.price_list_rate = 0;
                 triggerTaxRefresh(frm, item_row);
                 resolve();
             }
