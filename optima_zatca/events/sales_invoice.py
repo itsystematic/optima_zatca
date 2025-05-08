@@ -133,3 +133,21 @@ def sales_invoice_on_submit(doc , event) :
     # assigning to document
     doc.db_set('ksa_einv_qr', _file.file_url)
     doc.notify_update()
+
+def validate_advance_payment(doc,event):
+        """Validate Sales Invoice Elementary Advance Payment
+
+        Args:
+            sales_invoice (dict): Sales Invoice Data
+
+        Raises:
+            frappe.throw: If Sales Invoice Type is not Elementary Advance Payment 
+                                    or Advance Payment Item is not in Items List
+        """
+        if doc.get("sales_invoice_type") != "Elementary Advance Payment":
+            return
+
+        items = doc.get("items")
+        if len(items) != 1 or items[0].get("item_code") != "Advance Payment" or items[0].get("qty") != 1:
+            frappe.throw(title=_("Avance Payment Error"), msg=_("Elementary Advance Payment Must Have One Item with Advance Payment Item and Quantity 1"))
+

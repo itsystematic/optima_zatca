@@ -147,9 +147,10 @@ after_app_install = "optima_zatca.utils.after_app_install"
 
 doc_events = {
 	"Sales Invoice": {
+        "validate": "optima_zatca.events.sales_invoice.validate_advance_payment",
 		"on_cancel": "optima_zatca.events.sales_invoice.sales_invoice_on_cancel",
 		"on_trash": "optima_zatca.events.sales_invoice.sales_invoice_on_trash",
-        "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit"
+        "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit",
 	}
 }
 
