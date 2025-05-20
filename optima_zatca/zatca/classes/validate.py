@@ -135,7 +135,7 @@ class ZatcaInvoiceValidate :
             return
 
         items = self.sales_invoice.get("items")
-        if len(items) != 1 or items[0].get("item_code") != "Advance Payment" or items[0].get("qty") != 1:
+        if len(items) != 1 or items[0].get("item_code") != "advance payment" or items[0].get("qty") != 1:
             frappe.throw(title=_("Avance Payment Error"), msg=_("Elementary Advance Payment Must Have One Item with Advance Payment Item and Quantity 1"))
 
 
