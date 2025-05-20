@@ -145,6 +145,55 @@ frappe.ui.form.on("Sales Invoice" , {
         } else {
             handleStandardInvoice(frm);
         }
+    },
+
+    previous_sales_invoice: function(frm) {
+        if(!frm.doc.previous_sales_invoice) {
+            // Clear the child table if the field is cleared
+            frm.clear_table('prepayments_invcoies');
+            frm.refresh_field('prepayments_invcoies');
+            return;
+        }
+        
+        // Show loading indicator
+        frappe.dom.freeze(__('Fetching prepayment details...'));
+        
+        // Call a server-side method to fetch prepayment data
+        frappe.call({
+            method: "optima_zatca.zatca.utils.get_prepayment_details",
+            args: {
+                prepayment_invoice: frm.doc.previous_sales_invoice,
+                filters: {
+                    // customer: frm.doc.customer,
+                    // docstatus: 1,  // Example: Only submitted prepayments
+                    // outstanding_amount: [">", 0]  // Example: Only with outstanding amount
+                }
+            },
+            callback: function(r) {
+                console.log("Response from server: ", r);
+                frm.clear_table('prepayments_invcoies');
+                
+                if (r.message && r.message.length) {
+                    // Add fetched rows to child table
+                    r.message.forEach(function(prepayment) {
+                        let row = frm.add_child('prepayments_invcoies');
+
+                        row.reference_invoice = prepayment.name;
+                        row.tax_amount = prepayment.tax_amount;
+                        row.taxable_amount = prepayment.taxable_amount;
+                        row.uuid = prepayment.uuid;
+                        row.tax_category = prepayment.tax_category;
+                        row.percent = prepayment.percent;
+                        row.issue_date = prepayment.issue_date;
+                        row.issue_time = prepayment.issue_time;
+                        
+                    });
+                }
+                
+                frm.refresh_field('prepayments_invcoies');
+                frappe.dom.unfreeze();
+            }
+        });
     }
 
 })
