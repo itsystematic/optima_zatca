@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:id",
+ "creation": "2025-05-11 11:11:57.295914",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "id",
+  "uuid",
+  "prepayment_type_code",
+  "customer",
+  "column_break_onnz",
+  "issue_date",
+  "issue_time",
+  "section_break_sumh",
+  "tax_amount",
+  "taxable_amount",
+  "column_break_hmwq",
+  "tax_category",
+  "percent"
+ ],
+ "fields": [
+  {
+   "fieldname": "id",
+   "fieldtype": "Data",
+   "label": "ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "uuid",
+   "fieldtype": "Data",
+   "label": "UUID"
+  },
+  {
+   "fieldname": "column_break_onnz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "issue_date",
+   "fieldtype": "Data",
+   "label": "Issue Date"
+  },
+  {
+   "fieldname": "issue_time",
+   "fieldtype": "Data",
+   "label": "Issue Time"
+  },
+  {
+   "fieldname": "prepayment_type_code",
+   "fieldtype": "Data",
+   "label": "Prepayment Type Code"
+  },
+  {
+   "fieldname": "section_break_sumh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "tax_amount",
+   "fieldtype": "Currency",
+   "label": "Tax Amount"
+  },
+  {
+   "fieldname": "taxable_amount",
+   "fieldtype": "Currency",
+   "label": "Taxable Amount"
+  },
+  {
+   "fieldname": "column_break_hmwq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tax_category",
+   "fieldtype": "Data",
+   "label": "Tax Category"
+  },
+  {
+   "fieldname": "percent",
+   "fieldtype": "Percent",
+   "label": "Percent"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-11 12:48:37.347280",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Prepayment Invoice",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
