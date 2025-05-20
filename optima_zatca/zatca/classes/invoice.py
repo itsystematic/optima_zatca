@@ -268,7 +268,7 @@ class ZatcaInvoiceData :
             "LineExtensionAmount" : str(flt(abs(item.get("line_extension_amount") )  , 2)) ,
             "TaxAmount" : str(flt(abs(item.get("tax_amount") ) , 2 ))  ,
             "RoundingAmount" : str(flt(abs(item.get("total_amount") ) , 2) ) ,
-            "Name" : item.get("item_code") ,
+            "Name" : item.get("item_name") ,# name not code for number item --JK
             "TaxCategory" :  item.get("tax_category") or frappe.db.get_value("Item Tax Template" , item.get("item_tax_template") , "tax_category") ,
             "Percent" : str(flt(abs(item.get("tax_rate") ) , 2) )  ,
             "TaxScheme" : "VAT" ,
