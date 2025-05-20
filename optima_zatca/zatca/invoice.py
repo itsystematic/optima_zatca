@@ -1,5 +1,6 @@
 import json
 import traceback
+from datetime import datetime
 import frappe 
 import base64
 from frappe import _
@@ -42,6 +43,9 @@ def send_to_zatca(sales_invoice_name):
         qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
         qrcode_url = create_qr_code_for_invoice(sales_invoice.name , qrcode)
         frappe.db.set_value("Sales Invoice", sales_invoice.name ,{"ksa_einv_qr" : qrcode_url})
+
+        if sales_invoice.get("sales_invoice_type") == 'Elementary Advance Payment': # Create Prepayment Invoice doctype
+            make_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
         # manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
         # if not manual_submit : # Auto Submit
         #     sales_invoice.reload()
@@ -191,3 +195,21 @@ def get_itemised_tax(taxes):
                 ))
 
 	return itemised_tax
+
+def make_prepayment_invoice(sales_invoice: dict, uuid: str):
+
+    TimeFormat = "%H:%M:%S.%f" if "." in str(sales_invoice.get("posting_time")) else "%H:%M:%S"
+
+    new_prepayment = frappe.new_doc("Prepayment Invoice")
+    new_prepayment.update({
+        "id": sales_invoice.get("name"),
+        "uuid": uuid,
+        "issue_date": sales_invoice.get("posting_date"),
+        "issue_time": datetime.strptime(str(sales_invoice.get("posting_time")) , TimeFormat ).strftime("%H:%M:%S"),
+        "tax_amount": sales_invoice.get("total_taxes_and_charges"),
+        "taxable_amount": sales_invoice.get("total", "net_total"),
+        "tax_category": sales_invoice.get("tax_category"),
+        "customer": sales_invoice.get("customer"),
+        "prepayment_type_code": "386",
+        "percent": "15", # TODO: handle this
+    }).insert(ignore_permissions=True)

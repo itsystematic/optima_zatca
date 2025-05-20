@@ -178,7 +178,7 @@ class ZatcaInvoiceData :
         # The invoice sub status is determined by whether the invoice is a return or debit note
         InvoiceSubStatus, InvoiceTypeCode = ("credit", "381") if is_return else ("debit", "383") if is_debit_note else ("normal", "388")
 
-        # override the invoice type code if Advance Payment is selected
+        # override the invoice typ  e code if Advance Payment is selected
         if sales_invoice_type in ["Elementary Advance Payment", "Advance Payment"]:
             InvoiceTypeCode = "386"
         # The endpoint is determined by the company settings
@@ -232,13 +232,19 @@ class ZatcaInvoiceData :
             else self.sales_invoice.get("total")
         ) , 2 ))
 
+        PrepaymentAmount = str(flt(abs(
+            sum([prepayment.get("taxable_amount") for prepayment in self.sales_invoice.get("prepayments_invcoies")])
+            if self.sales_invoice.get("sales_invoice_type") == "Adjust Payment"
+            else 0.00
+        ), 2))
+
 
         self.zatca_invoice.update({
             "LineExtensionAmount" : LineExtensionAmount ,
             "TaxExclusiveAmount" :  str(flt(abs(self.sales_invoice.get("net_total")) , 2)) ,
             "TaxInclusiveAmount" :  str(flt(abs(self.sales_invoice.get("grand_total") ), 2)) ,
             "AllowanceTotalAmount" :  AllowanceTotalAmount ,
-            "PrepaidAmount" :  "0.00" , # Current Zero Until Handle advanced Payment
+            "PrepaidAmount" :  PrepaymentAmount , # Current Zero Until Handle advanced Payment
             "PayableAmount" :  str(flt(abs(self.sales_invoice.get("grand_total") ), 2)) ,
         })
 
@@ -270,18 +276,18 @@ class ZatcaInvoiceData :
             "ID": str(self.prepayment_idx),
             "InvoicedQuantity": str(0.000000),
             "LineExtensionAmount": str(0.00),
-            "TaxAmount": str(0), # ********** to be reviewed
+            "TaxAmount": str(prepayment_invoice.get("tax_amount")),
             "RoundingAmount": str(0),
-            "TaxableAmount": str(0), # ********** to be calculated
-            "Name": str, # ******* to be reviewed
+            "TaxableAmount": str(prepayment_invoice.get("net_amount")), # ********** to be calculated
+            "Name": str(prepayment_invoice.get("reference_invoice")),
             "TaxCategory": str(), #******* to be calculated
             "Percent": str(0), # ****** to be calculated
             "TaxScheme": "VAT",
             "PriceAmount": str(0.00),
-            "PrepaymentID": prepayment_invoice.get("name"), # ***
-            "PrepaymentUUID": prepayment_invoice.get("uuid"), # ***
-            "PrepaymentIssueDate": prepayment_invoice.get("IssueDate"), # ***
-            "PrepaymentIssueTime": prepayment_invoice.get("IssueTime"), # ***
+            "PrepaymentID": str(prepayment_invoice.get("reference_invoice")),
+            "PrepaymentUUID": str(prepayment_invoice.get("uuid")), # ***
+            "PrepaymentIssueDate": str(prepayment_invoice.get("issue_date")), # ***
+            "PrepaymentIssueTime": str(prepayment_invoice.get("issue_time")), # ***
             "PrepaymentTypeCode": "386" # **
 
             # To figure out what item should be put, The Default one "Advance Payment" or the acutall sold one

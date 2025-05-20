@@ -250,3 +250,52 @@ def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict 
     
     
     return company_dict
+
+@frappe.whitelist()
+def get_prepayment_details(prepayment_invoice, filters=None):
+    """
+    Fetch prepayment details from the specified prepayment invoice
+    """
+    try:
+        if not prepayment_invoice:
+            return []
+            
+        # Convert string filters to dict if needed
+        if filters and isinstance(filters, str):
+            filters = frappe.parse_json(filters)
+        
+        # Build the base filters
+        base_filters = {
+            "name": prepayment_invoice,
+            # "customer": filters.get("customer") if filters else None,
+            # "docstatus": 1,  # Only fetch submitted invoices
+        }
+        
+        # Add additional filters if provided
+        if filters:
+            base_filters.update(filters)
+        
+        # Fetch prepayment data
+        prepayment_data = frappe.get_all(
+            "Prepayment Invoice",  # Your doctype name for prepayment invoices
+            filters=base_filters,
+            fields=[
+                "name",
+                "issue_date",
+                "issue_time", 
+                "tax_amount",
+                "taxable_amount",
+                "tax_category",
+                "percent",
+                "issue_date",
+                "issue_time",
+                "uuid",
+            ]
+        )
+        
+        return prepayment_data
+    except Exception as e:
+        frappe.errprint(
+            title="Error fetching prepayment details",
+            message=f"Error: {str(e)}\nFilters: {filters}"
+        )
