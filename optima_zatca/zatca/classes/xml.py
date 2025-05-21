@@ -669,111 +669,217 @@ class ZatcaXml :
 
         
     def add_invoice_items(self):
+        try:
 
-        item_list = self.sales_invoice.get("items")
+            item_list = self.sales_invoice.get("items")
 
-        # Find the position to insert new invoice line  elements (after the legal monetary total)
-        last_existing_legal_monetary_total = self.root.xpath(".//cac:LegalMonetaryTotal[last()]", namespaces=NameSpace)
-            # Iterate through the item list
-        for i, item in enumerate(item_list):
-            invoice_line = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}InvoiceLine")
-            # check if item is the last then handle the spaces and indentation for hashing
-            invoice_line.tail = "\n    "
+            # Find the position to insert new invoice line  elements (after the legal monetary total)
+            last_existing_legal_monetary_total = self.root.xpath(".//cac:LegalMonetaryTotal[last()]", namespaces=NameSpace)
+                # Iterate through the item list
+            for i, item in enumerate(item_list):
+                if item.get("is_prepayment", False) == True :
+                    invoice_line = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}InvoiceLine")
+                    # check if item is the last then handle the spaces and indentation for hashing
+                    invoice_line.tail = "\n    "
 
-            # create item idx
-            item_id = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
-            item_id.text = item.get("ID")
+                    # create item idx
+                    item_id = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    item_id.text = item.get("ID")
 
-            item_quantity = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}InvoicedQuantity")
-            item_quantity.set("unitCode", "PCE")
-            item_quantity.text = item.get("InvoicedQuantity")
+                    item_quantity = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}InvoicedQuantity")
+                    item_quantity.set("unitCode", "PCE")
+                    item_quantity.text = item.get("InvoicedQuantity")
 
-            # item net amount
-            item_total_amount = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}LineExtensionAmount")
-            item_total_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
-            item_total_amount.text = item.get("LineExtensionAmount")
+                    # item net amount
+                    item_total_amount = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}LineExtensionAmount")
+                    item_total_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_total_amount.text = item.get("LineExtensionAmount")
 
-            # item taxes
-            item_tax_total = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxTotal")
+                    # document reference
+                    document_reference = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}DocumentReference")
 
-            item_tax_amount = etree.SubElement(item_tax_total,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxAmount")
-            item_tax_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    document_reference_id = etree.SubElement(document_reference,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    document_reference_id.text = item.get("PrepaymentID")
 
-            item_tax_amount.text = item.get("TaxAmount")
+                    document_reference_uuid = etree.SubElement(document_reference,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}UUID")
+                    document_reference_uuid.text = item.get("PrepaymentUUID")
 
-            # item total with taxes
-            item_rounding_amount = etree.SubElement(item_tax_total, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}RoundingAmount")
-            item_rounding_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
-            item_rounding_amount.text = item.get("RoundingAmount")
+                    document_reference_issue_date = etree.SubElement(document_reference,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}IssueDate")
+                    document_reference_issue_date.text = item.get("PrepaymentIssueDate")
 
-            # create item tag
-            item_item = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}Item")
+                    document_reference_issue_time = etree.SubElement(document_reference,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}IssueTime")
+                    document_reference_issue_time.text = item.get("PrepaymentIssueTime")
 
-            # fill item name
-            item_name = etree.SubElement(item_item,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Name")
-            item_name.text = item.get("Name")
+                    document_reference_document_type_code = etree.SubElement(document_reference,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}DocumentTypeCode")
+                    document_reference_document_type_code.text = item.get("PrepaymentTypeCode")
 
-            # item tax cat info
-            tax_scheme = etree.SubElement(item_item,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}ClassifiedTaxCategory")
+                    # tax total
+                    item_tax_total = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxTotal")
 
-            # tax category from child table element
-            tax_scheme_id = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
-            tax_scheme_id.text = item.get("TaxCategory")
-            tax_scheme_id.set("schemeID", "UNCL5305")
+                    item_tax_amount = etree.SubElement(item_tax_total,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxAmount")
+                    item_tax_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_tax_amount.text = item.get("TaxTotalAmount")
 
-            # tax percent from item tax template
-            tax_scheme_percent = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Percent")
-            tax_scheme_percent.text = item.get("Percent")
-            # create tax scheme tag
-            tax_scheme_type = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxScheme")
+                    item_rounding_amount = etree.SubElement(item_tax_total, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}RoundingAmount")
+                    item_rounding_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_rounding_amount.text = item.get("RoundingAmount")
 
-            # tax scheme id , by default "VAT"
-            tax_scheme_type_id = etree.SubElement(tax_scheme_type,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
-            tax_scheme_type_id.text = item.get("TaxScheme")
+                    # tax subtotal
+                    item_tax_subtotal = etree.SubElement(item_tax_total,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxSubtotal")
+                    item_tax_subtotal_taxable_amount = etree.SubElement(item_tax_subtotal,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxableAmount")
+                    item_tax_subtotal_taxable_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_tax_subtotal_taxable_amount.text = item.get("TaxSubtotalTaxableAmount")
 
-            # create price tag
-            item_price = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}Price")
+                    item_tax_subtotal_tax_amount = etree.SubElement(item_tax_subtotal,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxAmount")
+                    item_tax_subtotal_tax_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_tax_subtotal_tax_amount.text = item.get("TaxSubtotalTaxAmount")
 
-            # item price
-            item_unit_price = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}PriceAmount")
-            item_unit_price.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
-            item_unit_price.text = item.get("PriceAmount")
+                    # tax category
+                    item_tax_subtotal_tax_category = etree.SubElement(item_tax_subtotal,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxCategory")
 
-            item_base_qauntity = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}BaseQuantity")
-            item_base_qauntity.set("unitCode", "PCE")
-            item_base_qauntity.text = "1"
+                    item_tax_subtotal_tax_category_tax_category_id = etree.SubElement(item_tax_subtotal_tax_category,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    item_tax_subtotal_tax_category_tax_category_id.text = item.get("TaxCategory")
 
-            if item.get("Amount") :
-            # charge or allowance on item price not item net line (discount for now)
-                item_price_allowance = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
+                    item_tax_subtotal_tax_category_tax_category_percent = etree.SubElement(item_tax_subtotal_tax_category,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Percent")
+                    item_tax_subtotal_tax_category_tax_category_percent.text = item.get("Percent")
 
-                # discount or charge indicator (false for discount , true for charge)
-                item_price_allowance_indicator = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ChargeIndicator")
-                item_price_allowance_indicator.text = item.get("ChargeIndicator")
+                    # tax category scheme
+                    item_tax_subtotal_tax_category_tax_category_tax_scheme = etree.SubElement(item_tax_subtotal_tax_category,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxScheme")
 
-                # discount or charge reason , for now not important , important in charge
-                item_price_allowance_reason = etree.SubElement(item_price_allowance, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason")
-                item_price_allowance_reason.text = "discount"
+                    item_tax_subtotal_tax_category_tax_category_tax_scheme_id = etree.SubElement(item_tax_subtotal_tax_category_tax_category_tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    item_tax_subtotal_tax_category_tax_category_tax_scheme_id.text = item.get("TaxCategoryTaxSchemeID")
 
-                # item price discount amount
-                item_price_allowance_amount = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
-                item_price_allowance_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
-                item_price_allowance_amount.text = item.get("Amount")
 
-            # indent the elements
-            etree.indent(invoice_line, space="    ", level=1)
+                    # create item tag
+                    item_item = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}Item")
 
-            # handle spaces for hashes
-            last_existing_legal_monetary_total[0].tail = "\n    "
-            # Insert the invoice line element after the legal monetary tag
-            last_existing_legal_monetary_total[0].getparent().insert(
-                last_existing_legal_monetary_total[0]
-                .getparent()
-                .index(last_existing_legal_monetary_total[0])
-                + int(item.get("ID")),
-                invoice_line,
-            )
-            
+                    # fill item name
+                    item_name = etree.SubElement(item_item,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Name")
+                    item_name.text = item.get("Name")
+
+                    # item tax cat info
+                    tax_scheme = etree.SubElement(item_item,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}ClassifiedTaxCategory")
+                    # tax category from child table element
+                    tax_scheme_id = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    tax_scheme_id.text = item.get("TaxCategory")
+
+                    # tax percent from item tax template
+                    tax_scheme_percent = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Percent")
+                    tax_scheme_percent.text = item.get("Percent")
+                    # create tax scheme tag
+                    tax_scheme_type = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxScheme")
+                    # tax scheme id , by default "VAT"  
+                    tax_scheme_type_id = etree.SubElement(tax_scheme_type,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    tax_scheme_type_id.text = "VAT"
+
+                    # create price tag
+                    item_price = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}Price")
+                    # item price
+                    item_unit_price = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}PriceAmount")
+                    item_unit_price.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_unit_price.text = item.get("PriceAmount")
+                    
+                else:
+                    invoice_line = etree.Element("{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}InvoiceLine")
+                    # check if item is the last then handle the spaces and indentation for hashing
+                    invoice_line.tail = "\n    "
+
+                    # create item idx
+                    item_id = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    item_id.text = item.get("ID")
+
+                    item_quantity = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}InvoicedQuantity")
+                    item_quantity.set("unitCode", "PCE")
+                    item_quantity.text = item.get("InvoicedQuantity")
+
+                    # item net amount
+                    item_total_amount = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}LineExtensionAmount")
+                    item_total_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_total_amount.text = item.get("LineExtensionAmount")
+
+                    # item taxes
+                    item_tax_total = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxTotal")
+
+                    item_tax_amount = etree.SubElement(item_tax_total,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}TaxAmount")
+                    item_tax_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+
+                    item_tax_amount.text = item.get("TaxAmount")
+
+                    # item total with taxes
+                    item_rounding_amount = etree.SubElement(item_tax_total, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}RoundingAmount")
+                    item_rounding_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_rounding_amount.text = item.get("RoundingAmount")
+
+                    # create item tag
+                    item_item = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}Item")
+
+                    # fill item name
+                    item_name = etree.SubElement(item_item,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Name")
+                    item_name.text = item.get("Name")
+
+                    # item tax cat info
+                    tax_scheme = etree.SubElement(item_item,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}ClassifiedTaxCategory")
+
+                    # tax category from child table element
+                    tax_scheme_id = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    tax_scheme_id.text = item.get("TaxCategory")
+                    tax_scheme_id.set("schemeID", "UNCL5305")
+
+                    # tax percent from item tax template
+                    tax_scheme_percent = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Percent")
+                    tax_scheme_percent.text = item.get("Percent")
+                    # create tax scheme tag
+                    tax_scheme_type = etree.SubElement(tax_scheme,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxScheme")
+
+                    # tax scheme id , by default "VAT"
+                    tax_scheme_type_id = etree.SubElement(tax_scheme_type,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID")
+                    tax_scheme_type_id.text = item.get("TaxScheme")
+
+                    # create price tag
+                    item_price = etree.SubElement(invoice_line,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}Price")
+
+                    # item price
+                    item_unit_price = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}PriceAmount")
+                    item_unit_price.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                    item_unit_price.text = item.get("PriceAmount")
+
+                    item_base_qauntity = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}BaseQuantity")
+                    item_base_qauntity.set("unitCode", "PCE")
+                    item_base_qauntity.text = "1"
+
+                    if item.get("Amount") :
+                    # charge or allowance on item price not item net line (discount for now)
+                        item_price_allowance = etree.SubElement(item_price,"{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}AllowanceCharge")
+
+                        # discount or charge indicator (false for discount , true for charge)
+                        item_price_allowance_indicator = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ChargeIndicator")
+                        item_price_allowance_indicator.text = item.get("ChargeIndicator")
+
+                        # discount or charge reason , for now not important , important in charge
+                        item_price_allowance_reason = etree.SubElement(item_price_allowance, "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}AllowanceChargeReason")
+                        item_price_allowance_reason.text = "discount"
+
+                        # item price discount amount
+                        item_price_allowance_amount = etree.SubElement(item_price_allowance,"{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
+                        item_price_allowance_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
+                        item_price_allowance_amount.text = item.get("Amount")
+
+                # indent the elements
+                etree.indent(invoice_line, space="    ", level=1)
+
+                # handle spaces for hashes
+                last_existing_legal_monetary_total[0].tail = "\n    "
+                # Insert the invoice line element after the legal monetary tag
+                last_existing_legal_monetary_total[0].getparent().insert(
+                    last_existing_legal_monetary_total[0]
+                    .getparent()
+                    .index(last_existing_legal_monetary_total[0])
+                    + int(item.get("ID")),
+                    invoice_line,
+                )
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback() , "Error in Invoice Line")
+            frappe.throw(_("Error in Invoice Line") + str(e))
     
     def __fill_signed_properities_tag(
         self, signing_time,
