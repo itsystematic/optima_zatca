@@ -220,33 +220,75 @@ class ZatcaInvoiceData :
             "TaxCategorySchemeID" : "UNCL5305" ,
         })
 
-
+    def add_sales_invoice_totals(self):
+        try:
+            # Calculate all amounts
+            rounding_amount = self.get_rounding_amount()
+            line_extension_amount = self.get_line_extension_amount()
+            tax_exclusive_amount = self.get_tax_exclusive_amount()
+            tax_inclusive_amount = self.get_tax_inclusive_amount()
+            allowance_total_amount = self.get_allowance_total_amount()
+            prepaid_amount = self.get_prepayment_amount()
+            payable_amount = self.get_payable_amount(
+                float(tax_inclusive_amount), 
+                float(prepaid_amount), 
+                float(rounding_amount)
+            )
             
+            # Update zatca invoice with all calculated amounts
+            self.zatca_invoice.update({
+                "LineExtensionAmount": line_extension_amount,
+                "TaxExclusiveAmount": tax_exclusive_amount,
+                "TaxInclusiveAmount": tax_inclusive_amount,
+                "AllowanceTotalAmount": allowance_total_amount,
+                "PrepaidAmount": prepaid_amount,
+                "PayableAmount": payable_amount,
+            })
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback(), "Error in Sales Invoice Totals")
+            frappe.throw(_("Error in Sales Invoice Totals: {0}").format(e))
+
+    def get_allowance_total_amount(self) -> str:
+        """Sum of all allowances on document level in the Invoice."""
+        discount = self.sales_invoice.get("discount_amount", 0.00)
+        return f"{abs(flt(discount, 2)):.2f}"
+
+    def get_line_extension_amount(self) -> str:
+        """The total amount of the Invoice line, including allowances."""
+        if self.included_in_print_rate:
+            amount = self.sales_invoice.get("net_total", 0) + self.sales_invoice.get("discount_amount", 0)
+        else:
+            amount = self.sales_invoice.get("total", 0)
         
-    def add_sales_invoice_totals(self) :
-        AllowanceTotalAmount = "{:.2f}".format(abs(self.sales_invoice.get("discount_amount" , 0))) if self.sales_invoice.get("discount_amount") else "0.00"
-        
-        LineExtensionAmount = str(flt(abs(
-            self.sales_invoice.get("net_total") + self.sales_invoice.get("discount_amount") 
-            if self.included_in_print_rate 
-            else self.sales_invoice.get("total")
-        ) , 2 ))
+        return f"{abs(flt(amount, 2)):.2f}"
 
-        PrepaymentAmount = str(flt(abs(
-            sum([prepayment.get("taxable_amount") for prepayment in self.sales_invoice.get("prepayments_invcoies")])
-            if self.sales_invoice.get("sales_invoice_type") == "Adjust Payment"
-            else 0.00
-        ), 2))
+    def get_prepayment_amount(self) -> str:
+        """The sum of amounts which have been paid in advance including VAT."""
+        if self.sales_invoice.get("sales_invoice_type") == "Adjust Payment":
+            prepayments = self.sales_invoice.get("prepayments_invcoies", [])
+            prepayment_sum = sum(
+                (p.get("taxable_amount", 0) + p.get("tax_amount", 0)) 
+                for p in prepayments
+            )
+            return f"{abs(flt(prepayment_sum, 2)):.2f}"
+        return f"{0.00:.2f}"
 
+    def get_tax_inclusive_amount(self) -> str:
+        """The total amount of the Invoice with VAT."""
+        return f"{abs(flt(self.sales_invoice.get('grand_total', 0), 2)):.2f}"
 
-        self.zatca_invoice.update({
-            "LineExtensionAmount" : LineExtensionAmount ,
-            "TaxExclusiveAmount" :  str(flt(abs(self.sales_invoice.get("net_total")) , 2)) ,
-            "TaxInclusiveAmount" :  str(flt(abs(self.sales_invoice.get("grand_total") ), 2)) ,
-            "AllowanceTotalAmount" :  AllowanceTotalAmount ,
-            "PrepaidAmount" :  PrepaymentAmount , # Current Zero Until Handle advanced Payment
-            "PayableAmount" :  str(flt(abs(self.sales_invoice.get("grand_total") ), 2)) ,
-        })
+    def get_tax_exclusive_amount(self) -> str:
+        """The total amount of the Invoice without VAT."""
+        return f"{abs(flt(self.sales_invoice.get('net_total', 0), 2)):.2f}"
+
+    def get_payable_amount(self, tax_inclusive_amount: float, prepaid_amount: float, rounding_amount: float) -> str:
+        """The outstanding amount that is requested to be paid."""
+        payable = float(tax_inclusive_amount) - float(prepaid_amount) + float(rounding_amount)
+        return f"{abs(flt(payable, 2)):.2f}"
+
+    def get_rounding_amount(self) -> str:
+        """Amount which must be added to round off the payment amount."""
+        return f"{0.00:.2f}"  # Not implemented yet
 
     def add_invoice_lines_and_tax_categories(self) :
 
