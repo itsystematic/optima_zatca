@@ -313,30 +313,37 @@ class ZatcaInvoiceData :
 
 
     def add_prepayment_item(self, prepayment_invoice: dict, invoice_line: list):
+        try:
 
-        prepayment_row = {
-            "ID": str(self.prepayment_idx),
-            "InvoicedQuantity": str(0.000000),
-            "LineExtensionAmount": str(0.00),
-            "TaxAmount": str(prepayment_invoice.get("tax_amount")),
-            "RoundingAmount": str(0),
-            "TaxableAmount": str(prepayment_invoice.get("net_amount")), # ********** to be calculated
-            "Name": str(prepayment_invoice.get("reference_invoice")),
-            "TaxCategory": str(), #******* to be calculated
-            "Percent": str(0), # ****** to be calculated
-            "TaxScheme": "VAT",
-            "PriceAmount": str(0.00),
-            "PrepaymentID": str(prepayment_invoice.get("reference_invoice")),
-            "PrepaymentUUID": str(prepayment_invoice.get("uuid")), # ***
-            "PrepaymentIssueDate": str(prepayment_invoice.get("issue_date")), # ***
-            "PrepaymentIssueTime": str(prepayment_invoice.get("issue_time")), # ***
-            "PrepaymentTypeCode": "386" # **
+            prepayment_row = {
+                "is_prepayment": True,
+                "ID": str(self.prepayment_idx),
+                "InvoicedQuantity": str(0.000000),
+                "LineExtensionAmount": str(0.00),
+                "TaxTotalAmount": str(0),
+                "TaxSubtotalTaxableAmount": str(flt(abs(prepayment_invoice.get("taxable_amount")), 2)),
+                "TaxSubtotalTaxAmount": str(flt(abs(prepayment_invoice.get("tax_amount")), 2)),
+                "RoundingAmount": str(0),
+                "Name": str("Advance Payment"), # ****** to be calculated
+                "TaxCategory": str(prepayment_invoice.get("tax_category")), #******* to be calculated
+                "Percent": str(flt(prepayment_invoice.get("percent"), 2)), # ****** to be calculated
+                "TaxScheme": "VAT",
+                "PriceAmount": str(flt(0.00, 2)),
+                "PrepaymentID": str(prepayment_invoice.get("reference_invoice")),
+                "PrepaymentUUID": str(prepayment_invoice.get("uuid")), # ***
+                "PrepaymentIssueDate": str(prepayment_invoice.get("issue_date")), # ***
+                "PrepaymentIssueTime": str(prepayment_invoice.get("issue_time")), # ***
+                "PrepaymentTypeCode": "386", # **,
+                "TaxCategoryTaxSchemeID": "VAT", # **,
 
-            # To figure out what item should be put, The Default one "Advance Payment" or the acutall sold one
-        }
+                # To figure out what item should be put, The Default one "Advance Payment" or the acutall sold one
+            }
 
-        self.prepayment_idx += 1 # keep increasing counter for next prepayment
-        invoice_line.append(prepayment_row)
+            self.prepayment_idx += 1 # keep increasing counter for next prepayment
+            invoice_line.append(prepayment_row)
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback() , "Error in Prepayment Item")
+            frappe.throw(_("Error in Prepayment Item") + f" {e}")
 
     def add_invoice_item(self, item:dict , invoice_line:list) :
 
