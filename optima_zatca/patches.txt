@@ -4,6 +4,3 @@
 
 [post_model_sync]
 optima_zatca.patches.v15.create_zatca_additoinal_role
-optima_zatca.patches.v15.create_advance_payment_fields
-optima_zatca.patches.v15.create_advance_payment_doctypes
-optima_zatca.patches.v15.create_prepayments_tab_in_sales_invoice
