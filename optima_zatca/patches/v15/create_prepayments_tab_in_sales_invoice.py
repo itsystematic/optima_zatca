@@ -23,9 +23,9 @@ def create_prepayments_tab_in_sales_invoice():
                 "insert_after" : "Connections",
             },
             {
-                "fieldname" : "previous_sales_invoice",
+                "fieldname" : "previous_prepayment",
                 "fieldtype" : "Link",
-                "label" : "Previous Sales Invoice",
+                "label" : "Previous Prepayment",
                 "options": "Prepayment Invoice",
                 "insert_after" : "Prepayments",
             },
@@ -33,8 +33,8 @@ def create_prepayments_tab_in_sales_invoice():
                 "fieldname" : "prepayments_invcoies",
                 "fieldtype" : "Table",
                 "label" : "Prepayments Invoices",
-                "options" : "Sales Invoice Prepayment",
-                "insert_after" : "Previous Sales Invoice",
+                "options" : "Prepayment Details",
+                "insert_after" : "Previous Prepayment",
             },
         ]
     }
