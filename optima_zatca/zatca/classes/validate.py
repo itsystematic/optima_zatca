@@ -95,6 +95,8 @@ class ZatcaInvoiceValidate :
                 if len(str(self.customer_info.get("registration_value")).strip()) != 10 :
                     frappe.throw(title=_("National Id Required"),msg=_("National Id Must 10 no"))
 
+            self.validate_item_name_special_chars(item)
+
                 
     def validate_customer_info(self) :
 
@@ -119,6 +121,12 @@ class ZatcaInvoiceValidate :
             if country_code in ["sa" , "SA"] :
                 validate_tax_id_in_saudia_arabia(self.customer_info.get("tax_id"))
                 validate_commercial_register(self.customer_info.get("registration_type"),self.customer_info.get("registration_value"))
+    def validate_item_name_special_chars(self, item):
+        """Validate item name doesn't contain restricted characters."""
+        item_name = item.get("item_name")
+        restricted_chars = ["'", "\""]
+        if any(char in item_name for char in restricted_chars):
+            frappe.throw(_("Item Name [{0}] contains restricted characters, Please Remove it and Try Again.").format(item_name))
 
 
 def validate_commercial_register(registration_type,registration_value) :
