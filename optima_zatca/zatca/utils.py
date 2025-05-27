@@ -297,7 +297,41 @@ def get_prepayment_details(prepayment_invoice, filters=None):
         
         return prepayment_data
     except Exception as e:
-        frappe.errprint(
-            title="Error fetching prepayment details",
-            message=f"Error: {str(e)}\nFilters: {filters}"
+        log_and_throw_error(
+            operation="fetch prepayment details for",
+            document_name=prepayment_invoice,
+            exception=e,
+            custom_message="Failed to fetch prepayment invoice details. Please check the Error Log."
         )
+
+
+def log_and_throw_error(operation: str, document_name: str, exception: Exception, custom_message: str = None) -> None:
+    """
+    Log an error to the error log and throw a user-friendly message.
+    
+    Args:
+        operation: The operation that failed (e.g., "create", "update", "delete")
+        document_name: The name/ID of the document being processed
+        exception: The exception that was caught
+        custom_message: Optional custom error message to display to the user
+    
+    Raises:
+        frappe.ValidationError: A user-friendly error message
+    """
+    error_message = str(exception)
+    error_trace = traceback.format_exc()
+    
+    # Generate the log title
+    log_title = f"Failed to {operation} {document_name}"
+    
+    # Log the detailed error
+    frappe.log_error(
+        title=log_title,
+        message=f"Error: {error_message}\n{error_trace}"
+    )
+    
+    # Use custom message if provided, otherwise create a generic one
+    user_message = custom_message or f"Failed to {operation}. Please check the Error Log."
+    
+    # Throw the user-friendly message
+    frappe.throw(_(user_message))
