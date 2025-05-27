@@ -13,9 +13,17 @@
   "column_break_onnz",
   "issue_date",
   "issue_time",
+  "is_debit_note",
+  "is_return",
+  "section_break_sifn",
+  "has_previous_prepayment",
+  "previous_prepayment_invoice",
+  "column_break_glvq",
+  "sales_invoice",
   "section_break_sumh",
   "tax_amount",
   "taxable_amount",
+  "grand_total",
   "column_break_hmwq",
   "tax_category",
   "percent"
@@ -84,12 +92,59 @@
    "fieldtype": "Link",
    "label": "Customer",
    "options": "Customer"
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_debit_note",
+   "fieldtype": "Check",
+   "label": "Is Debit Note",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_return",
+   "fieldtype": "Check",
+   "label": "Is Return",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_previous_prepayment",
+   "fieldtype": "Check",
+   "label": "Has Previous Prepayment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_prepayment_invoice",
+   "fieldtype": "Link",
+   "label": "Previous Prepayment Invoice",
+   "options": "Prepayment Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_sifn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_glvq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-11 12:48:37.347280",
+ "modified": "2025-05-22 15:40:17.946736",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Invoice",
