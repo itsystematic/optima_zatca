@@ -140,15 +140,15 @@ frappe.ui.form.on("Sales Invoice" , {
 
     // Advance Payment ********
     sales_invoice_type(frm) {
-        if (frm.doc.sales_invoice_type == "Elementary Advance Payment") {
+        if (["Initial Prepayment", "Prepayment"].includes(frm.doc.sales_invoice_type)) {
             handleAdvancePaymentInvoice(frm);
         } else {
             handleStandardInvoice(frm);
         }
     },
 
-    previous_sales_invoice: function(frm) {
-        if(!frm.doc.previous_sales_invoice) {
+    previous_prepayment: function(frm) {
+        if(!frm.doc.previous_prepayment) {
             // Clear the child table if the field is cleared
             frm.clear_table('prepayments_invcoies');
             frm.refresh_field('prepayments_invcoies');
@@ -162,15 +162,10 @@ frappe.ui.form.on("Sales Invoice" , {
         frappe.call({
             method: "optima_zatca.zatca.utils.get_prepayment_details",
             args: {
-                prepayment_invoice: frm.doc.previous_sales_invoice,
-                filters: {
-                    // customer: frm.doc.customer,
-                    // docstatus: 1,  // Example: Only submitted prepayments
-                    // outstanding_amount: [">", 0]  // Example: Only with outstanding amount
-                }
+                prepayment_invoice: frm.doc.previous_prepayment,
+                filters: {}
             },
             callback: function(r) {
-                console.log("Response from server: ", r);
                 frm.clear_table('prepayments_invcoies');
                 
                 if (r.message && r.message.length) {
@@ -186,6 +181,8 @@ frappe.ui.form.on("Sales Invoice" , {
                         row.percent = prepayment.percent;
                         row.issue_date = prepayment.issue_date;
                         row.issue_time = prepayment.issue_time;
+                        row.grand_total = prepayment.grand_total;
+                        row.customer = prepayment.customer;
                         
                     });
                 }

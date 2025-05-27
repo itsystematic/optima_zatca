@@ -109,14 +109,16 @@
   {
    "fieldname": "grand_total",
    "fieldtype": "Currency",
-   "label": "Grand Total"
+   "in_list_view": 1,
+   "label": "Grand Total",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-22 15:13:36.710058",
+ "modified": "2025-05-27 09:51:13.421575",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Details",
