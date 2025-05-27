@@ -256,7 +256,14 @@ def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict 
 @frappe.whitelist()
 def get_prepayment_details(prepayment_invoice, filters=None):
     """
-    Fetch prepayment details from the specified prepayment invoice
+    Fetch prepayment details from the specified prepayment invoice.
+    
+    Args:
+        prepayment_invoice: The name of the prepayment invoice to fetch
+        filters: Optional additional filters as string or dict
+        
+    Returns:
+        List of prepayment invoice details
     """
     try:
         if not prepayment_invoice:
@@ -266,36 +273,26 @@ def get_prepayment_details(prepayment_invoice, filters=None):
         if filters and isinstance(filters, str):
             filters = frappe.parse_json(filters)
         
-        # Build the base filters
-        base_filters = {
-            "name": prepayment_invoice,
-            # "customer": filters.get("customer") if filters else None,
-            # "docstatus": 1,  # Only fetch submitted invoices
-        }
+        # Fetch the prepayment invoice directly by name
+        prepayment_data = frappe.get_doc("Prepayment Invoice", prepayment_invoice)
         
-        # Add additional filters if provided
-        if filters:
-            base_filters.update(filters)
+        # Start building the result list
+        result_list = [prepayment_data]
         
-        # Fetch prepayment data
-        prepayment_data = frappe.get_all(
-            "Prepayment Invoice",  # Your doctype name for prepayment invoices
-            filters=base_filters,
-            fields=[
-                "name",
-                "issue_date",
-                "issue_time", 
-                "tax_amount",
-                "taxable_amount",
-                "tax_category",
-                "percent",
-                "issue_date",
-                "issue_time",
-                "uuid",
-            ]
-        )
+        # Recursively fetch previous prepayment invoices if they exist
+        # Check both has_previous_prepayment flag and that previous_prepayment_invoice is not null/empty
+        if (prepayment_data.get("has_previous_prepayment") and 
+            prepayment_data.get("previous_prepayment_invoice")):
+            
+            previous_invoices = get_prepayment_details(
+                prepayment_data.get("previous_prepayment_invoice"), 
+                filters
+            )
+            # Extend the list with previous prepayment details
+            result_list.extend(previous_invoices)
+            
+        return result_list
         
-        return prepayment_data
     except Exception as e:
         log_and_throw_error(
             operation="fetch prepayment details for",
