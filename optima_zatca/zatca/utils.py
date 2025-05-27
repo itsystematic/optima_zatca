@@ -6,6 +6,8 @@ import frappe
 import qrcode
 import hashlib
 import binascii
+import traceback
+from frappe import _
 from datetime import datetime
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
