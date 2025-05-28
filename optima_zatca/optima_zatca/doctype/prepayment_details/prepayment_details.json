@@ -7,18 +7,24 @@
  "field_order": [
   "reference_invoice",
   "uuid",
-  "customer",
   "issue_date",
   "issue_time",
   "is_debit_note",
   "is_return",
   "has_previous_prepayment",
   "column_break_capl",
-  "tax_amount",
-  "taxable_amount",
+  "prepayment_type",
+  "customer",
   "tax_category",
   "percent",
-  "grand_total"
+  "section_break_sreu",
+  "deducted_grand_total",
+  "deducted_tax_amount",
+  "deducted_taxable_amount",
+  "column_break_xbku",
+  "grand_total",
+  "tax_amount",
+  "taxable_amount"
  ],
  "fields": [
   {
@@ -112,13 +118,41 @@
    "in_list_view": 1,
    "label": "Grand Total",
    "read_only": 1
+  },
+  {
+   "fieldname": "deducted_tax_amount",
+   "fieldtype": "Currency",
+   "label": "Deducted Tax Amount"
+  },
+  {
+   "fieldname": "deducted_taxable_amount",
+   "fieldtype": "Currency",
+   "label": "Deducted Taxable Amount"
+  },
+  {
+   "fieldname": "deducted_grand_total",
+   "fieldtype": "Currency",
+   "label": "Deducted Grand Total"
+  },
+  {
+   "fieldname": "prepayment_type",
+   "fieldtype": "Data",
+   "label": "Prepayment Type"
+  },
+  {
+   "fieldname": "section_break_sreu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_xbku",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-27 09:51:13.421575",
+ "modified": "2025-05-28 10:39:25.666792",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Details",
