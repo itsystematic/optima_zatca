@@ -1,6 +1,5 @@
 import json
 import traceback
-from datetime import datetime
 import frappe 
 import base64
 from frappe import _
@@ -8,7 +7,7 @@ from lxml import etree
 from frappe.utils import flt
 from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
-from optima_zatca.zatca.utils import create_qr_code_for_invoice
+from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
 # from erpnext.controllers.taxes_and_totals import get_itemised_tax
 
@@ -44,8 +43,8 @@ def send_to_zatca(sales_invoice_name):
         qrcode_url = create_qr_code_for_invoice(sales_invoice.name , qrcode)
         frappe.db.set_value("Sales Invoice", sales_invoice.name ,{"ksa_einv_qr" : qrcode_url})
 
-        if sales_invoice.get("sales_invoice_type") == 'Elementary Advance Payment': # Create Prepayment Invoice doctype
-            make_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
+        if sales_invoice.get("sales_invoice_type") in ['Initial Prepayment', 'Prepayment', 'Adjustment']: # Create Prepayment Invoice doctype
+            create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
         # manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
         # if not manual_submit : # Auto Submit
         #     sales_invoice.reload()
@@ -156,12 +155,17 @@ def update_itemised_tax_data(doc):
 
                     raise frappe.ValidationError("Tax calculation failed. Check Error Log.")
     except Exception as e:
-        frappe.log_error(
-            title=f"Failed in update_itemised_tax_data for {doc.name}",
-            message=f"Document: {doc.doctype} {doc.name}\nError: {str(e)}\n{traceback.format_exc()}"
+        log_and_throw_error(
+            operation = "update_itemised_tax_data",
+            document_name = doc.name,
+            exception = e
         )
-        # Re-raise if you want the document save to fail visibly
-        frappe.throw("Tax calculation failed. Check Error Log.")
+        # frappe.log_error(
+        #     title=f"Failed in update_itemised_tax_data for {doc.name}",
+        #     message=f"Document: {doc.doctype} {doc.name}\nError: {str(e)}\n{traceback.format_exc()}"
+        # )
+        # # Re-raise if you want the document save to fail visibly
+        # frappe.throw("Tax calculation failed. Check Error Log.")
 
 
 
@@ -196,20 +200,92 @@ def get_itemised_tax(taxes):
 
 	return itemised_tax
 
-def make_prepayment_invoice(sales_invoice: dict, uuid: str):
+def create_prepayment_invoice(sales_invoice: dict, uuid: str) -> None:
+    """
+    Create a Prepayment Invoice document from a Sales Invoice.
+    
+    Args:
+        sales_invoice: Dictionary containing sales invoice data
+        uuid: Unique identifier for the prepayment invoice
+        
+    Raises:
+        frappe.ValidationError: If prepayment invoice creation fails
+    """
+    try:
+        issue_time = format_issue_time(sales_invoice.get("posting_time"))
+        has_previous_prepayment = True if sales_invoice.get("previous_prepayment", None) else False
+        percent = (sales_invoice.get("items") or [{}])[0].get("tax_rate", 0)
+        
+        # Create and insert the document
+        new_prepayment = frappe.get_doc({
+            "doctype": "Prepayment Invoice",
+            "uuid": uuid,
+            "percent": percent,
+            "issue_time": issue_time,
+            "prepayment_type_code": "386",
+            "id": sales_invoice.get("name"),
+            "customer": sales_invoice.get("customer"),
+            "sales_invoice": sales_invoice.get("name"),
+            "is_return": sales_invoice.get("is_return"),
+            "issue_date": sales_invoice.get("posting_date"),
+            "grand_total": sales_invoice.get("grand_total"),
+            "tax_category": sales_invoice.get("tax_category"),
+            "has_previous_prepayment": has_previous_prepayment,
+            "is_debit_note": sales_invoice.get("is_debit_note"),
+            "prepayment_type": sales_invoice.get("sales_invoice_type"),
+            "tax_amount": sales_invoice.get("total_taxes_and_charges"),
+            "previous_prepayment_invoice": sales_invoice.get("previous_prepayment"),
+            "taxable_amount": sales_invoice.get("total") or sales_invoice.get("net_total"),
+        })
+        new_prepayment.insert(ignore_permissions=True)
+    except Exception as e:
+        log_and_throw_error(
+            operation = "create prepayment invoice",
+            document_name = sales_invoice.get('name'),
+            exception = e
+        )
 
-    TimeFormat = "%H:%M:%S.%f" if "." in str(sales_invoice.get("posting_time")) else "%H:%M:%S"
 
-    new_prepayment = frappe.new_doc("Prepayment Invoice")
-    new_prepayment.update({
-        "id": sales_invoice.get("name"),
-        "uuid": uuid,
-        "issue_date": sales_invoice.get("posting_date"),
-        "issue_time": datetime.strptime(str(sales_invoice.get("posting_time")) , TimeFormat ).strftime("%H:%M:%S"),
-        "tax_amount": sales_invoice.get("total_taxes_and_charges"),
-        "taxable_amount": sales_invoice.get("total", "net_total"),
-        "tax_category": sales_invoice.get("tax_category"),
-        "customer": sales_invoice.get("customer"),
-        "prepayment_type_code": "386",
-        "percent": "15", # TODO: handle this
-    }).insert(ignore_permissions=True)
+def format_issue_time(posting_time: str) -> str:
+    """Format a posting time value to HH:MM:SS string.
+    
+    Args:
+        posting_time: A time value (timedelta, string, etc.)
+        
+    Returns:
+        Formatted time string in HH:MM:SS format
+    """
+    if not posting_time:
+        return ""
+        
+    time_str = str(posting_time)
+    
+    # If there's a decimal point (microseconds), truncate it
+    if "." in time_str:
+        time_str = time_str.split(".")[0]
+    
+    # Zero-pad the hours if needed
+    parts = time_str.split(":")
+    if len(parts) >= 1:
+        parts[0] = parts[0].zfill(2)
+        time_str = ":".join(parts)
+        
+    return time_str
+
+
+def get_tax_rate_from_items(sales_invoice: dict) -> float:
+    """Extract tax rate from the first item in the sales invoice."""
+    items = sales_invoice.get("items", [])
+    return items[0].get("tax_rate") if items else 0
+
+
+# def log_and_throw_error(invoice_name: str, exception: Exception) -> None:
+#     """Log the error and throw a user-friendly message."""
+#     error_message = str(exception)
+#     error_trace = traceback.format_exc()
+    
+#     frappe.log_error(
+#         title=f"Failed to create Prepayment Invoice for {invoice_name}",
+#         message=f"Error: {error_message}\n{error_trace}"
+#     )
+#     frappe.throw(_("Failed to create Prepayment Invoice. Check Error Log."))
