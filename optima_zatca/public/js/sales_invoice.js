@@ -183,13 +183,32 @@ frappe.ui.form.on("Sales Invoice" , {
                         row.issue_time = prepayment.issue_time;
                         row.grand_total = prepayment.grand_total;
                         row.customer = prepayment.customer;
+                        row.prepayment_type = prepayment.prepayment_type;
+                        // Deducted values are the same as the original, to be updated when the adjustment percentage is changed, though.
+                        row.deducted_tax_amount = prepayment.tax_amount;
+                        row.deducted_taxable_amount = prepayment.taxable_amount;
+                        row.deducted_grand_total = prepayment.grand_total;
                         
                     });
                 }
                 
                 frm.refresh_field('prepayments_invcoies');
+                CalculatePrepaymentTotals(frm);
                 frappe.dom.unfreeze();
             }
+        });
+    },
+
+    adjustment_percentage(frm) {
+        const percentage = frm.doc.adjustment_percentage / 100;
+        const factor = percentage ? percentage : 1;
+
+        frm.set_value("prepayment_subtotal", frm.doc.total_grands * factor);
+        frm.doc.prepayments_invcoies.forEach(row => {
+            if (!['Initial Prepayment', 'Prepayment'].includes(row.prepayment_type)) return;
+            row.deducted_tax_amount = row.tax_amount * factor;
+            row.deducted_taxable_amount = row.taxable_amount * factor;
+            row.deducted_grand_total = row.grand_total * factor;
         });
     }
 
@@ -291,6 +310,22 @@ function refreshFormFields(frm) {
 
 function triggerTaxRefresh(frm, item_row) {
     frm.script_manager.trigger("item_code", item_row.doctype, item_row.name);
+}
+
+function CalculatePrepaymentTotals(frm) {
+    let total_taxable_amount = 0;
+    let total_tax_amount = 0;
+    let total_grand_total = 0;
+
+    frm.doc.prepayments_invcoies.forEach(row => {
+        total_taxable_amount += row.deducted_taxable_amount || 0;
+        total_tax_amount += row.deducted_tax_amount || 0;
+        total_grand_total += row.deducted_grand_total || 0;
+    });
+
+    frm.set_value("total_taxable_amount", total_taxable_amount);
+    frm.set_value("total_tax_amount", total_tax_amount);
+    frm.set_value("total_grands", total_grand_total);
 }
 // End of Advance Payment ********
 
