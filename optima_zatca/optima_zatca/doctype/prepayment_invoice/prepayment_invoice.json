@@ -20,6 +20,7 @@
   "previous_prepayment_invoice",
   "column_break_glvq",
   "sales_invoice",
+  "prepayment_type",
   "section_break_sumh",
   "tax_amount",
   "taxable_amount",
@@ -139,12 +140,17 @@
    "fieldtype": "Link",
    "label": "Sales Invoice",
    "options": "Sales Invoice"
+  },
+  {
+   "fieldname": "prepayment_type",
+   "fieldtype": "Data",
+   "label": "Prepayment Type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-22 15:40:17.946736",
+ "modified": "2025-05-28 10:33:41.312262",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Invoice",
