@@ -234,6 +234,8 @@ def create_prepayment_invoice(sales_invoice: dict, uuid: str) -> None:
             "is_debit_note": sales_invoice.get("is_debit_note"),
             "prepayment_type": sales_invoice.get("sales_invoice_type"),
             "tax_amount": sales_invoice.get("total_taxes_and_charges"),
+            "remaining_percentage": sales_invoice.get("remaining_percentage"),
+            "adjustment_percentage": sales_invoice.get("adjustment_percentage", 0),
             "previous_prepayment_invoice": sales_invoice.get("previous_prepayment"),
             "taxable_amount": sales_invoice.get("total") or sales_invoice.get("net_total"),
         })
