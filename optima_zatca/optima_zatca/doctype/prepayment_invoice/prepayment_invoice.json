@@ -27,7 +27,11 @@
   "grand_total",
   "column_break_hmwq",
   "tax_category",
-  "percent"
+  "percent",
+  "section_break_dieb",
+  "adjustment_percentage",
+  "column_break_pxay",
+  "remaining_percentage"
  ],
  "fields": [
   {
@@ -145,12 +149,33 @@
    "fieldname": "prepayment_type",
    "fieldtype": "Data",
    "label": "Prepayment Type"
+  },
+  {
+   "fieldname": "section_break_dieb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "adjustment_percentage",
+   "fieldtype": "Percent",
+   "label": "Adjustment Percentage",
+   "precision": "0"
+  },
+  {
+   "fieldname": "column_break_pxay",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remaining_percentage",
+   "fieldtype": "Percent",
+   "label": "Remaining Percentage",
+   "precision": "0"
   }
  ],
  "grid_page_length": 50,
+ "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-28 10:33:41.312262",
+ "modified": "2025-05-29 14:09:02.527699",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Invoice",
