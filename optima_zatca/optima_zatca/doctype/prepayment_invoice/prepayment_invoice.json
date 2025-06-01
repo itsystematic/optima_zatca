@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "autoname": "field:id",
  "creation": "2025-05-11 11:11:57.295914",
  "doctype": "DocType",
@@ -43,7 +42,8 @@
   {
    "fieldname": "uuid",
    "fieldtype": "Data",
-   "label": "UUID"
+   "label": "UUID",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_onnz",
@@ -52,17 +52,20 @@
   {
    "fieldname": "issue_date",
    "fieldtype": "Data",
-   "label": "Issue Date"
+   "label": "Issue Date",
+   "read_only": 1
   },
   {
    "fieldname": "issue_time",
    "fieldtype": "Data",
-   "label": "Issue Time"
+   "label": "Issue Time",
+   "read_only": 1
   },
   {
    "fieldname": "prepayment_type_code",
    "fieldtype": "Data",
-   "label": "Prepayment Type Code"
+   "label": "Prepayment Type Code",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_sumh",
@@ -71,12 +74,14 @@
   {
    "fieldname": "tax_amount",
    "fieldtype": "Currency",
-   "label": "Tax Amount"
+   "label": "Tax Amount",
+   "read_only": 1
   },
   {
    "fieldname": "taxable_amount",
    "fieldtype": "Currency",
-   "label": "Taxable Amount"
+   "label": "Taxable Amount",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_hmwq",
@@ -85,23 +90,27 @@
   {
    "fieldname": "tax_category",
    "fieldtype": "Data",
-   "label": "Tax Category"
+   "label": "Tax Category",
+   "read_only": 1
   },
   {
    "fieldname": "percent",
    "fieldtype": "Percent",
-   "label": "Percent"
+   "label": "Percent",
+   "read_only": 1
   },
   {
    "fieldname": "customer",
    "fieldtype": "Link",
    "label": "Customer",
-   "options": "Customer"
+   "options": "Customer",
+   "read_only": 1
   },
   {
    "fieldname": "grand_total",
    "fieldtype": "Currency",
-   "label": "Grand Total"
+   "label": "Grand Total",
+   "read_only": 1
   },
   {
    "default": "0",
@@ -143,12 +152,14 @@
    "fieldname": "sales_invoice",
    "fieldtype": "Link",
    "label": "Sales Invoice",
-   "options": "Sales Invoice"
+   "options": "Sales Invoice",
+   "read_only": 1
   },
   {
    "fieldname": "prepayment_type",
    "fieldtype": "Data",
-   "label": "Prepayment Type"
+   "label": "Prepayment Type",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_dieb",
@@ -175,7 +186,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-29 14:09:02.527699",
+ "modified": "2025-06-01 16:00:32.090737",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Invoice",
