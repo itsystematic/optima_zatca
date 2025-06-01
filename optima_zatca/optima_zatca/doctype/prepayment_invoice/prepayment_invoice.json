@@ -169,7 +169,8 @@
    "fieldname": "adjustment_percentage",
    "fieldtype": "Percent",
    "label": "Adjustment Percentage",
-   "precision": "0"
+   "precision": "0",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_pxay",
@@ -179,14 +180,15 @@
    "fieldname": "remaining_percentage",
    "fieldtype": "Percent",
    "label": "Remaining Percentage",
-   "precision": "0"
+   "precision": "0",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-01 16:00:32.090737",
+ "modified": "2025-06-01 16:01:35.058742",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Invoice",
