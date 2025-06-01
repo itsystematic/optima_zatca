@@ -188,18 +188,28 @@ frappe.ui.form.on("Sales Invoice" , {
                         row.deducted_tax_amount = prepayment.tax_amount;
                         row.deducted_taxable_amount = prepayment.taxable_amount;
                         row.deducted_grand_total = prepayment.grand_total;
+                        // Adjustment percentages
+                        row.remaining_percentage = prepayment.remaining_percentage;
+                        row.adjustment_percentage = prepayment.adjustment_percentage;
                         
                     });
                 }
                 
                 frm.refresh_field('prepayments_invcoies');
                 CalculatePrepaymentTotals(frm);
+                calculateRemainingPercentage(frm);
+                calculateAdjustmentPercentage(frm);
                 frappe.dom.unfreeze();
             }
         });
     },
 
     adjustment_percentage(frm) {
+         // Validate adjustment percentage first
+        if (!validateAdjustmentPercentage(frm)) {
+            return;
+        }
+
         const percentage = frm.doc.adjustment_percentage / 100;
         const factor = percentage ? percentage : 1;
 
@@ -210,6 +220,9 @@ frappe.ui.form.on("Sales Invoice" , {
             row.deducted_taxable_amount = row.taxable_amount * factor;
             row.deducted_grand_total = row.grand_total * factor;
         });
+        
+        frm.refresh_field('prepayments_invcoies');
+        // CalculatePrepaymentTotals(frm);
     }
 
 })
@@ -327,7 +340,72 @@ function CalculatePrepaymentTotals(frm) {
     frm.set_value("total_tax_amount", total_tax_amount);
     frm.set_value("total_grands", total_grand_total);
 }
-// End of Advance Payment ********
+
+
+function validateAdjustmentPercentage(frm) {
+    const adjustmentPercentage = frm.doc.adjustment_percentage || 0;
+    
+    // Check if value is greater than 0
+    if (adjustmentPercentage <= 0) {
+        frappe.msgprint({
+            title: __('Invalid Adjustment Percentage'),
+            message: __('Adjustment percentage must be greater than 0'),
+            indicator: 'red'
+        });
+        frm.set_value('adjustment_percentage', 0);
+        return false;
+    }
+    
+    // Calculate remaining percentage based on prepayment invoices
+    // const remainingPercentage = calculateRemainingPercentage(frm);
+    
+    // // Check if adjustment percentage exceeds remaining percentage
+    // if (adjustmentPercentage > remainingPercentage) {
+    //     frappe.msgprint({
+    //         title: __('Invalid Adjustment Percentage'),
+    //         message: __('Adjustment percentage ({0}%) cannot exceed the remaining percentage ({1}%)', 
+    //                     [adjustmentPercentage, remainingPercentage.toFixed(2)]),
+    //         indicator: 'red'
+    //     });
+    //     frm.set_value('adjustment_percentage', remainingPercentage);
+    //     return false;
+    // }
+    
+    return true;
+}
+
+function calculateRemainingPercentage(frm) {
+    // If no previous prepayment, return 100%
+    if (!frm.doc.previous_prepayment || !frm.doc.prepayments_invcoies || frm.doc.prepayments_invcoies.length === 0) {
+        return 100;
+    }
+    
+    let totalUsedPercentage = 0;
+    
+    // Calculate total percentage already used from prepayment invoices
+    frm.doc.prepayments_invcoies.forEach(row => {
+        totalUsedPercentage += (row.adjustment_percentage || 0);
+    });
+    
+    // Remaining percentage is 100% minus what's already used
+    const remainingPercentage = 100 - totalUsedPercentage;
+    
+    frm.set_value("remaining_percentage", remainingPercentage);
+    return Math.max(0, remainingPercentage); // Ensure it's not negative
+}
+
+function calculateAdjustmentPercentage(frm) {
+    // only set automatically if the type is Final Prepayment, all the remaining should be adjusted then
+    if (frm.doc.sales_invoice_type === "Final Adjustment") {
+        const remainingPercentage = calculateRemainingPercentage(frm);
+        const adjustmentPercentage = remainingPercentage;
+        frm.set_value("adjustment_percentage", adjustmentPercentage);
+        frm.set_df_property("adjustment_percentage", "read_only", true);
+    }
+}
+
+
+// End of Advance Payment **********************************************************************************************************************
 
 
 frappe.ui.form.on("Sales Invoice Item" , {
