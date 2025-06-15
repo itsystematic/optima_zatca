@@ -14,6 +14,8 @@
   "issue_time",
   "is_debit_note",
   "is_return",
+  "is_linked",
+  "been_return",
   "section_break_sifn",
   "has_previous_prepayment",
   "previous_prepayment_invoice",
@@ -182,13 +184,27 @@
    "label": "Remaining Percentage",
    "precision": "0",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_linked",
+   "fieldtype": "Check",
+   "label": "Is Linked",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "been_return",
+   "fieldtype": "Check",
+   "label": "Been Return",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-01 16:01:35.058742",
+ "modified": "2025-06-04 08:57:48.263694",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Invoice",

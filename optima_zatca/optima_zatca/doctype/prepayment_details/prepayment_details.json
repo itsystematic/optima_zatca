@@ -6,13 +6,15 @@
  "engine": "InnoDB",
  "field_order": [
   "reference_invoice",
-  "uuid",
   "issue_date",
   "issue_time",
   "is_debit_note",
   "is_return",
   "has_previous_prepayment",
+  "is_linked",
+  "been_return",
   "column_break_capl",
+  "uuid",
   "prepayment_type",
   "customer",
   "tax_category",
@@ -140,6 +142,7 @@
   {
    "fieldname": "prepayment_type",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Prepayment Type"
   },
   {
@@ -172,13 +175,25 @@
    "fieldname": "percent",
    "fieldtype": "Percent",
    "label": "Tax Percent"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_linked",
+   "fieldtype": "Check",
+   "label": "Is Linked"
+  },
+  {
+   "default": "0",
+   "fieldname": "been_return",
+   "fieldtype": "Check",
+   "label": "Been Return"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-29 15:04:28.329280",
+ "modified": "2025-06-04 14:22:03.691182",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Details",
