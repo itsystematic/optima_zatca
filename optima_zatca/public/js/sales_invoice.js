@@ -68,7 +68,8 @@ frappe.ui.form.on("Sales Invoice" , {
             return {
                 filters: {
                     is_linked: 0,
-                    prepayment_type: ["!=", "Final Adjustment"]
+                    prepayment_type: ["!=", "Final Adjustment"],
+                    customer: frm.doc.customer
                 }
             }
         });
