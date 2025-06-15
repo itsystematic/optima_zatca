@@ -43,7 +43,7 @@ def send_to_zatca(sales_invoice_name):
         qrcode_url = create_qr_code_for_invoice(sales_invoice.name , qrcode)
         frappe.db.set_value("Sales Invoice", sales_invoice.name ,{"ksa_einv_qr" : qrcode_url})
 
-        if sales_invoice.get("sales_invoice_type") in ['Initial Prepayment', 'Prepayment', 'Adjustment']: # Create Prepayment Invoice doctype
+        if sales_invoice.get("sales_invoice_type") != "Normal": # Create Prepayment Invoice doctype
             create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
         # manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
         # if not manual_submit : # Auto Submit
@@ -200,22 +200,38 @@ def get_itemised_tax(taxes):
 
 	return itemised_tax
 
-def create_prepayment_invoice(sales_invoice: dict, uuid: str) -> None:
+def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
     """
     Create a Prepayment Invoice document from a Sales Invoice.
     
     Args:
-        sales_invoice: Dictionary containing sales invoice data
+        sales_invoice: frappe Document containing sales invoice data
         uuid: Unique identifier for the prepayment invoice
         
     Raises:
         frappe.ValidationError: If prepayment invoice creation fails
     """
     try:
-        issue_time = format_issue_time(sales_invoice.get("posting_time"))
-        has_previous_prepayment = True if sales_invoice.get("previous_prepayment", None) else False
-        percent = (sales_invoice.get("items") or [{}])[0].get("tax_rate", 0)
-        
+        issue_time = format_issue_time(sales_invoice.posting_time)
+        has_previous_prepayment = True if sales_invoice.previous_prepayment else False
+        previous_prepayment_invoice = sales_invoice.previous_prepayment
+        percent = (sales_invoice.items or [{}])[0].get("tax_rate", 0)
+        adjustment_percentage = sales_invoice.adjustment_percentage * -1 if sales_invoice.is_return else sales_invoice.adjustment_percentage
+
+        # mark the previous invoice as "Is Linked"
+        if sales_invoice.previous_prepayment:
+            frappe.db.set_value("Prepayment Invoice", sales_invoice.previous_prepayment, "is_linked", 1)
+
+        # mark the invoice which was acctually returned against The returned invoice as "Been Returned"
+        if sales_invoice.return_against:
+            frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "been_return", 1)
+            frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "is_linked", 1)
+
+        # To keep the linked chain ensure the reutuned invoice always has a previous, even initial prepayment
+        if sales_invoice.is_return:
+            has_previous_prepayment = True
+            previous_prepayment_invoice = sales_invoice.return_against
+
         # Create and insert the document
         new_prepayment = frappe.get_doc({
             "doctype": "Prepayment Invoice",
@@ -227,23 +243,23 @@ def create_prepayment_invoice(sales_invoice: dict, uuid: str) -> None:
             "customer": sales_invoice.get("customer"),
             "sales_invoice": sales_invoice.get("name"),
             "is_return": sales_invoice.get("is_return"),
+            "adjustment_percentage": adjustment_percentage,
             "issue_date": sales_invoice.get("posting_date"),
             "grand_total": sales_invoice.get("grand_total"),
             "tax_category": sales_invoice.get("tax_category"),
             "has_previous_prepayment": has_previous_prepayment,
             "is_debit_note": sales_invoice.get("is_debit_note"),
             "prepayment_type": sales_invoice.get("sales_invoice_type"),
+            "previous_prepayment_invoice": previous_prepayment_invoice,
             "tax_amount": sales_invoice.get("total_taxes_and_charges"),
             "remaining_percentage": sales_invoice.get("remaining_percentage"),
-            "adjustment_percentage": sales_invoice.get("adjustment_percentage", 0),
-            "previous_prepayment_invoice": sales_invoice.get("previous_prepayment"),
             "taxable_amount": sales_invoice.get("total") or sales_invoice.get("net_total"),
         })
         new_prepayment.insert(ignore_permissions=True)
     except Exception as e:
         log_and_throw_error(
             operation = "create prepayment invoice",
-            document_name = sales_invoice.get('name'),
+            document_name = sales_invoice.name,
             exception = e
         )
 
