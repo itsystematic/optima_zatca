@@ -529,7 +529,7 @@ class ZatcaXml :
                 allowance_charge_reason.text = allowance_charge.get("AllowanceChargeReason")
 
                 allowance_charge_amount = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
-                allowance_charge_amount.text = str(flt(allowance_charge.get("AllowanceChargeAmount") , 1))
+                allowance_charge_amount.text = str(flt(allowance_charge.get("AllowanceChargeAmount") , 2))
                 allowance_charge_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
                 allowance_charge_tax_category = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxCategory")
