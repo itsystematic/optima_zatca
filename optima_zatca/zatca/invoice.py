@@ -29,7 +29,9 @@ def send_to_zatca(sales_invoice_name):
         invoice.zatca_invoice.get("EndPoint")
     )
     Status , qrcode = "Failed" , ""
-    if response.status_code in [200 , 202]: 
+    sucess_status = response.status_code in [200 , 202]
+
+    if sucess_status: 
         ResponseJson = response.json()
         sales_invoice.db_set({
             "sent_to_zatca" : 1  ,
@@ -43,8 +45,6 @@ def send_to_zatca(sales_invoice_name):
         qrcode_url = create_qr_code_for_invoice(sales_invoice.name , qrcode)
         frappe.db.set_value("Sales Invoice", sales_invoice.name ,{"ksa_einv_qr" : qrcode_url})
 
-        if sales_invoice.get("sales_invoice_type") != "Normal": # Create Prepayment Invoice doctype
-            create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
         # manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
         # if not manual_submit : # Auto Submit
         #     sales_invoice.reload()
@@ -74,7 +74,11 @@ def send_to_zatca(sales_invoice_name):
         xml_content = etree.tostring(invoice.xml.root , encoding="utf-8")
     )
 
-    return True if response.status_code in [200 , 202] else False
+    # Create Prepayment Invoice doctype when success
+    if sales_invoice.get("sales_invoice_type") != "Normal" and sucess_status:
+        create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
+
+    return True if sucess_status else False
 
 
 def get_qr_code_from_zatca(zatca_response, generated_qrcode) :
@@ -216,6 +220,7 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
         has_previous_prepayment = True if sales_invoice.previous_prepayment else False
         previous_prepayment_invoice = sales_invoice.previous_prepayment
         percent = (sales_invoice.items or [{}])[0].get("tax_rate", 0)
+        prepayment_type = sales_invoice.sales_invoice_type
         adjustment_percentage = sales_invoice.adjustment_percentage * -1 if sales_invoice.is_return else sales_invoice.adjustment_percentage
 
         # mark the previous invoice as "Is Linked"
@@ -226,6 +231,11 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
         if sales_invoice.return_against:
             frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "been_return", 1)
             frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "is_linked", 1)
+            
+            # revert back the final to adjustment and set the adjustment percentage to zero to continue the pepayment chain later
+            if sales_invoice.sales_invoice_type == "Final Adjustment":
+                prepayment_type = "Adjustment"
+                frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "prepayment_type", "Adjustment")
 
         # To keep the linked chain ensure the reutuned invoice always has a previous, even initial prepayment
         if sales_invoice.is_return:
@@ -249,7 +259,7 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
             "tax_category": sales_invoice.get("tax_category"),
             "has_previous_prepayment": has_previous_prepayment,
             "is_debit_note": sales_invoice.get("is_debit_note"),
-            "prepayment_type": sales_invoice.get("sales_invoice_type"),
+            "prepayment_type": prepayment_type,
             "previous_prepayment_invoice": previous_prepayment_invoice,
             "tax_amount": sales_invoice.get("total_taxes_and_charges"),
             "remaining_percentage": sales_invoice.get("remaining_percentage"),
