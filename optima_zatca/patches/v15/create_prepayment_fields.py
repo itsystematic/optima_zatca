@@ -34,7 +34,7 @@ def get_prepayment_fields():
                 "fieldtype" : "Tab Break",
                 "label" : "Prepayments",
                 "insert_after" : "connections_tab",
-                "depends_on" : "eval:!['Normal', 'Initial Prepayment'].includes(doc.sales_invoice_type)",
+                "depends_on" : "eval:['Prepayment', 'Adjustment', 'Final Adjustment'].includes(doc.sales_invoice_type)",
             },
             {
                 "fieldname" : "previous_prepayment",
@@ -43,12 +43,13 @@ def get_prepayment_fields():
                 "options": "Prepayment Invoice",
                 "insert_after" : "prepayments_tab",
                 "no_copy" : 1,
+                "read_only_depends_on": "eval: doc.return_against",
                 "mandatory_depends_on" : "eval:['Prepayment', 'Adjustment', 'Final Adjustment'].includes(doc.sales_invoice_type)",
             },
             {
-                "fieldname" : "prepayments_details_table",
+                "fieldname" : "prepayments_details",
                 "fieldtype" : "Section Break",
-                "label" : "Prepayment Details Table",
+                "label" : "Prepayment Details",
                 "insert_after" : "previous_prepayment",
             },
             {
@@ -56,7 +57,7 @@ def get_prepayment_fields():
                 "fieldtype" : "Table",
                 "label" : "Prepayments Invoices",
                 "options" : "Prepayment Details",
-                "insert_after" : "prepayments_details_table",
+                "insert_after" : "prepayments_details",
                 "depends_on" : "eval:doc.previous_prepayment",
                 "read_only" : 1,
             },
