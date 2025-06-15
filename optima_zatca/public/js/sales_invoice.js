@@ -161,8 +161,16 @@ frappe.ui.form.on("Sales Invoice" , {
     sales_invoice_type(frm) {
         if (["Initial Prepayment", "Prepayment"].includes(frm.doc.sales_invoice_type)) {
             handleAdvancePaymentInvoice(frm);
+            
+            // Disable adding and deleting rows
+            frm.fields_dict.items.grid.cannot_add_rows = true;
+            frm.fields_dict.items.grid.df.cannot_delete_rows = true;
         } else {
             handleStandardInvoice(frm);
+
+            // Enable adding and deleting rows
+            frm.fields_dict.items.grid.cannot_add_rows = false;
+            frm.fields_dict.items.grid.df.cannot_delete_rows = false;
         }
     },
 
@@ -260,6 +268,7 @@ function handleAdvancePaymentInvoice(frm) {
         price_list_rate : 0,
     });
 
+    
     fetchAdvancePaymentItemDetails(frm, item_row).then(() => {
         frm.set_value("update_stock", 0);
         refreshFormFields(frm);
