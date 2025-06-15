@@ -310,7 +310,7 @@ class ZatcaInvoiceData :
                 self.add_invoice_item(item, invoice_line)
                 self.add_tax_cateogry(item, tax_subtotals)
 
-            # Advance Payments
+            # Advance Payments process
             if self.sales_invoice.get("sales_invoice_type") in ["Adjustment", "Final Adjustment"]:
 
                 # start where normal items end
@@ -318,7 +318,10 @@ class ZatcaInvoiceData :
                 self.prepayment_idx = len(self.sales_invoice.get("items")) + 1
 
                 prepayments: list = (p for p in self.sales_invoice.get("prepayments_invcoies", []) 
-                                if p.get("prepayment_type") in ('Initial Prepayment', 'Prepayment'))
+                                if p.get("prepayment_type") in ('Initial Prepayment', 'Prepayment')
+                                and p.get("been_return") == 0 # both retured and returned agianst should be execluded
+                                and p.get("is_return") == 0 # As not existed in the first place
+                                )
                 
                 for prepayment_invoice in prepayments:
                     self.add_prepayment_item(prepayment_invoice, invoice_line)

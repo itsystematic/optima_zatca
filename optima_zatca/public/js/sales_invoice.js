@@ -6,6 +6,11 @@ frappe.ui.form.on("Sales Invoice" , {
         frm.trigger("add_zatca_button") ;
         frm.trigger('remove_send_to_zatca_button') ;
         frm.trigger("setup_query_filters") ;
+        if (frm.doc.is_return && !frm.doc.previous_prepayment){// set previous prepayment only once
+            frm.set_value("previous_prepayment", frm.doc.return_against);
+            frm.events.previous_prepayment(frm);
+        }
+        
         // frm.trigger("add_default_commercial_register");
     },
 
@@ -57,6 +62,18 @@ frappe.ui.form.on("Sales Invoice" , {
                 }
             }
         })
+
+    
+        frm.set_query("previous_prepayment", () => {
+            return {
+                filters: {
+                    is_linked: 0,
+                    prepayment_type: ["!=", "Final Adjustment"]
+                }
+            }
+        });
+        
+
     },
 
     async commercial_register(frm) {
@@ -108,6 +125,7 @@ frappe.ui.form.on("Sales Invoice" , {
         if (frm.doc.is_return) {
             frm.set_df_property("return_against" , "label" , __("Return Against"));
             frm.set_df_property("return_against" , "reqd" , 1);
+            
         } else {
             frm.set_df_property("return_against" , "reqd" , 0);
         }
@@ -191,6 +209,9 @@ frappe.ui.form.on("Sales Invoice" , {
                         // Adjustment percentages
                         row.remaining_percentage = prepayment.remaining_percentage;
                         row.adjustment_percentage = prepayment.adjustment_percentage;
+                        row.been_return = prepayment.been_return;
+                        row.is_linked = prepayment.is_linked;
+                        row.is_return = prepayment.is_return;
                         
                     });
                 }
@@ -213,7 +234,7 @@ frappe.ui.form.on("Sales Invoice" , {
         const percentage = frm.doc.adjustment_percentage / 100;
         const factor = percentage ? percentage : 1;
 
-        frm.set_value("prepayment_subtotal", frm.doc.total_grands * factor);
+        // frm.set_value("prepayment_subtotal", frm.doc.total_grands * factor); // field deleted
         frm.doc.prepayments_invcoies.forEach(row => {
             if (!['Initial Prepayment', 'Prepayment'].includes(row.prepayment_type)) return;
             row.deducted_tax_amount = row.tax_amount * factor;
@@ -375,6 +396,14 @@ function validateAdjustmentPercentage(frm) {
 }
 
 function calculateRemainingPercentage(frm) {
+
+    // in case of return, fetch the first prepayment invoice remaining percentage
+    if (frm.doc.is_return) {
+        if (frm.doc.prepayments_invcoies && frm.doc.prepayments_invcoies.length > 0) {
+            frm.set_value("remaining_percentage", frm.doc.prepayments_invcoies[0].remaining_percentage || 0);
+            return frm.doc.prepayments_invcoies[0].remaining_percentage || 0;
+        }
+    }
     // If no previous prepayment, return 100%
     if (!frm.doc.previous_prepayment || !frm.doc.prepayments_invcoies || frm.doc.prepayments_invcoies.length === 0) {
         return 100;
@@ -401,6 +430,14 @@ function calculateAdjustmentPercentage(frm) {
         const adjustmentPercentage = remainingPercentage;
         frm.set_value("adjustment_percentage", adjustmentPercentage);
         frm.set_df_property("adjustment_percentage", "read_only", true);
+    }
+
+    // in case of return, fetch the first prepayment invoice adjustment percentage
+    if (frm.doc.is_return) {
+        if (frm.doc.prepayments_invcoies && frm.doc.prepayments_invcoies.length > 0) {
+            frm.set_value("adjustment_percentage", frm.doc.prepayments_invcoies[0].adjustment_percentage || 0);
+            frm.set_df_property("adjustment_percentage", "read_only", true);
+        }
     }
 }
 
