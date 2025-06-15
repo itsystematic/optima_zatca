@@ -42,6 +42,7 @@ def get_prepayment_fields():
                 "label" : "Previous Prepayment",
                 "options": "Prepayment Invoice",
                 "insert_after" : "prepayments_tab",
+                "no_copy" : 1,
                 "mandatory_depends_on" : "eval:['Prepayment', 'Adjustment', 'Final Adjustment'].includes(doc.sales_invoice_type)",
             },
             {
@@ -118,19 +119,19 @@ def get_prepayment_fields():
                 "read_only_depends_on" : "eval:doc.sales_invoice_type == 'Final Adjustment'",
                 "precision" : 0, 
             },
-            {
-                "fieldname" : "prepayment_subtotal",
-                "fieldtype" : "Currency",
-                "label" : "Prepayment Subtotal",
-                "insert_after" : "adjustment_percentage",
-                "read_only" : 1,
-                "depends_on" : "eval:doc.adjustment_percentage != 0",
-                "default" : 0
-            },
+            # {
+            #     "fieldname" : "prepayment_subtotal",
+            #     "fieldtype" : "Currency",
+            #     "label" : "Prepayment Subtotal",
+            #     "insert_after" : "adjustment_percentage",
+            #     "read_only" : 1,
+            #     "depends_on" : "eval:doc.adjustment_percentage != 0",
+            #     "default" : 0
+            # },
             {
                 "fieldname" : "column_break_eikd",
                 "fieldtype" : "Column Break",
-                "insert_after" : "prepayment_subtotal",
+                "insert_after" : "adjustment_percentage",
             },
             {
                 "fieldname" : "remaining_percentage",
