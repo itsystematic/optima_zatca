@@ -103,45 +103,133 @@ def get_prepayment_fields():
                 "default" : 0
             },
             {
+                "fieldname": "deducted_prepayment_totals",
+                "fieldtype": "Section Break",
+                "label": "Deducted Prepayment Totals",
+                "insert_after": "total_grands",
+                "depends_on": "eval:doc.adjustment_percentage",
+            },
+            {
+                "fieldname": "deducted_tax_amount",
+                "fieldtype": "Currency",
+                "label": "Deducted Tax Amount",
+                "insert_after": "deducted_prepayment_totals",
+                "read_only": 1,
+                "default": 0
+            },
+            {
+                "fieldname": "column_break_efde",
+                "fieldtype": "Column Break",
+                "insert_after": "deducted_tax_amount",
+            },
+            {
+                "fieldname": "deducted_taxable_amount",
+                "fieldtype": "Currency",
+                "label": "Deducted Taxable Amount",
+                "insert_after": "column_break_efde",
+                "read_only": 1,
+                "default": 0
+            },
+            {
+                "fieldname": "column_break_eifde",
+                "fieldtype": "Column Break",
+                "insert_after": "deducted_taxable_amount",
+            },
+            {
+                "fieldname": "deducted_grand_total",
+                "fieldtype": "Currency",
+                "label": "Deducted Grand Total",
+                "insert_after": "column_break_eifde",
+                "read_only": 1,
+                "default": 0
+            },
+            {
+                "fieldname": "adjustment_totals",
+                "fieldtype": "Section Break",
+                "label": "Adjustment Totals",
+                "insert_after": "deducted_grand_total",
+                "depends_on" : "eval:doc.adjustment_percentage",
+            },
+            {
+                "fieldname" : "adjustment_tax_amount",
+                "fieldtype" : "Currency",
+                "label" : "Adjustment Tax Amount",
+                "insert_after" : "adjustment_totals",
+                "read_only" : 1,
+                "default" : 0
+            },
+            {
+                "fieldname" : "column_break_eiwqwe",
+                "fieldtype" : "Column Break",
+                "insert_after" : "adjustment_tax_amount",
+            },
+            {
+                "fieldname" : "adjustment_taxable_amount",
+                "fieldtype" : "Currency",
+                "label" : "Adjustment Taxable Amount",
+                "insert_after" : "column_break_eiwqwe",
+                "read_only" : 1,
+                "default" : 0
+            },
+            {
+                "fieldname" : "column_break_eiweqwe",
+                "fieldtype" : "Column Break",
+                "insert_after" : "adjustment_taxable_amount",
+            },
+            {
+                "fieldname" : "adjustment_grands",
+                "fieldtype" : "Currency",
+                "label" : "Adjustment Grands",
+                "insert_after" : "column_break_eiweqwe",
+                "read_only" : 1,
+                "default" : 0
+            },
+            {
                 "fieldname" : "prepayment_percentages",
                 "fieldtype" : "Section Break",
                 "label" : "Prepayment Percentages",
-                "insert_after" : "total_grands",
+                "insert_after" : "adjustment_grands",
                 "depends_on" : "eval:['Adjustment', 'Final Adjustment'].includes(doc.sales_invoice_type) && doc.previous_prepayment",
                 "read_only_depends_on" : "eval:doc.sales_invoice_type == 'Final Adjustment'",
-            },
-            {
-                "fieldname" : "adjustment_percentage",
-                "fieldtype" : "Percent",
-                "label" : "Adjustment Percentage",
-                "insert_after" : "prepayment_percentages",
-                "depends_on" : "eval:doc.previous_prepayment",
-                "mandatory_depends_on" : "eval:doc.sales_invoice_type == 'Adjustment'",
-                "read_only_depends_on" : "eval:doc.sales_invoice_type == 'Final Adjustment'",
-                "precision" : 0, 
-            },
-            # {
-            #     "fieldname" : "prepayment_subtotal",
-            #     "fieldtype" : "Currency",
-            #     "label" : "Prepayment Subtotal",
-            #     "insert_after" : "adjustment_percentage",
-            #     "read_only" : 1,
-            #     "depends_on" : "eval:doc.adjustment_percentage != 0",
-            #     "default" : 0
-            # },
-            {
-                "fieldname" : "column_break_eikd",
-                "fieldtype" : "Column Break",
-                "insert_after" : "adjustment_percentage",
             },
             {
                 "fieldname" : "remaining_percentage",
                 "fieldtype" : "Percent",
                 "label" : "Remaining Percentage",
-                "insert_after" : "column_break_eikd",
+                "insert_after" : "prepayment_percentages",
                 "precision" : 0,
                 "default" : 100,
                 "read_only" : 1,
+                "precision" : 5,
+            },
+            {
+                "fieldname" : "column_break_eikd",
+                "fieldtype" : "Column Break",
+                "insert_after" : "remaining_percentage",
+            },
+            {
+                "fieldname" : "max_adjustment_limit",
+                "fieldtype" : "Percent",
+                "label" : "Max Limit Percentage",
+                "insert_after" : "column_break_eikd",
+                "read_only" : 1,
+                "default" : 0,
+                "precision" : 5,
+            },
+            {
+                "fieldname" : "column_break_eikder",
+                "fieldtype" : "Column Break",
+                "insert_after" : "max_adjustment_limit",
+            },
+            {
+                "fieldname" : "adjustment_percentage",
+                "fieldtype" : "Percent",
+                "label" : "Adjustment Percentage",
+                "insert_after" : "column_break_eikder",
+                "precision" : 5,
+                "depends_on" : "eval:doc.previous_prepayment",
+                "mandatory_depends_on" : "eval:doc.sales_invoice_type == 'Adjustment'",
+                "read_only_depends_on" : "eval:doc.sales_invoice_type == 'Final Adjustment'  || doc.is_return",
             },
         ]
     }
