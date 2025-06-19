@@ -137,9 +137,9 @@ after_app_install = "optima_zatca.utils.after_app_install"
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Sales Invoice": "optima_zatca.overrides.sales_invoice.CustomSalesInvoice"
+}
 
 # Document Events
 # ---------------
