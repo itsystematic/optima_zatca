@@ -517,6 +517,7 @@ class ZatcaXml :
         if self.sales_invoice.get("ActualDeliveryDate") :
             place += 1
 
+        has_single_allawance = len(self.sales_invoice.get("TaxSubtotal" , [])) == 1 and self.sales_invoice.get("TaxSubtotal")[0].get("AllowanceChargeAmount" , 0.00) > 0
         for allowance_charge in self.sales_invoice.get("TaxSubtotal" , []) :
 
             if allowance_charge.get("AllowanceChargeAmount" , 0.00) > 0 :
@@ -529,7 +530,12 @@ class ZatcaXml :
                 allowance_charge_reason.text = allowance_charge.get("AllowanceChargeReason")
 
                 allowance_charge_amount = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount")
-                allowance_charge_amount.text = str(flt(allowance_charge.get("AllowanceChargeAmount") , 2))
+                if has_single_allawance :
+                
+                    allowance_charge_amount.text = str(flt(self.sales_invoice.get("AllowanceTotalAmount") , 2))
+                    frappe.msgprint("one found , using discount amount {0}".format(allowance_charge_amount.text))
+                else :
+                    allowance_charge_amount.text = str(flt(allowance_charge.get("AllowanceChargeAmount") , 2))
                 allowance_charge_amount.set("currencyID", self.sales_invoice.get("DocumentCurrencyCode"))
 
                 allowance_charge_tax_category = etree.SubElement(parent_allowance_charge , "{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}TaxCategory")
@@ -556,6 +562,7 @@ class ZatcaXml :
                     .index(customer) + place ,
                     parent_allowance_charge,
                 )
+
 
         # tax total amount in company currency (We deal mainly with ksa) , rhera is two tax total amounts one in invoice currency and one in company curreny
         tax_total_tax_amount = self.root.find(".//cac:TaxTotal/cbc:TaxAmount", namespaces=NameSpace)
