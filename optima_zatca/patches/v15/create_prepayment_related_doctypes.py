@@ -40,11 +40,8 @@ def execute():
         if not frappe.db.exists("Item Group", "Prepayment Services"):
             frappe.get_doc({
                 "doctype": "Item Group",
-                "parent_item_group": "All Item Groups",
                 "item_group_name": "Prepayment Services",
                 "name": "Prepayment Services",
-                "old_parent": "All Item Groups",
-                "parent_item_group": "All Item Groups",
                 "is_group": 0
             }).insert()
 
