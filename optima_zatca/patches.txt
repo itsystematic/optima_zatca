@@ -4,3 +4,5 @@
 
 [post_model_sync]
 optima_zatca.patches.v15.create_zatca_additoinal_role
+optima_zatca.patches.v15.create_prepayment_related_doctypes
+optima_zatca.patches.v15.create_prepayment_fields
