@@ -188,6 +188,15 @@ def create_additional_fields() :
                 "no_copy" : 1
             },
             {
+                "fieldname" : "sales_invoice_type",
+                "fieldtype" : "Link",
+                "label" : "Sales Invoice Type",
+                "insert_after" : "clearance_or_reporting",
+                "options" : "Sales Invoice Type",
+                "default" : "Normal",
+                "reqd" : 1
+            },
+            {
                 "fieldname" : "reason_for_issuance",
                 "fieldtype" : "Small Text" ,
                 "label" : "Reason For issuance" ,

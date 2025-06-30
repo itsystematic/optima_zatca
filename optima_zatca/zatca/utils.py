@@ -6,6 +6,8 @@ import frappe
 import qrcode
 import hashlib
 import binascii
+import traceback
+from frappe import _
 from datetime import datetime
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -250,3 +252,83 @@ def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict 
     
     
     return company_dict
+
+@frappe.whitelist()
+def get_prepayment_details(prepayment_invoice, filters=None):
+    """
+    Fetch prepayment details from the specified prepayment invoice.
+    
+    Args:
+        prepayment_invoice: The name of the prepayment invoice to fetch
+        filters: Optional additional filters as string or dict
+        
+    Returns:
+        List of prepayment invoice details
+    """
+    try:
+        if not prepayment_invoice:
+            return []
+            
+        # Convert string filters to dict if needed
+        if filters and isinstance(filters, str):
+            filters = frappe.parse_json(filters)
+        
+        # Fetch the prepayment invoice directly by name
+        prepayment_data = frappe.get_doc("Prepayment Invoice", prepayment_invoice)
+        
+        # Start building the result list
+        result_list = [prepayment_data]
+        
+        # Recursively fetch previous prepayment invoices if they exist
+        # Check both has_previous_prepayment flag and that previous_prepayment_invoice is not null/empty
+        if (prepayment_data.get("has_previous_prepayment") and 
+            prepayment_data.get("previous_prepayment_invoice")):
+            
+            previous_invoices = get_prepayment_details(
+                prepayment_data.get("previous_prepayment_invoice"), 
+                filters
+            )
+            # Extend the list with previous prepayment details
+            result_list.extend(previous_invoices)
+            
+        return result_list
+        
+    except Exception as e:
+        log_and_throw_error(
+            operation="fetch prepayment details for",
+            document_name=prepayment_invoice,
+            exception=e,
+            custom_message="Failed to fetch prepayment invoice details. Please check the Error Log."
+        )
+
+
+def log_and_throw_error(operation: str, document_name: str, exception: Exception, custom_message: str = None) -> None:
+    """
+    Log an error to the error log and throw a user-friendly message.
+    
+    Args:
+        operation: The operation that failed (e.g., "create", "update", "delete")
+        document_name: The name/ID of the document being processed
+        exception: The exception that was caught
+        custom_message: Optional custom error message to display to the user
+    
+    Raises:
+        frappe.ValidationError: A user-friendly error message
+    """
+    error_message = str(exception)
+    error_trace = traceback.format_exc()
+    
+    # Generate the log title
+    log_title = f"Failed to {operation} {document_name}"
+    
+    # Log the detailed error
+    frappe.log_error(
+        title=log_title,
+        message=f"Error: {error_message}\n{error_trace}"
+    )
+    
+    # Use custom message if provided, otherwise create a generic one
+    user_message = custom_message or f"Failed to {operation}. Please check the Error Log."
+    
+    # Throw the user-friendly message
+    frappe.throw(_(user_message))
