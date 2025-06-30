@@ -677,7 +677,7 @@ class ZatcaXmlGenerator:
         self._create_element(
             allowance,
             "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Amount",
-            str(flt(self.sales_invoice.get("AllowanceChargeAmount"), 2)) if has_single_allawance else str(flt(charge.get("AllowanceChargeAmount"), 2)) ,
+            str(flt(self.sales_invoice.get("AllowanceTotalAmount"), 2)) if has_single_allawance else str(flt(charge.get("AllowanceChargeAmount"), 2)) ,
             {"currencyID": self.sales_invoice.get("DocumentCurrencyCode")}
         )
         
