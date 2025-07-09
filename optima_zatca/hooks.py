@@ -137,9 +137,9 @@ after_app_install = "optima_zatca.utils.after_app_install"
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Sales Invoice": "optima_zatca.overrides.sales_invoice.CustomSalesInvoice"
+}
 
 # Document Events
 # ---------------
@@ -147,9 +147,10 @@ after_app_install = "optima_zatca.utils.after_app_install"
 
 doc_events = {
 	"Sales Invoice": {
+        "before_save": "optima_zatca.events.sales_invoice.validate_prepayments",
 		"on_cancel": "optima_zatca.events.sales_invoice.sales_invoice_on_cancel",
 		"on_trash": "optima_zatca.events.sales_invoice.sales_invoice_on_trash",
-        "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit"
+        "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit",
 	}
 }
 

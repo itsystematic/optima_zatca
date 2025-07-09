@@ -26,6 +26,7 @@ class ZatcaInvoiceValidate :
         self.validate_credit_or_debit_invoice()
         self.validate_items_fields()
         self.validate_customer_info()
+        self.validate_advance_payment()
 
         
     def validate_sales_invoice_sender(self) :
@@ -95,6 +96,8 @@ class ZatcaInvoiceValidate :
                 if len(str(self.customer_info.get("registration_value")).strip()) != 10 :
                     frappe.throw(title=_("National Id Required"),msg=_("National Id Must 10 no"))
 
+            self.validate_item_name_special_chars(item)
+
                 
     def validate_customer_info(self) :
 
@@ -119,6 +122,29 @@ class ZatcaInvoiceValidate :
             if country_code in ["sa" , "SA"] :
                 validate_tax_id_in_saudia_arabia(self.customer_info.get("tax_id"))
                 validate_commercial_register(self.customer_info.get("registration_type"),self.customer_info.get("registration_value"))
+    def validate_item_name_special_chars(self, item):
+        """Validate item name doesn't contain restricted characters."""
+        item_name = item.get("item_name")
+        restricted_chars = ["'", "\""]
+        if any(char in item_name for char in restricted_chars):
+            frappe.throw(_("Item Name [{0}] contains restricted characters, Please Remove it and Try Again.").format(item_name))
+
+    def validate_advance_payment(self) -> None:
+        """Validate Sales Invoice Elementary Advance Payment
+
+        Args:
+            sales_invoice (dict): Sales Invoice Data
+
+        Raises:
+            frappe.throw: If Sales Invoice Type is not Elementary Advance Payment 
+                                    or Advance Payment Item is not in Items List
+        """
+        if self.sales_invoice.get("sales_invoice_type") != "Elementary Advance Payment":
+            return
+
+        items = self.sales_invoice.get("items")
+        if len(items) != 1 or items[0].get("item_code") != "advance payment" or items[0].get("qty") != 1:
+            frappe.throw(title=_("Avance Payment Error"), msg=_("Elementary Advance Payment Must Have One Item with Advance Payment Item and Quantity 1"))
 
 
 def validate_commercial_register(registration_type,registration_value) :

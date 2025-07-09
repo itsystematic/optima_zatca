@@ -1,0 +1,235 @@
+{
+ "actions": [],
+ "autoname": "field:id",
+ "creation": "2025-05-11 11:11:57.295914",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "id",
+  "uuid",
+  "prepayment_type_code",
+  "customer",
+  "column_break_onnz",
+  "issue_date",
+  "issue_time",
+  "is_debit_note",
+  "is_return",
+  "is_linked",
+  "been_return",
+  "section_break_sifn",
+  "has_previous_prepayment",
+  "previous_prepayment_invoice",
+  "column_break_glvq",
+  "sales_invoice",
+  "prepayment_type",
+  "section_break_sumh",
+  "tax_amount",
+  "taxable_amount",
+  "grand_total",
+  "column_break_hmwq",
+  "tax_category",
+  "percent",
+  "section_break_dieb",
+  "adjustment_percentage",
+  "column_break_pxay",
+  "remaining_percentage"
+ ],
+ "fields": [
+  {
+   "fieldname": "id",
+   "fieldtype": "Data",
+   "label": "ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "uuid",
+   "fieldtype": "Data",
+   "label": "UUID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_onnz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "issue_date",
+   "fieldtype": "Data",
+   "label": "Issue Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issue_time",
+   "fieldtype": "Data",
+   "label": "Issue Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "prepayment_type_code",
+   "fieldtype": "Data",
+   "label": "Prepayment Type Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_sumh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "tax_amount",
+   "fieldtype": "Currency",
+   "label": "Tax Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "taxable_amount",
+   "fieldtype": "Currency",
+   "label": "Taxable Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hmwq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tax_category",
+   "fieldtype": "Data",
+   "label": "Tax Category",
+   "read_only": 1
+  },
+  {
+   "fieldname": "percent",
+   "fieldtype": "Percent",
+   "label": "Percent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_debit_note",
+   "fieldtype": "Check",
+   "label": "Is Debit Note",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_return",
+   "fieldtype": "Check",
+   "label": "Is Return",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_previous_prepayment",
+   "fieldtype": "Check",
+   "label": "Has Previous Prepayment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_prepayment_invoice",
+   "fieldtype": "Link",
+   "label": "Previous Prepayment Invoice",
+   "options": "Prepayment Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_sifn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_glvq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "prepayment_type",
+   "fieldtype": "Data",
+   "label": "Prepayment Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_dieb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "adjustment_percentage",
+   "fieldtype": "Percent",
+   "label": "Adjustment Percentage",
+   "precision": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pxay",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remaining_percentage",
+   "fieldtype": "Percent",
+   "label": "Remaining Percentage",
+   "precision": "0",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_linked",
+   "fieldtype": "Check",
+   "label": "Is Linked",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "been_return",
+   "fieldtype": "Check",
+   "label": "Been Return",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-30 08:58:54.590969",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Prepayment Invoice",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
