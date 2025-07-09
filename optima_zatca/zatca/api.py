@@ -3,7 +3,7 @@ import base64
 import frappe
 from frappe import _
 from optima_zatca.zatca.classes.validate import validate_register_data
-from optima_zatca.zatca.request import make_post_request , make_get_request , make_patch_request
+from optima_zatca.zatca.request import make_post_request , make_patch_request
 
 
 def get_zatca_csid(setting: str, otp: str, csr: str) -> dict:
