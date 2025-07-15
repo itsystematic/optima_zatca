@@ -19,6 +19,21 @@ def send_to_zatca(sales_invoice_name):
     invoice = ZatcaInvoiceData(sales_invoice)
     invoice_encoded = base64.b64encode(etree.tostring(invoice.xml.root , encoding="utf-8")).decode("utf-8")
 
+    # Run all validations and pre-submit hooks BEFORE sending to ZATCA for auto-submit later
+    try:
+        sales_invoice.run_method("validate")
+        sales_invoice.run_method("before_submit")
+        sales_invoice.check_permission("submit")
+        
+    except Exception as e:
+        log_and_throw_error(
+            operation="Send to ZATCA",
+            document_name = sales_invoice.name,
+            exception=e
+        )
+        return False
+
+
     response = make_invoice_request(
         invoice.zatca_invoice.get("Clearance-Status") , 
         invoice.company_settings.get("authorization") , 
@@ -33,22 +48,19 @@ def send_to_zatca(sales_invoice_name):
 
     if sucess_status: 
         ResponseJson = response.json()
-        sales_invoice.db_set({
-            "sent_to_zatca" : 1  ,
-            "clearance_or_reporting" : ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus")
-        }, commit=True)
+        sales_invoice.sent_to_zatca = 1
+        sales_invoice.clearance_or_reporting = ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus")
 
         frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=  _("Accepted"),indicator="green" ,alert=True)
         
         Status = "Success"  if response.status_code == 200 else "Warning"  
         qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
         qrcode_url = create_qr_code_for_invoice(sales_invoice.name , qrcode)
-        frappe.db.set_value("Sales Invoice", sales_invoice.name ,{"ksa_einv_qr" : qrcode_url})
+        sales_invoice.ksa_einv_qr = qrcode_url
 
-        # manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
-        # if not manual_submit : # Auto Submit
-        #     sales_invoice.reload()
-        #     sales_invoice.submit()
+        # Save the document with ZATCA updates
+        sales_invoice.save(ignore_permissions=True, ignore_version=True)
+
 
     else :
         frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=  _("Rejected"), indicator="red" , alert=True)
@@ -78,6 +90,11 @@ def send_to_zatca(sales_invoice_name):
     if sales_invoice.get("sales_invoice_type") != "Normal" and sucess_status:
         create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
 
+    manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
+    if not manual_submit and sucess_status: # Auto Submit
+        sales_invoice.submit()
+        frappe.db.commit()
+        
     return True if sucess_status else False
 
 

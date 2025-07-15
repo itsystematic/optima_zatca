@@ -74,7 +74,11 @@ frappe.ui.form.on("Sales Invoice" , {
                 freeze_message : __("Sending Invoice {0} to Zatca", [frm.doc.name]),
                 callback(r){
                     if(r.message){
-                        cur_frm.reload_doc();
+                        // cur_frm.reload_doc();
+                        frappe.show_alert({
+                            message : __("Invoice sumbitted successfully"),
+                            indicator : "green"
+                        })
                     }
                 }
             })
