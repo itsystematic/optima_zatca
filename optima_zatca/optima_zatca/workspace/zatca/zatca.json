@@ -1,6 +1,10 @@
 {
  "charts": [
   {
+   "chart_name": "Zatca Accepted Status",
+   "label": "Zatca Accepted Status"
+  },
+  {
    "chart_name": "Zatca End Point Count",
    "label": "Zatca Logs End-point Count"
   },
@@ -9,7 +13,7 @@
    "label": "Optima Zatca Logs Count"
   }
  ],
- "content": "[{\"id\":\"ZNyKNnirFh\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">ZATCA</span>\",\"col\":12}},{\"id\":\"Wm_QtdR2zq\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Optima Zatca Logs Count\",\"col\":6}},{\"id\":\"SVdzvZ8x5M\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zatca Logs End-point Count\",\"col\":6}},{\"id\":\"95B1LijhF1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Zatca Onboarding\",\"col\":6}}]",
+ "content": "[{\"id\":\"ZNyKNnirFh\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">ZATCA</span>\",\"col\":12}},{\"id\":\"PeQOP9V4aX\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Failed Zatca Invoice\",\"col\":6}},{\"id\":\"aoinfGtb0O\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Success Zatca Invoice\",\"col\":6}},{\"id\":\"SVdzvZ8x5M\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zatca Logs End-point Count\",\"col\":6}},{\"id\":\"Wm_QtdR2zq\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Optima Zatca Logs Count\",\"col\":6}},{\"id\":\"aIBOg4c2Ys\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zatca Accepted Status\",\"col\":12}},{\"id\":\"95B1LijhF1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Zatca Onboarding\",\"col\":3}}]",
  "creation": "2025-03-20 10:13:10.284989",
  "custom_blocks": [],
  "docstatus": 0,
@@ -22,11 +26,20 @@
  "is_hidden": 0,
  "label": "ZATCA",
  "links": [],
- "modified": "2025-03-23 12:40:17.638826",
+ "modified": "2025-07-16 15:18:15.023969",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "ZATCA",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Total Success Zatca Invoice",
+   "number_card_name": "Total Success Zatca Invoice"
+  },
+  {
+   "label": "Total Failed Zatca Invoice",
+   "number_card_name": "Total Failed Zatca Invoice"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
