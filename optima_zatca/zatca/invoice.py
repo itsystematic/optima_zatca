@@ -181,12 +181,6 @@ def update_itemised_tax_data(doc):
             document_name = doc.name,
             exception = e
         )
-        # frappe.log_error(
-        #     title=f"Failed in update_itemised_tax_data for {doc.name}",
-        #     message=f"Document: {doc.doctype} {doc.name}\nError: {str(e)}\n{traceback.format_exc()}"
-        # )
-        # # Re-raise if you want the document save to fail visibly
-        # frappe.throw("Tax calculation failed. Check Error Log.")
 
 
 
