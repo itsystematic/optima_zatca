@@ -31,7 +31,7 @@ def execute(filters=None):
 	# Prepare chart data
 	pie_chart = {
         "data": {
-            'labels': ["Cleared", "Reported"],
+            'labels': ["Reported" ,"Cleared"],
             'datasets': [
                 {
                     'name': 'End Point Count',
