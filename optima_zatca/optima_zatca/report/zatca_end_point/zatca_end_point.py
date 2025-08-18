@@ -26,6 +26,7 @@ def execute(filters=None):
 			SUM(CASE WHEN api_endpoint IN ('reporting', 'reported') THEN 1 ELSE 0 END) AS reported,
 			SUM(CASE WHEN api_endpoint IN ('clearance','cleared') THEN 1 ELSE 0 END) AS cleared
 		FROM `tabOptima Zatca Logs`
+		WHERE status != 'Failed'
 	""", as_dict=1)
 
 	# Prepare chart data

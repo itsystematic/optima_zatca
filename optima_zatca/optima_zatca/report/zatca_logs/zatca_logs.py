@@ -5,7 +5,7 @@ import frappe
 
 
 def execute(filters=None):
-	columns = [
+    columns = [
         {
             "fieldname": "success",
             "label": "Success",
@@ -20,16 +20,18 @@ def execute(filters=None):
         }
     ]
 
-	# SQL Query to fetch the data in one command
-	data = frappe.db.sql("""
-		SELECT
-			SUM(CASE WHEN status IN ('Success', 'Warning') THEN 1 ELSE 0 END) AS success,
-			SUM(CASE WHEN status = 'Failed' THEN 1 ELSE 0 END) AS failed
-		FROM `tabOptima Zatca Logs`
-	""", as_dict=1)
+    # SQL Query to fetch the data in one command
+    data = frappe.db.sql("""
+        SELECT
+            SUM(CASE WHEN status IN ('Success', 'Warning') THEN 1 ELSE 0 END) AS success,
+            SUM(CASE WHEN status = 'Failed' THEN 1 ELSE 0 END) AS failed
+        FROM `tabOptima Zatca Logs`
+        WHERE api_endpoint != 'complainace_checks'
+        AND reference_name != ''
+    """, as_dict=1)
 
-	# Prepare chart data
-	pie_chart = {
+    # Prepare chart data
+    pie_chart = {
         "data": {
             'labels': ["Success", "Failed"],
             'datasets': [
@@ -44,4 +46,4 @@ def execute(filters=None):
         "colors": ["#4CAF50", "#F44336"],
         "title": "Status Distribution"
     }
-	return columns, data, None, pie_chart
+    return columns, data, None, pie_chart
