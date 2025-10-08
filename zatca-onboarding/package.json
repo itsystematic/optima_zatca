@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "//": "axios@^1.8.2 explicitly added to fix SSRF vulnerability (CVE-2024-39338)",
   "scripts": {
     "dev": "vite",
     "build": "vite build --base=/assets/optima_zatca/zatca-onboarding/",
@@ -14,6 +15,7 @@
     "@ant-design/icons": "^5.5.2",
     "@reduxjs/toolkit": "^2.4.0",
     "antd": "^5.23.2",
+    "axios": "^1.8.2",
     "framer-motion": "^11.14.4",
     "frappe-react-sdk": "^1.9.0",
     "motion": "^11.13.1",
