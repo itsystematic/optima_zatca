@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "//": "Security fixes: axios@^1.8.2 (CVE-2024-39338 SSRF), form-data@^4.0.4 (CVE-2025-7783 unsafe random)",
+  "//": "Security fixes: axios@^1.12.2 (CVE-2024-39338 SSRF + CVE-2024-55565 DoS), form-data@^4.0.4 (CVE-2025-7783 unsafe random)",
   "scripts": {
     "dev": "vite",
     "build": "vite build --base=/assets/optima_zatca/zatca-onboarding/",
@@ -15,7 +15,7 @@
     "@ant-design/icons": "^5.5.2",
     "@reduxjs/toolkit": "^2.4.0",
     "antd": "^5.23.2",
-    "axios": "^1.8.2",
+    "axios": "^1.12.2",
     "form-data": "^4.0.4",
     "framer-motion": "^11.14.4",
     "frappe-react-sdk": "^1.9.0",
