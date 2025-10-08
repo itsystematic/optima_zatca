@@ -73,7 +73,7 @@ class ZatcaInvoiceData:
             self.company_address = self._get_address(self.sales_invoice.get("company_address"))
             self.customer_info = self._get_customer_info()
             self.customer_address = self._get_address(self.sales_invoice.get("customer_address"))
-            self.customer_country_code = self.DEFAULT_COUNTRY_CODE
+            self.customer_country_code = self._get_code_from_country()
             
         except Exception as e:
             log_and_throw_error(
@@ -111,6 +111,25 @@ class ZatcaInvoiceData:
         except frappe.DoesNotExistError:
             frappe.log_error(f"Customer {customer_name} not found", "ZATCA Customer Error")
             return {}
+
+    def _get_code_from_country(self) -> str:
+        """Get country code from customer address."""
+        try:
+            if not self.customer_address or not self.customer_address.get("country"):
+                return self.DEFAULT_COUNTRY_CODE
+            
+            country_name = self.customer_address.get("country")
+            country_code = frappe.db.get_value("Country", country_name, "code")
+            
+            if country_code:
+                return country_code.upper()
+            else:
+                frappe.log_error(f"Country code not found for country: {country_name}", "ZATCA Country Code Error")
+                return self.DEFAULT_COUNTRY_CODE
+                
+        except Exception as e:
+            frappe.log_error(f"Error getting country code: {str(e)}", "ZATCA Country Code Error")
+            return self.DEFAULT_COUNTRY_CODE
 
 
     def _validate_invoice(self) -> None:
