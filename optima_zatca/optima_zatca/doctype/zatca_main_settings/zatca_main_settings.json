@@ -9,6 +9,7 @@
   "enable_cancel_invoice",
   "enable_delete_invoice",
   "manual_submit",
+  "sending_is_restricted_to_todays_date",
   "column_break_cehc",
   "phase"
  ],
@@ -46,12 +47,19 @@
    "fieldname": "manual_submit",
    "fieldtype": "Check",
    "label": "Manual Submit"
+  },
+  {
+   "default": "0",
+   "fieldname": "sending_is_restricted_to_todays_date",
+   "fieldtype": "Check",
+   "label": "Sending is Restricted to Today's Date"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-02-27 14:29:30.781573",
+ "modified": "2025-10-28 13:12:55.199089",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Zatca Main Settings",
@@ -68,6 +76,8 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

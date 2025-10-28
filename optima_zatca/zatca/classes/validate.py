@@ -1,7 +1,8 @@
 import re
 import json
 import frappe
-from frappe import _ 
+from frappe import _
+from datetime import datetime 
 
 
 class ZatcaInvoiceValidate :
@@ -27,6 +28,8 @@ class ZatcaInvoiceValidate :
         self.validate_items_fields()
         self.validate_customer_info()
         self.validate_advance_payment()
+        self.validate_sending_date_restriction()
+
 
         
     def validate_sales_invoice_sender(self) :
@@ -145,6 +148,29 @@ class ZatcaInvoiceValidate :
         items = self.sales_invoice.get("items")
         if len(items) != 1 or items[0].get("item_code") != "advance payment" or items[0].get("qty") != 1:
             frappe.throw(title=_("Avance Payment Error"), msg=_("Elementary Advance Payment Must Have One Item with Advance Payment Item and Quantity 1"))
+
+    def validate_sending_date_restriction(self) -> None:
+        """Validate that invoice sending is restricted to today's date if enabled in settings.
+
+        Raises:
+            frappe.throw: If sending is restricted to today's date and invoice posting date is not today
+        """
+        # Check if sending is restricted to today's date
+        zatca_main_settings = frappe.get_single("Zatca Main Settings")
+        if not zatca_main_settings.get("sending_is_restricted_to_todays_date"):
+            return
+
+        # Get today's date
+        today = datetime.now().date()
+
+        # Get invoice posting date
+        posting_date = self.sales_invoice.get("posting_date")
+        if isinstance(posting_date, str):
+            posting_date = datetime.strptime(posting_date, "%Y-%m-%d").date()
+
+        # Validate that posting date is today
+        if posting_date != today:
+            frappe.throw(_("Sending is restricted to today's date. Invoice posting date must be today."))
 
 
 def validate_commercial_register(registration_type,registration_value) :
