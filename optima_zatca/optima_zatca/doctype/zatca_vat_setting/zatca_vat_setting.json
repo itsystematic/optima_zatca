@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "autoname": "field:company",
+ "creation": "2021-07-13 08:49:01.100356",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "zatca_vat_sales_accounts",
+  "zatca_vat_purchase_accounts"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "zatca_vat_sales_accounts",
+   "fieldtype": "Table",
+   "label": "Zatca VAT Sales Accounts",
+   "options": "Zatca VAT Sales Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "zatca_vat_purchase_accounts",
+   "fieldtype": "Table",
+   "label": "Zatca VAT Purchase Accounts",
+   "options": "Zatca VAT Purchase Account",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2023-12-27 13:47:02.169813",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Zatca VAT Setting",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "company",
+ "track_changes": 1
+}
