@@ -171,6 +171,7 @@ def get_data(filters=None , accounts:list=None) -> list :
         WHERE 
             gl.is_cancelled = 0 
             AND gl.account IN %(accounts)s
+            AND gl.voucher_type IN ('Sales Invoice', 'Purchase Invoice')
             {conditions}
             
         ORDER BY gl.voucher_type , gl.posting_date DESC ;
