@@ -147,7 +147,7 @@ override_doctype_class = {
 
 doc_events = {
 	"Sales Invoice": {
-        "before_save": "optima_zatca.events.sales_invoice.validate_prepayments",
+        "validate": "optima_zatca.events.sales_invoice.validate_prepayments",
 		"on_cancel": "optima_zatca.events.sales_invoice.sales_invoice_on_cancel",
 		"on_trash": "optima_zatca.events.sales_invoice.sales_invoice_on_trash",
         "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit",

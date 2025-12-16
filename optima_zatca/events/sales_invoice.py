@@ -137,7 +137,7 @@ def sales_invoice_on_submit(doc , event) :
 
 
 NORMAL_INVOICE_TYPE = "Normal"
-ADJUSTMENT_INVOICE_TYPE = "Adjustment"
+ADJUSTMENT_TYPES = ["Adjustment", "Final Adjustment"]
 MIN_ADJUSTMENT_PERCENTAGE = 0
 MAX_ADJUSTMENT_PERCENTAGE = 100
 PRECISION = 2
@@ -153,7 +153,7 @@ def validate_prepayments(doc, event):
         _validate_return_requirements(doc)
         
         # Additional validations only for adjustment invoices
-        if doc.sales_invoice_type == ADJUSTMENT_INVOICE_TYPE:
+        if doc.sales_invoice_type in ADJUSTMENT_TYPES:
             _validate_adjustment_requirements(doc)
         
     except Exception as e:
@@ -215,6 +215,8 @@ def _validate_adjustment_requirements(doc):
     _validate_required_fields(doc)
     _validate_deducted_totals(doc)
     _validate_adjustment_percentage_limit(doc)
+    _validate_pos_payment_for_adjustment(doc)
+    _validate_non_pos_payment_for_adjustment(doc)
 
 
 def _validate_required_fields(doc):
@@ -234,7 +236,7 @@ def _validate_adjustment_percentage_range(doc):
     """Validate adjustment percentage is within valid range"""
     adjustment_percentage = flt(doc.adjustment_percentage, PRECISION)
     
-    if adjustment_percentage <= MIN_ADJUSTMENT_PERCENTAGE or adjustment_percentage >= MAX_ADJUSTMENT_PERCENTAGE:
+    if adjustment_percentage < MIN_ADJUSTMENT_PERCENTAGE or adjustment_percentage > MAX_ADJUSTMENT_PERCENTAGE:
         frappe.throw(
             _("Adjustment percentage must be between {0}% and {1}% (exclusive)").format(
                 MIN_ADJUSTMENT_PERCENTAGE, MAX_ADJUSTMENT_PERCENTAGE
@@ -292,4 +294,44 @@ def _calculate_max_adjustment_limit(grand_total, total_grands):
     
     max_limit = (abs_grand_total * 100) / abs_total_grands
     return flt(max_limit, PRECISION)
+
+
+def _validate_pos_payment_for_adjustment(doc):
+    """Validate POS payment requirements for adjustment invoices"""
+    if doc.get("is_pos") != 1:
+        return
+    
+    deducted_grand_total = flt(doc.get("deducted_grand_total"), PRECISION)
+    paid_amount = flt(doc.get("paid_amount"), PRECISION)
+    grand_total = flt(doc.get("grand_total"), PRECISION)
+    
+    # Use absolute values for comparison to handle negative invoices
+    abs_deducted = abs(deducted_grand_total)
+    abs_paid = abs(paid_amount)
+    abs_grand = abs(grand_total)
+    
+    if abs_deducted + abs_paid > abs_grand:
+        frappe.throw(
+            _("(Deducted Grand Total + Paid Amount) Must Be Less Than Or Equal To The Grand Total")
+        )
+
+
+def _validate_non_pos_payment_for_adjustment(doc):
+    """Validate non-POS payment requirements for adjustment invoices"""
+    if doc.get("is_pos") != 0:
+        return
+    
+    deducted_grand_total = flt(doc.get("deducted_grand_total"), PRECISION)
+    total_advance = flt(doc.get("total_advance"), PRECISION)
+    grand_total = flt(doc.get("grand_total"), PRECISION)
+    
+    # Use absolute values for comparison to handle negative invoices
+    abs_deducted = abs(deducted_grand_total)
+    abs_total_advance = abs(total_advance)
+    abs_grand = abs(grand_total)
+    
+    if abs_deducted + abs_total_advance > abs_grand:
+        frappe.throw(
+            _("Deducted Grand Total + Total Advance Must Be Less Than Or Equal To The Grand Total")
+        )
 

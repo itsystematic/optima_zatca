@@ -52,6 +52,27 @@ frappe.ui.form.on("Sales Invoice" , {
         if (Math.abs(adjustment_percentage || 0) > maxAdjustmentLimit) {
             frappe.throw(__(`Adjustment percentage cannot be greater than ${maxAdjustmentLimit.toFixed(2)}%`));
         }
+                // Validate for POS payments in adjustment types
+        if (ADJUSTMENT_TYPES.includes(sales_invoice_type) && frm.doc.is_pos == 1) {
+            const absDeductedGrandTotal = Math.abs(flt(frm.doc.deducted_grand_total));
+            const absPaidAmount = Math.abs(flt(frm.doc.paid_amount));
+            const absGrandTotal = Math.abs(flt(frm.doc.grand_total));
+            
+            if (absDeductedGrandTotal + absPaidAmount > absGrandTotal) {
+                frappe.throw(__("(Deducted Grand Total + Paid Amount) Must Be Less Than Or Equal To The Grand Total "));
+            }
+        }
+
+        // Validate for non-POS payments in adjustment types
+        if (ADJUSTMENT_TYPES.includes(sales_invoice_type) && frm.doc.is_pos == 0) {
+            const absDeductedGrandTotal = Math.abs(flt(frm.doc.deducted_grand_total));
+            const absTotalAdvance = Math.abs(flt(frm.doc.total_advance));
+            const absGrandTotal = Math.abs(flt(frm.doc.grand_total));
+            
+            if (absDeductedGrandTotal + absTotalAdvance > absGrandTotal) {
+                frappe.throw(__("Deducted Grand Total + Total Advance Must Be Less Than Or Equal To The Grand Total"));
+            }
+        }
     },
 
     add_zatca_button(frm) {
@@ -306,7 +327,7 @@ function handleStandardInvoice(frm) {
 function fetchAdvancePaymentItemDetails(frm, item_row) {
     return new Promise((resolve) => {
         frappe.call({
-            method: "erpnext.stock.get_item_details.get_item_details",
+            method: "optima_zatca.zatca.utils.get_item_details",
             args: {
                 doc: frm.doc,
                 args: {
@@ -336,6 +357,7 @@ function fetchAdvancePaymentItemDetails(frm, item_row) {
                     tax_category: frm.doc.tax_category,
                     child_doctype: frm.doc.doctype + " Item",
                     is_old_subcontracting_flow: frm.doc.is_old_subcontracting_flow,
+                    sales_invoice_type: frm.doc.sales_invoice_type,
                 }
             },
             callback: (r) => {
@@ -343,6 +365,8 @@ function fetchAdvancePaymentItemDetails(frm, item_row) {
                 item_row.rate = 0;
                 item_row.price_list_rate = 0;
                 triggerTaxRefresh(frm, item_row);
+                // Re-set the custom income_account after triggerTaxRefresh to prevent override
+                item_row.income_account = r.message.income_account;
                 resolve();
             }
         });
