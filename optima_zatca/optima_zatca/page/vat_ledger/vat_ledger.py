@@ -21,7 +21,7 @@ def get_tax_accounts(company):
 
 
 @frappe.whitelist()
-def get_vat_ledger_data(company=None, from_date=None, to_date=None, tax_account=None):
+def get_vat_ledger_data(company=None, from_date=None, to_date=None, tax_account=None, party=None):
     """Get VAT ledger data based on filters"""
     
     if not company:
@@ -45,25 +45,43 @@ def get_vat_ledger_data(company=None, from_date=None, to_date=None, tax_account=
         accounts = [tax_account]
     
     # Get data
-    data = get_vat_data(company, from_date, to_date, accounts)
+    data = get_vat_data(company, from_date, to_date, accounts, party)
     
     # Process data
     final_data, summary, doctypes = make_group_by_type(data)
     report_summary, values = get_report_summary(data, summary)
     chart_data = prepare_chart_data(doctypes, values)
     
+    # Ensure area chart data is always generated
+    try:
+        area_chart_data = prepare_area_chart_data(data, from_date, to_date)
+    except Exception as e:
+        frappe.log_error(f"Error preparing area chart data: {str(e)}")
+        area_chart_data = {"labels": [], "datasets": []}
+    
     return {
         "data": final_data,
         "summary": report_summary,
-        "chart_data": chart_data
+        "chart_data": chart_data,
+        "area_chart_data": area_chart_data
     }
 
 
-def get_vat_data(company, from_date, to_date, accounts):
+def get_vat_data(company, from_date, to_date, accounts, party=None):
     """Fetch VAT data from database"""
     
     if not accounts:
         return []
+    
+    party_condition = ""
+    if party:
+        party_condition = """
+            AND (
+                (gl.voucher_type = 'Sales Invoice' AND t1.customer LIKE %(party)s)
+                OR (gl.voucher_type = 'Purchase Invoice' AND t2.supplier LIKE %(party)s)
+                OR gl.party LIKE %(party)s
+            )
+        """
     
     sql_query = frappe.db.sql("""
         SELECT 
@@ -141,13 +159,15 @@ def get_vat_data(company, from_date, to_date, accounts):
             AND gl.voucher_type IN ('Sales Invoice', 'Purchase Invoice')
             AND gl.company = %(company)s
             AND gl.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            {party_condition}
             
         ORDER BY gl.voucher_type, gl.posting_date DESC
-    """, {
+    """.format(party_condition=party_condition), {
         "from_date": from_date,
         "to_date": to_date,
         "company": company,
-        "accounts": accounts
+        "accounts": accounts,
+        "party": f"%{party}%" if party else ""
     }, as_dict=True)
     
     return sql_query
@@ -168,11 +188,6 @@ def make_group_by_type(data):
                 "name": "<h5 style='text-align:center; font-weight:bold; color:#9B3922'>{0}</h5>".format(type)
             })
             final_result += filtered_data
-            final_result.append({
-                "name": "<h5 style='font-weight:bold; text-align:center; color:#C80036'>Total</h5>",
-                "base_tax_amount": filtered_value
-            })
-            final_result.append({})
             report_summary.append({
                 "doctype": type,
                 "total": filtered_value
@@ -215,3 +230,101 @@ def prepare_chart_data(doctypes, values):
         "labels": doctypes,
         "values": values
     }
+
+
+def prepare_area_chart_data(data, from_date, to_date):
+    """Prepare cumulative area chart data by day with separate lines for Sales and Purchase"""
+    from datetime import timedelta
+    from frappe.utils import getdate, flt
+    
+    if not data or not from_date or not to_date:
+        return {"labels": [], "datasets": []}
+    
+    try:
+        # Parse dates
+        start_date = getdate(from_date)
+        end_date = getdate(to_date)
+        
+        # Create dictionaries to store daily amounts by type
+        daily_sales = {}
+        daily_purchase = {}
+        current_date = start_date
+        
+        # Initialize all dates with 0
+        while current_date <= end_date:
+            daily_sales[current_date] = 0.0
+            daily_purchase[current_date] = 0.0
+            current_date += timedelta(days=1)
+        
+        # Aggregate amounts by posting date and type
+        for row in data:
+            try:
+                posting_date = getdate(row.get("posting_date"))
+                if start_date <= posting_date <= end_date:
+                    # Use flt to ensure proper float conversion and handle None
+                    amount = flt(row.get("base_tax_amount", 0), 2)
+                    voucher_type = row.get("parenttype")
+                    
+                    if voucher_type == "Sales Invoice":
+                        daily_sales[posting_date] = flt(daily_sales[posting_date], 2) + amount
+                    elif voucher_type == "Purchase Invoice":
+                        daily_purchase[posting_date] = flt(daily_purchase[posting_date], 2) + amount
+            except Exception as row_error:
+                frappe.log_error(f"Error processing row: {str(row_error)}")
+                continue
+        
+        # Sort dates and calculate cumulative values
+        sorted_dates = sorted(daily_sales.keys())
+        labels = []
+        cumulative_sales = []
+        cumulative_purchase = []
+        cumulative_total = []
+        
+        sales_sum = 0.0
+        purchase_sum = 0.0
+        
+        for date in sorted_dates:
+            # Use flt to ensure proper float handling
+            sales_sum = flt(sales_sum, 2) + flt(daily_sales[date], 2)
+            purchase_sum = flt(purchase_sum, 2) + flt(daily_purchase[date], 2)
+            
+            labels.append(date.strftime("%d %b"))  # Format: "16 Dec"
+            cumulative_sales.append(round(sales_sum, 2))
+            cumulative_purchase.append(round(purchase_sum, 2))
+            cumulative_total.append(round(sales_sum + purchase_sum, 2))
+        
+        # Ensure we have data
+        if not labels:
+            return {"labels": [], "datasets": []}
+        
+        # Validate all values are numbers
+        for i, val in enumerate(cumulative_sales):
+            if val is None or not isinstance(val, (int, float)):
+                cumulative_sales[i] = 0.0
+        for i, val in enumerate(cumulative_purchase):
+            if val is None or not isinstance(val, (int, float)):
+                cumulative_purchase[i] = 0.0
+        for i, val in enumerate(cumulative_total):
+            if val is None or not isinstance(val, (int, float)):
+                cumulative_total[i] = 0.0
+        
+        return {
+            "labels": labels,
+            "datasets": [
+                {
+                    "name": "Sales Invoice",
+                    "values": cumulative_sales
+                },
+                {
+                    "name": "Purchase Invoice",
+                    "values": cumulative_purchase
+                },
+                {
+                    "name": "Total",
+                    "values": cumulative_total
+                }
+            ]
+        }
+    except Exception as e:
+        frappe.log_error(f"Error in prepare_area_chart_data: {str(e)}")
+        return {"labels": [], "datasets": []}
