@@ -153,7 +153,12 @@ class ZatcaInvoiceData:
     @staticmethod
     def _safe_float(value) -> float:
         """Safely convert value to float, returning 0 if None."""
-        return 0 if value is None else value
+        if value is None:
+            return 0.0
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
 
     def _build_zatca_invoice_data(self) -> None:
         """Build all ZATCA invoice data."""
