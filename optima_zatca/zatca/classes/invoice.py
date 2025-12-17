@@ -164,10 +164,15 @@ class ZatcaInvoiceData:
         """
         Validate that net_total + tax = grand_total.
         If there's a rounding difference, adjust the tax amount to ensure ZATCA validation passes.
+        This method caches the adjusted tax amount for use across the invoice.
         
         Returns:
             Adjusted tax amount that ensures: net_total + tax = grand_total
         """
+        # Return cached value if already calculated
+        if hasattr(self, '_adjusted_tax_amount'):
+            return self._adjusted_tax_amount
+            
         net_total = flt(self._safe_float(self.sales_invoice.get('net_total')), 2)
         tax_amount = flt(self._safe_float(self.sales_invoice.get('total_taxes_and_charges')), 2)
         grand_total = flt(self._safe_float(self.sales_invoice.get('grand_total')), 2)
@@ -196,8 +201,12 @@ Formula: {net_total} + {adjusted_tax} = {grand_total}
                 "ZATCA Tax Rounding Adjustment"
             )
             
+            # Cache the adjusted value
+            self._adjusted_tax_amount = adjusted_tax
             return adjusted_tax
         
+        # Cache the original value
+        self._adjusted_tax_amount = tax_amount
         return tax_amount
 
     def _build_zatca_invoice_data(self) -> None:
@@ -388,9 +397,22 @@ Formula: {net_total} + {adjusted_tax} = {grand_total}
         # Get the tax amount and validate rounding
         tax_amount = self._validate_and_adjust_tax_amount()
         
+        # For base currency tax (used in QR code), check if we need the same adjustment
+        base_tax = self._safe_float(self.sales_invoice.get('base_total_taxes_and_charges'))
+        
+        # If currency is different, apply same adjustment ratio
+        if base_tax != self._safe_float(self.sales_invoice.get('total_taxes_and_charges')):
+            original_tax = self._safe_float(self.sales_invoice.get('total_taxes_and_charges'))
+            if original_tax != 0:
+                adjustment_ratio = tax_amount / original_tax
+                base_tax = flt(base_tax * adjustment_ratio, 2)
+        else:
+            # Same currency, use adjusted amount
+            base_tax = tax_amount
+        
         self.zatca_invoice.update({
             "TaxAmount": f"{abs(flt(tax_amount, 2)):.2f}",
-            "TaxTotalTaxAmount": f"{abs(self._safe_float(self.sales_invoice.get('base_total_taxes_and_charges'))):.2f}",
+            "TaxTotalTaxAmount": f"{abs(flt(base_tax, 2)):.2f}",
             "TaxCategorySchemeID": "UNCL5305",
         })
 
@@ -606,7 +628,8 @@ Formula: {net_total} + {adjusted_tax} = {grand_total}
         }
         
         if tax_category == "S":
-            entry["TaxAmount"] = str(abs(self._safe_float(self.sales_invoice.get("total_taxes_and_charges"))))
+            # Use the validated and adjusted tax amount
+            entry["TaxAmount"] = str(abs(flt(self._validate_and_adjust_tax_amount(), 2)))
         else:
             # Handle tax exemption
             exemption_code = item.get("tax_exemption")
