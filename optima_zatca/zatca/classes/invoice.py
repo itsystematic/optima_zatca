@@ -533,16 +533,16 @@ class ZatcaInvoiceData:
             tax_subtotals[tax_category] = self._create_tax_subtotal_entry(item, tax_category)
         else:
             # Update existing tax category
-            tax_subtotals[tax_category]["TaxableAmount"] += abs(item.get("net_amount", 0))
-            tax_subtotals[tax_category]["AllowanceChargeAmount"] += abs(item.get("item_discount", 0))
+            tax_subtotals[tax_category]["TaxableAmount"] += abs(item.get("net_amount") or 0)
+            tax_subtotals[tax_category]["AllowanceChargeAmount"] += abs(item.get("item_discount") or 0)
 
     def _create_tax_subtotal_entry(self, item: Dict, tax_category: str) -> Dict:
         """Create a new tax subtotal entry."""
         entry = {
             "TaxCategory": tax_category,
-            "Percent": str(abs(item.get("tax_rate", 0))),
+            "Percent": str(abs(item.get("tax_rate") or 0)),
             "TaxAmount": "0.00",
-            "TaxableAmount": abs(item.get("net_amount", 0)),
+            "TaxableAmount": abs(item.get("net_amount") or 0),
             "TaxCategorySchemeID": "UNCL5305",
             "TaxSchemeID": self.DEFAULT_TAX_SCHEME,
             "schemeAgencyID": "6",
@@ -550,7 +550,7 @@ class ZatcaInvoiceData:
             "TaxExemptionReason": "",
             "ChargeIndicator": "false",
             "AllowanceChargeReason": "discount",
-            "AllowanceChargeAmount": abs(item.get("item_discount", 0)),
+            "AllowanceChargeAmount": abs(item.get("item_discount") or 0),
         }
         
         if tax_category == "S":
