@@ -1,11 +1,11 @@
 # Optima ZATCA
 
-**Optima ZATCA** is a powerful, feature-rich application designed to ensure full compliance with Saudi Arabia's ZATCA (Zakat, Tax, and Customs Authority) regulations. Covering both Phase 1 and Phase 2 of ZATCA compliance, this app provides a seamless, user-friendly, and highly efficient solution for businesses.
+**Optima ZATCA** is an Open-source,  powerful, feature-rich application designed to ensure full compliance with Saudi Arabia's ZATCA (Zakat, Tax, and Customs Authority) regulations. Covering both Phase 1 and Phase 2 of ZATCA compliance, this app provides a seamless, user-friendly, and highly efficient solution for businesses.
 
 ---
 
 ## 🚀 Main Features
-
+Fully compliant with Saudi Arabia's ZATCA E-Invoicing Phase 2 requirements. Includes XML generation, cryptographic stamping, and API integration with the Fatoora portal.
 Optima ZATCA goes beyond the competition by offering superior performance, unmatched features, and ease of use. Here's what sets it apart:
 
 ### **ZATCA Phase 1**
@@ -119,7 +119,7 @@ Guidelines
 
 ## 📜 License
 
-Optima ZATCA is licensed under the **GNU General Public License (v3)**. See the full license in the [LICENSE](https://github.com/itsystematic/optima_zatca/blob/version-15/LICENSE) file.
+Optima ZATCA is Open-Source licensed under the **MIT License**. See the full license in the [LICENSE](https://github.com/itsystematic/optima_zatca/blob/version-15/LICENSE) file.
 
 ---
 
