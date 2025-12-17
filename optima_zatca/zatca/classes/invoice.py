@@ -150,6 +150,10 @@ class ZatcaInvoiceData:
             tax.get("included_in_print_rate") for tax in taxes
         )
 
+    @staticmethod
+    def _safe_float(value) -> float:
+        """Safely convert value to float, returning 0 if None."""
+        return 0 if value is None else value
 
     def _build_zatca_invoice_data(self) -> None:
         """Build all ZATCA invoice data."""
@@ -337,8 +341,8 @@ class ZatcaInvoiceData:
     def _add_global_taxes(self) -> None:
         """Add global tax information."""
         self.zatca_invoice.update({
-            "TaxAmount": f"{abs(0 if self.sales_invoice.get('total_taxes_and_charges') is None else self.sales_invoice.get('total_taxes_and_charges')):.2f}",
-            "TaxTotalTaxAmount": f"{abs(0 if self.sales_invoice.get('base_total_taxes_and_charges') is None else self.sales_invoice.get('base_total_taxes_and_charges')):.2f}",
+            "TaxAmount": f"{abs(self._safe_float(self.sales_invoice.get('total_taxes_and_charges'))):.2f}",
+            "TaxTotalTaxAmount": f"{abs(self._safe_float(self.sales_invoice.get('base_total_taxes_and_charges'))):.2f}",
             "TaxCategorySchemeID": "UNCL5305",
         })
 
@@ -387,11 +391,11 @@ class ZatcaInvoiceData:
 
     def _get_tax_exclusive_amount(self) -> str:
         """Get tax exclusive amount."""
-        return f"{abs(flt(0 if self.sales_invoice.get('net_total') is None else self.sales_invoice.get('net_total'), 2)):.2f}"
+        return f"{abs(flt(self._safe_float(self.sales_invoice.get('net_total')), 2)):.2f}"
 
     def _get_tax_inclusive_amount(self) -> str:
         """Get tax inclusive amount."""
-        return f"{abs(flt(0 if self.sales_invoice.get('grand_total') is None else self.sales_invoice.get('grand_total'), 2)):.2f}"
+        return f"{abs(flt(self._safe_float(self.sales_invoice.get('grand_total')), 2)):.2f}"
 
     def _get_allowance_total_amount(self) -> str:
         """Get total allowances amount."""
@@ -445,22 +449,22 @@ class ZatcaInvoiceData:
         """Add a single invoice item."""
         item_row = {
             "ID": str(item.get("idx")),
-            "InvoicedQuantity": str(abs(0 if item.get("qty") is None else item.get("qty"))),
-            "LineExtensionAmount": f"{abs(flt(0 if item.get('line_extension_amount') is None else item.get('line_extension_amount'), 2)):.2f}",
-            "TaxAmount": f"{abs(flt(0 if item.get('tax_amount') is None else item.get('tax_amount'), 2)):.2f}",
-            "RoundingAmount": f"{abs(flt(0 if item.get('total_amount') is None else item.get('total_amount'), 2)):.2f}",
+            "InvoicedQuantity": str(abs(self._safe_float(item.get("qty")))),
+            "LineExtensionAmount": f"{abs(flt(self._safe_float(item.get('line_extension_amount')), 2)):.2f}",
+            "TaxAmount": f"{abs(flt(self._safe_float(item.get('tax_amount')), 2)):.2f}",
+            "RoundingAmount": f"{abs(flt(self._safe_float(item.get('total_amount')), 2)):.2f}",
             "Name": item.get("item_name"),
             "TaxCategory": self._get_item_tax_category(item),
-            "Percent": f"{abs(flt(0 if item.get('tax_rate') is None else item.get('tax_rate'), 2)):.2f}",
+            "Percent": f"{abs(flt(self._safe_float(item.get('tax_rate')), 2)):.2f}",
             "TaxScheme": self.DEFAULT_TAX_SCHEME,
-            "PriceAmount": f"{abs(flt(0 if item.get('price_amount') is None else item.get('price_amount'), 2)):.2f}",
+            "PriceAmount": f"{abs(flt(self._safe_float(item.get('price_amount')), 2)):.2f}",
         }
         
         # Add discount information if present
         if item.get("discount_amount"):
             item_row.update({
                 "ChargeIndicator": "false",
-                "Amount": f"{abs(flt(0 if item.get('discount_amount') is None else item.get('discount_amount'), 2)):.2f}"
+                "Amount": f"{abs(flt(self._safe_float(item.get('discount_amount')), 2)):.2f}"
             })
         
         invoice_lines.append(item_row)
@@ -499,8 +503,8 @@ class ZatcaInvoiceData:
                 "InvoicedQuantity": "0.00000",
                 "LineExtensionAmount": "0.00",
                 "TaxTotalAmount": "0.00",
-                "TaxSubtotalTaxableAmount": f"{abs(0 if prepayment.get('deducted_taxable_amount') is None else prepayment.get('deducted_taxable_amount')):.2f}",
-                "TaxSubtotalTaxAmount": f"{abs(0 if prepayment.get('deducted_tax_amount') is None else prepayment.get('deducted_tax_amount')):.2f}",
+                "TaxSubtotalTaxableAmount": f"{abs(self._safe_float(prepayment.get('deducted_taxable_amount'))):.2f}",
+                "TaxSubtotalTaxAmount": f"{abs(self._safe_float(prepayment.get('deducted_tax_amount'))):.2f}",
                 "RoundingAmount": "0",
                 "Name": "Advance Payment",
                 "TaxCategory": str(prepayment.get("tax_category", "")),
@@ -533,16 +537,16 @@ class ZatcaInvoiceData:
             tax_subtotals[tax_category] = self._create_tax_subtotal_entry(item, tax_category)
         else:
             # Update existing tax category
-            tax_subtotals[tax_category]["TaxableAmount"] += abs(0 if item.get("net_amount") is None else item.get("net_amount"))
-            tax_subtotals[tax_category]["AllowanceChargeAmount"] += abs(0 if item.get("item_discount") is None else item.get("item_discount"))
+            tax_subtotals[tax_category]["TaxableAmount"] += abs(self._safe_float(item.get("net_amount")))
+            tax_subtotals[tax_category]["AllowanceChargeAmount"] += abs(self._safe_float(item.get("item_discount")))
 
     def _create_tax_subtotal_entry(self, item: Dict, tax_category: str) -> Dict:
         """Create a new tax subtotal entry."""
         entry = {
             "TaxCategory": tax_category,
-            "Percent": str(abs(0 if item.get("tax_rate") is None else item.get("tax_rate"))),
+            "Percent": str(abs(self._safe_float(item.get("tax_rate")))),
             "TaxAmount": "0.00",
-            "TaxableAmount": abs(0 if item.get("net_amount") is None else item.get("net_amount")),
+            "TaxableAmount": abs(self._safe_float(item.get("net_amount"))),
             "TaxCategorySchemeID": "UNCL5305",
             "TaxSchemeID": self.DEFAULT_TAX_SCHEME,
             "schemeAgencyID": "6",
@@ -550,11 +554,11 @@ class ZatcaInvoiceData:
             "TaxExemptionReason": "",
             "ChargeIndicator": "false",
             "AllowanceChargeReason": "discount",
-            "AllowanceChargeAmount": abs(0 if item.get("item_discount") is None else item.get("item_discount")),
+            "AllowanceChargeAmount": abs(self._safe_float(item.get("item_discount"))),
         }
         
         if tax_category == "S":
-            entry["TaxAmount"] = str(abs(0 if self.sales_invoice.get("total_taxes_and_charges") is None else self.sales_invoice.get("total_taxes_and_charges")))
+            entry["TaxAmount"] = str(abs(self._safe_float(self.sales_invoice.get("total_taxes_and_charges"))))
         else:
             # Handle tax exemption
             exemption_code = item.get("tax_exemption")
