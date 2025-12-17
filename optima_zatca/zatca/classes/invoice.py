@@ -160,6 +160,46 @@ class ZatcaInvoiceData:
         except (TypeError, ValueError):
             return 0.0
 
+    def _validate_and_adjust_tax_amount(self) -> float:
+        """
+        Validate that net_total + tax = grand_total.
+        If there's a rounding difference, adjust the tax amount to ensure ZATCA validation passes.
+        
+        Returns:
+            Adjusted tax amount that ensures: net_total + tax = grand_total
+        """
+        net_total = flt(self._safe_float(self.sales_invoice.get('net_total')), 2)
+        tax_amount = flt(self._safe_float(self.sales_invoice.get('total_taxes_and_charges')), 2)
+        grand_total = flt(self._safe_float(self.sales_invoice.get('grand_total')), 2)
+        
+        # Calculate what the sum should be
+        calculated_total = flt(net_total + tax_amount, 2)
+        
+        # Check if there's a rounding difference
+        difference = flt(grand_total - calculated_total, 2)
+        
+        if abs(difference) > 0:
+            # Adjust tax amount to match grand total
+            adjusted_tax = flt(tax_amount + difference, 2)
+            
+            frappe.log_error(
+                f"""ZATCA Tax Rounding Adjustment
+Invoice: {self.sales_invoice.get('name')}
+Net Total: {net_total}
+Original Tax: {tax_amount}
+Grand Total: {grand_total}
+Calculated Total: {calculated_total}
+Difference: {difference}
+Adjusted Tax: {adjusted_tax}
+Formula: {net_total} + {adjusted_tax} = {grand_total}
+""",
+                "ZATCA Tax Rounding Adjustment"
+            )
+            
+            return adjusted_tax
+        
+        return tax_amount
+
     def _build_zatca_invoice_data(self) -> None:
         """Build all ZATCA invoice data."""
         self._add_basic_invoice_data()
@@ -344,9 +384,12 @@ class ZatcaInvoiceData:
             self.zatca_invoice["ActualDeliveryDate"] = str(self.sales_invoice.get("posting_date"))
 
     def _add_global_taxes(self) -> None:
-        """Add global tax information."""
+        """Add global tax information with rounding validation."""
+        # Get the tax amount and validate rounding
+        tax_amount = self._validate_and_adjust_tax_amount()
+        
         self.zatca_invoice.update({
-            "TaxAmount": f"{abs(self._safe_float(self.sales_invoice.get('total_taxes_and_charges'))):.2f}",
+            "TaxAmount": f"{abs(flt(tax_amount, 2)):.2f}",
             "TaxTotalTaxAmount": f"{abs(self._safe_float(self.sales_invoice.get('base_total_taxes_and_charges'))):.2f}",
             "TaxCategorySchemeID": "UNCL5305",
         })
