@@ -360,7 +360,7 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 			customer_group_income_account = frappe.db.get_value(
 				"Party Account", 
 				{"parent": customer_group, "company": args.get("company")}, 
-				"account"
+				"advance_account"
 			)
 			
 			if customer_group_income_account:
