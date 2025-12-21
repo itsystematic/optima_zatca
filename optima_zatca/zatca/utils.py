@@ -338,6 +338,7 @@ def log_and_throw_error(operation: str, document_name: str, exception: Exception
 def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=True):
 	"""
 	Custom get_item_details for optima_zatca that adds customer group income account for prepayment sales invoices
+     to make it work with muiltiple CURRANCY invoices.
 	"""
 	from erpnext.stock.get_item_details import get_item_details as erpnext_get_item_details
 
@@ -345,26 +346,26 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 	if isinstance(args, str):
 		args = frappe.parse_json(args)
 
-	frappe.msgprint(f"DEBUG: args = {args}")  # Debug: print args
-
 	# Call the standard ERPNext function
 	item_details = erpnext_get_item_details(args, doc, for_validate, overwrite_warehouse)
 
 	# Custom logic for prepayment sales invoices
 	if args.get("doctype") == "Sales Invoice" and "Prepayment" in str(args.get("sales_invoice_type", "")):
-		frappe.msgprint("DEBUG: Condition met for prepayment")  # Debug: condition met
 		# Get customer group income account
 		customer_group = None
 		if args.get("customer"):
 			customer_group = frappe.db.get_value("Customer", args.get("customer"), "customer_group")
-			frappe.msgprint(f"DEBUG: customer = {args.get('customer')}, customer_group = {customer_group}")  # Debug: customer and group
+		
 		if customer_group:
-			customer_group_income_account = frappe.db.get_value("Party Account", {"parent": customer_group, "company": args.get("company")}, "account")
-			frappe.msgprint(f"DEBUG: customer_group_income_account = {customer_group_income_account}")  # Debug: account found
+			customer_group_income_account = frappe.db.get_value(
+				"Party Account", 
+				{"parent": customer_group, "company": args.get("company")}, 
+				"account"
+			)
+			
 			if customer_group_income_account:
 				item_details["income_account"] = customer_group_income_account
-				frappe.msgprint(f"DEBUG: Set income_account to {item_details}")  # Debug: account set
-		else:
-			frappe.msgprint("DEBUG: No customer_group found")  # Debug: no group
+				# Add flag to indicate this is a custom income account
+				item_details["__is_custom_income_account"] = True
 
 	return item_details

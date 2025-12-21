@@ -361,13 +361,24 @@ function fetchAdvancePaymentItemDetails(frm, item_row) {
                 }
             },
             callback: (r) => {
+                // Store the custom income_account before any processing
+                const custom_income_account = r.message.income_account;
+                
                 Object.assign(item_row, r.message);
                 item_row.rate = 0;
                 item_row.price_list_rate = 0;
+                
+                // Mark this row to preserve income_account
+                item_row.__preserve_income_account = custom_income_account;
+                
                 triggerTaxRefresh(frm, item_row);
-                // Re-set the custom income_account after triggerTaxRefresh to prevent override
-                item_row.income_account = r.message.income_account;
-                resolve();
+                
+                // Set income_account after refresh cycle
+                setTimeout(() => {
+                    frappe.model.set_value(item_row.doctype, item_row.name, "income_account", custom_income_account);
+                    frm.refresh_field("items");
+                    resolve();
+                }, 200);
             }
         });
     });
@@ -630,6 +641,23 @@ frappe.ui.form.on("Sales Invoice Item" , {
             frappe.db.get_value("Item Tax Template", item.item_tax_template, ["tax_category"]).then(r => {
                 frappe.model.set_value(cdt ,cdn , "tax_category" , r.message.tax_category)
             })
+        }
+    },
+    
+    income_account(frm, cdt, cdn) {
+        // Preserve custom income_account for advance payment items
+        let item = frappe.get_doc(cdt, cdn);
+        
+        if (item.__preserve_income_account && 
+            item.item_code === "advance payment" && 
+            ["Initial Prepayment", "Prepayment"].includes(frm.doc.sales_invoice_type)) {
+            
+            // If income_account was changed by system, restore our custom value
+            if (item.income_account !== item.__preserve_income_account) {
+                setTimeout(() => {
+                    frappe.model.set_value(cdt, cdn, "income_account", item.__preserve_income_account);
+                }, 50);
+            }
         }
     }
 })
