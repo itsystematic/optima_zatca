@@ -195,7 +195,8 @@ def create_custom_fields_with_validation():
                 "insert_after": "clearance_or_reporting",
                 "options": "Sales Invoice Type",
                 "default": "Normal",
-                "reqd": 1
+                "reqd": 1,
+                "depends_on": "customer"
             },
             {
                 "fieldname": "reason_for_issuance",
