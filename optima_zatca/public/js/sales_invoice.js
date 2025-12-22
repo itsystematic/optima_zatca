@@ -30,14 +30,14 @@ frappe.ui.form.on("Sales Invoice" , {
 
         // Validate deducted total against grand total
         if (
-            Math.abs(flt(frm.doc.deducted_grand_total)) > Math.abs(flt(frm.doc.grand_total)) &&
+            Math.abs(flt(frm.doc.deducted_grand_total)) > Math.abs(flt(frm.doc.base_grand_total || frm.doc.grand_total)) &&
             ADJUSTMENT_TYPES.includes(sales_invoice_type)
         ) {
             frappe.throw(__("Deducted grand total cannot be greater than grand total"));
         }
 
         // Calculate and validate adjustment percentage limit
-        const absGrandTotal = Math.abs(flt(frm.doc.grand_total));
+        const absGrandTotal = Math.abs(flt(frm.doc.base_grand_total || frm.doc.grand_total));
         const absTotalGrands = Math.abs(flt(frm.doc.total_grands));
         
         // Avoid division by zero
@@ -56,7 +56,7 @@ frappe.ui.form.on("Sales Invoice" , {
         if (ADJUSTMENT_TYPES.includes(sales_invoice_type) && frm.doc.is_pos == 1) {
             const absDeductedGrandTotal = Math.abs(flt(frm.doc.deducted_grand_total));
             const absPaidAmount = Math.abs(flt(frm.doc.paid_amount));
-            const absGrandTotal = Math.abs(flt(frm.doc.grand_total));
+            const absGrandTotal = Math.abs(flt(frm.doc.base_grand_total || frm.doc.grand_total));
             
             if (absDeductedGrandTotal + absPaidAmount > absGrandTotal) {
                 frappe.throw(__("(Deducted Grand Total + Paid Amount) Must Be Less Than Or Equal To The Grand Total "));
@@ -67,7 +67,7 @@ frappe.ui.form.on("Sales Invoice" , {
         if (ADJUSTMENT_TYPES.includes(sales_invoice_type) && frm.doc.is_pos == 0) {
             const absDeductedGrandTotal = Math.abs(flt(frm.doc.deducted_grand_total));
             const absTotalAdvance = Math.abs(flt(frm.doc.total_advance));
-            const absGrandTotal = Math.abs(flt(frm.doc.grand_total));
+            const absGrandTotal = Math.abs(flt(frm.doc.base_grand_total || frm.doc.grand_total));
             
             if (absDeductedGrandTotal + absTotalAdvance > absGrandTotal) {
                 frappe.throw(__("Deducted Grand Total + Total Advance Must Be Less Than Or Equal To The Grand Total"));
@@ -620,7 +620,8 @@ function updateAndLockAdjustmentPercentage(frm, percentage) {
 // *****************************************
 function calculateMaxAdjustmentLimit(frm) {
 
-    const grandTotal = Math.abs(frm.doc.grand_total) || 0;
+    // Use base_grand_total for multi-currency, fallback to grand_total for single currency
+    const grandTotal = Math.abs(frm.doc.base_grand_total || frm.doc.grand_total) || 0;
     const totalGrands = Math.abs(frm.doc.total_grands) || 0;
     
     const calculatedLimit = totalGrands === 0 ? 0 : (grandTotal * 100) / totalGrands;
