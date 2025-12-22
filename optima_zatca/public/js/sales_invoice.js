@@ -100,6 +100,8 @@ frappe.ui.form.on("Sales Invoice" , {
                             message : __("Invoice sumbitted successfully"),
                             indicator : "green"
                         })
+
+                        frm.reload_doc();
                     }
                 }
             })
