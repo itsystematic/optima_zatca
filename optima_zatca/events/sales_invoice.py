@@ -247,7 +247,8 @@ def _validate_adjustment_percentage_range(doc):
 def _validate_deducted_totals(doc):
     """Validate deducted amounts are within acceptable limits"""
     deducted_total = flt(doc.get("deducted_grand_total"), PRECISION)
-    grand_total = flt(doc.get("grand_total"), PRECISION)
+    # Use base_grand_total for multi-currency, fallback to grand_total for single currency
+    grand_total = flt(doc.get("base_grand_total") or doc.get("grand_total"), PRECISION)
     
     # Use absolute values for comparison to handle negative invoices
     abs_deducted = abs(deducted_total)
@@ -265,7 +266,8 @@ def _validate_deducted_totals(doc):
 def _validate_adjustment_percentage_limit(doc):
     """Validate adjustment percentage against calculated maximum limit"""
     total_grands = flt(doc.get("total_grands"), PRECISION)
-    grand_total = flt(doc.get("grand_total"), PRECISION)
+    # Use base_grand_total for multi-currency, fallback to grand_total for single currency
+    grand_total = flt(doc.get("base_grand_total") or doc.get("grand_total"), PRECISION)
     adjustment_percentage = flt(doc.get("adjustment_percentage"), PRECISION)
     
     # Validate total_grands is not zero
@@ -303,7 +305,8 @@ def _validate_pos_payment_for_adjustment(doc):
     
     deducted_grand_total = flt(doc.get("deducted_grand_total"), PRECISION)
     paid_amount = flt(doc.get("paid_amount"), PRECISION)
-    grand_total = flt(doc.get("grand_total"), PRECISION)
+    # Use base_grand_total for multi-currency, fallback to grand_total for single currency
+    grand_total = flt(doc.get("base_grand_total") or doc.get("grand_total"), PRECISION)
     
     # Use absolute values for comparison to handle negative invoices
     abs_deducted = abs(deducted_grand_total)
@@ -323,7 +326,8 @@ def _validate_non_pos_payment_for_adjustment(doc):
     
     deducted_grand_total = flt(doc.get("deducted_grand_total"), PRECISION)
     total_advance = flt(doc.get("total_advance"), PRECISION)
-    grand_total = flt(doc.get("grand_total"), PRECISION)
+    # Use base_grand_total for multi-currency, fallback to grand_total for single currency
+    grand_total = flt(doc.get("base_grand_total") or doc.get("grand_total"), PRECISION)
     
     # Use absolute values for comparison to handle negative invoices
     abs_deducted = abs(deducted_grand_total)
