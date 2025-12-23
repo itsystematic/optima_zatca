@@ -148,10 +148,16 @@ class CustomSalesInvoice(SalesInvoice):
             ))
         
         # Debit customer account
+        # For receivable account, we need to use transaction currency amount
+        deducted_grand_in_party_currency = self.deducted_grand_total
+        if self.currency != self.company_currency:
+            # Convert base amount to transaction currency
+            deducted_grand_in_party_currency = abs(base_grand) / (self.conversion_rate or 1)
+        
         entries.append(self._create_gl_entry(
             account=self.debit_to,
             debit=abs(base_grand),
-            debit_in_account_currency=abs(self.deducted_grand_total),
+            debit_in_account_currency=abs(deducted_grand_in_party_currency),
             currency=currencies.get(self.debit_to),
             remarks="Return: Customer adjustment reversal",
             party_type="Customer",
@@ -160,6 +166,7 @@ class CustomSalesInvoice(SalesInvoice):
         ))
         
         return entries
+    
     def _create_normal_entries(self, accounts, currencies):
         """Create GL entries for normal invoices"""
         entries = []
@@ -189,10 +196,16 @@ class CustomSalesInvoice(SalesInvoice):
             ))
         
         # Credit customer account
+        # For receivable account, we need to use transaction currency amount
+        deducted_grand_in_party_currency = self.deducted_grand_total
+        if self.currency != self.company_currency:
+            # Convert base amount to transaction currency
+            deducted_grand_in_party_currency = abs(base_grand) / (self.conversion_rate or 1)
+        
         entries.append(self._create_gl_entry(
             account=self.debit_to,
             credit=abs(base_grand),
-            credit_in_account_currency=abs(self.deducted_grand_total),
+            credit_in_account_currency=abs(deducted_grand_in_party_currency),
             currency=currencies.get(self.debit_to),
             remarks="Customer adjustment",
             party_type="Customer",
