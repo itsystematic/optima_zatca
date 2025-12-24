@@ -350,7 +350,8 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 	item_details = erpnext_get_item_details(args, doc, for_validate, overwrite_warehouse)
 
 	# Custom logic for prepayment sales invoices
-	if args.get("doctype") == "Sales Invoice" and "Prepayment" in str(args.get("sales_invoice_type", "")):
+	prepayment_types = ["Initial Prepayment", "Prepayment"]
+	if args.get("doctype") == "Sales Invoice" and args.get("sales_invoice_type") in prepayment_types:
 		# Get customer group income account
 		customer_group = None
 		if args.get("customer"):
