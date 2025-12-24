@@ -51,15 +51,27 @@ class CustomSalesInvoice(SalesInvoice):
     def _get_required_accounts(self):
         """Fetch all required accounts in a single query where possible"""
         try:
-            # Get prepayment income account
-            prepayment_income_account = frappe.db.get_value(
-                "Item Default", 
-                {
-                    "parent": self.ADVANCE_PAYMENT_ITEM, 
-                    "company": self.company
-                }, 
-                "income_account"
-            )
+            # Get prepayment income account from Initial Prepayment invoice
+            prepayment_income_account = None
+            
+            # Find the Initial Prepayment row in prepayments_invcoies child table
+            initial_prepayment_row = None
+            for row in self.get("prepayments_invcoies", []):
+                if row.prepayment_type == "Initial Prepayment":
+                    initial_prepayment_row = row
+                    break
+            
+            if initial_prepayment_row and initial_prepayment_row.reference_invoice:
+                # Get the income account from the first item in the Initial Prepayment invoice
+                prepayment_income_account = frappe.db.get_value(
+                    "Sales Invoice Item",
+                    {
+                        "parent": initial_prepayment_row.reference_invoice,
+                        "parenttype": "Sales Invoice",
+                        "idx": 1  # First row because intial prepayment has only one item
+                    },
+                    "income_account"
+                )
             
             # Get tax account
             tax_account = frappe.db.get_value(
