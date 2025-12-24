@@ -268,6 +268,7 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
             "prepayment_type_code": "386",
             "id": sales_invoice.get("name"),
             "customer": sales_invoice.get("customer"),
+            "currency": sales_invoice.get("currency"),
             "sales_invoice": sales_invoice.get("name"),
             "is_return": sales_invoice.get("is_return"),
             "adjustment_percentage": adjustment_percentage,
