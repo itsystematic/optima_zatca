@@ -135,27 +135,41 @@ class CustomSalesInvoice(SalesInvoice):
         """Create GL entries for return invoices"""
         entries = []
         
+        # Use base_ fields if available, fallback to regular fields
+        base_taxable = getattr(self, 'base_deducted_taxable_amount', None) or self.deducted_taxable_amount
+        base_tax = getattr(self, 'base_deducted_tax_amount', None) or getattr(self, 'deducted_tax_amount', 0)
+        base_grand = getattr(self, 'base_deducted_grand_total', None) or self.deducted_grand_total
+        
         # Credit prepayment income (restore income)
         entries.append(self._create_gl_entry(
             account=accounts['prepayment_income_account'],
-            credit=abs(self.deducted_taxable_amount),
+            credit=abs(base_taxable),
+            credit_in_account_currency=abs(self.deducted_taxable_amount),
             currency=currencies.get(accounts['prepayment_income_account']),
             remarks="Return: Prepayment adjustment reversal"
         ))
         
         # Credit tax account if exists
-        if accounts['tax_account'] and getattr(self, 'deducted_tax_amount', 0):
+        if accounts['tax_account'] and base_tax:
             entries.append(self._create_gl_entry(
                 account=accounts['tax_account'],
-                credit=abs(self.deducted_tax_amount),
+                credit=abs(base_tax),
+                credit_in_account_currency=abs(getattr(self, 'deducted_tax_amount', 0)),
                 currency=currencies.get(accounts['tax_account']),
                 remarks="Return: Tax adjustment reversal"
             ))
         
         # Debit customer account
+        # For receivable account, we need to use transaction currency amount
+        deducted_grand_in_party_currency = self.deducted_grand_total
+        if self.currency != self.company_currency:
+            # Convert base amount to transaction currency
+            deducted_grand_in_party_currency = abs(base_grand) / (self.conversion_rate or 1)
+        
         entries.append(self._create_gl_entry(
             account=self.debit_to,
-            debit=abs(self.deducted_grand_total),
+            debit=abs(base_grand),
+            debit_in_account_currency=abs(deducted_grand_in_party_currency),
             currency=currencies.get(self.debit_to),
             remarks="Return: Customer adjustment reversal",
             party_type="Customer",
@@ -164,31 +178,46 @@ class CustomSalesInvoice(SalesInvoice):
         ))
         
         return entries
+    
     def _create_normal_entries(self, accounts, currencies):
         """Create GL entries for normal invoices"""
         entries = []
         
+        # Use base_ fields if available, fallback to regular fields
+        base_taxable = getattr(self, 'base_deducted_taxable_amount', None) or self.deducted_taxable_amount
+        base_tax = getattr(self, 'base_deducted_tax_amount', None) or getattr(self, 'deducted_tax_amount', 0)
+        base_grand = getattr(self, 'base_deducted_grand_total', None) or self.deducted_grand_total
+        
         # Debit prepayment income
         entries.append(self._create_gl_entry(
             account=accounts['prepayment_income_account'],
-            debit=abs(self.deducted_taxable_amount),
+            debit=abs(base_taxable),
+            debit_in_account_currency=abs(self.deducted_taxable_amount),
             currency=currencies.get(accounts['prepayment_income_account']),
             remarks="Prepayment adjustment"
         ))
         
         # Debit tax account if exists
-        if accounts['tax_account'] and getattr(self, 'deducted_tax_amount', 0):
+        if accounts['tax_account'] and base_tax:
             entries.append(self._create_gl_entry(
                 account=accounts['tax_account'],
-                debit=abs(self.deducted_tax_amount),
+                debit=abs(base_tax),
+                debit_in_account_currency=abs(getattr(self, 'deducted_tax_amount', 0)),
                 currency=currencies.get(accounts['tax_account']),
                 remarks="Tax adjustment"
             ))
         
         # Credit customer account
+        # For receivable account, we need to use transaction currency amount
+        deducted_grand_in_party_currency = self.deducted_grand_total
+        if self.currency != self.company_currency:
+            # Convert base amount to transaction currency
+            deducted_grand_in_party_currency = abs(base_grand) / (self.conversion_rate or 1)
+        
         entries.append(self._create_gl_entry(
             account=self.debit_to,
-            credit=abs(self.deducted_grand_total),
+            credit=abs(base_grand),
+            credit_in_account_currency=abs(deducted_grand_in_party_currency),
             currency=currencies.get(self.debit_to),
             remarks="Customer adjustment",
             party_type="Customer",
@@ -198,7 +227,8 @@ class CustomSalesInvoice(SalesInvoice):
         
         return entries
     
-    def _create_gl_entry(self, account, currency, remarks, debit=0, credit=0, 
+    def _create_gl_entry(self, account, currency, remarks, debit=0, credit=0,
+                        debit_in_account_currency=None, credit_in_account_currency=None,
                         party_type=None, party=None, against=None):
         """Helper method to create a single GL entry"""
         gl_dict = {
@@ -211,15 +241,13 @@ class CustomSalesInvoice(SalesInvoice):
         if debit:
             gl_dict.update({
                 "debit": debit,
-                "debit_in_account_currency": debit,
-                "debit_in_transaction_currency": debit,
+                "debit_in_account_currency": debit_in_account_currency if debit_in_account_currency is not None else debit,
             })
         
         if credit:
             gl_dict.update({
                 "credit": credit,
-                "credit_in_account_currency": credit,
-                "credit_in_transaction_currency": credit,
+                "credit_in_account_currency": credit_in_account_currency if credit_in_account_currency is not None else credit,
             })
         
         if party_type and party:

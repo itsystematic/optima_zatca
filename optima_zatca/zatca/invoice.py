@@ -253,6 +253,12 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
             has_previous_prepayment = True
             previous_prepayment_invoice = sales_invoice.return_against
 
+        # Store company currency amounts (base_ fields if available, fallback to regular fields)
+        # This ensures we always store amounts in company currency
+        grand_total = sales_invoice.get("base_grand_total") or sales_invoice.get("grand_total")
+        tax_amount = sales_invoice.get("base_total_taxes_and_charges") or sales_invoice.get("total_taxes_and_charges")
+        taxable_amount = sales_invoice.get("base_total") or sales_invoice.get("base_net_total") or sales_invoice.get("total") or sales_invoice.get("net_total")
+
         # Create and insert the document
         new_prepayment = frappe.get_doc({
             "doctype": "Prepayment Invoice",
@@ -266,15 +272,15 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
             "is_return": sales_invoice.get("is_return"),
             "adjustment_percentage": adjustment_percentage,
             "issue_date": sales_invoice.get("posting_date"),
-            "grand_total": sales_invoice.get("grand_total"),
+            "grand_total": grand_total,
             "tax_category": sales_invoice.get("tax_category"),
             "has_previous_prepayment": has_previous_prepayment,
             "is_debit_note": sales_invoice.get("is_debit_note"),
             "prepayment_type": prepayment_type,
             "previous_prepayment_invoice": previous_prepayment_invoice,
-            "tax_amount": sales_invoice.get("total_taxes_and_charges"),
+            "tax_amount": tax_amount,
             "remaining_percentage": sales_invoice.get("remaining_percentage"),
-            "taxable_amount": sales_invoice.get("total") or sales_invoice.get("net_total"),
+            "taxable_amount": taxable_amount,
         })
         new_prepayment.insert(ignore_permissions=True)
     except Exception as e:
