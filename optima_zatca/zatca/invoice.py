@@ -234,6 +234,15 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
         prepayment_type = sales_invoice.sales_invoice_type
         adjustment_percentage = sales_invoice.adjustment_percentage * -1 if sales_invoice.is_return else sales_invoice.adjustment_percentage
 
+        # Get sales_order value based on priority
+        sales_order = None
+        # Priority 1: Check prepayment_sales_order field
+        if sales_invoice.get("prepayment_sales_order"):
+            sales_order = sales_invoice.get("prepayment_sales_order")
+        # Priority 2: Check first item's sales_order field
+        elif sales_invoice.items and sales_invoice.items[0].get("sales_order"):
+            sales_order = sales_invoice.items[0].get("sales_order")
+
         # mark the previous invoice as "Is Linked"
         if sales_invoice.previous_prepayment:
             frappe.db.set_value("Prepayment Invoice", sales_invoice.previous_prepayment, "is_linked", 1)
@@ -270,6 +279,7 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
             "customer": sales_invoice.get("customer"),
             "currency": sales_invoice.get("currency"),
             "sales_invoice": sales_invoice.get("name"),
+            "sales_order": sales_order,
             "is_return": sales_invoice.get("is_return"),
             "adjustment_percentage": adjustment_percentage,
             "issue_date": sales_invoice.get("posting_date"),
