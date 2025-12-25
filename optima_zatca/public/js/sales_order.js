@@ -10,6 +10,16 @@ frappe.ui.form.on("Sales Order" , {
                 }
             }
         })
+
+        // Add custom button for Advance Sales Invoice
+        if (frm.doc.docstatus === 1) {
+            frm.add_custom_button(__('Advance Sales Invoice'), function() {
+                frappe.model.open_mapped_doc({
+                    method: "optima_zatca.zatca.sales_order.make_advance_sales_invoice",
+                    frm: frm
+                });
+            }, __('Create'));
+        }
     }
 })
 
