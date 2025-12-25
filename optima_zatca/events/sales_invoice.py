@@ -145,6 +145,9 @@ PRECISION = 2
 def validate_prepayments(doc, event):
     """Validate prepayment-related business rules for Sales Invoice"""
     try:
+        # Validate Sales Order doesn't have duplicate Initial Prepayment
+        _validate_unique_initial_prepayment(doc)
+        
         # Early return for normal invoices
         if doc.sales_invoice_type == NORMAL_INVOICE_TYPE:
             return
@@ -162,6 +165,45 @@ def validate_prepayments(doc, event):
             document_name=doc.name or "New Document", 
             exception=e
         )
+
+
+def _validate_unique_initial_prepayment(doc):
+    """Validate that a Sales Order can only have one Initial Prepayment Sales Invoice"""
+    # Only check for Initial Prepayment invoices
+    if doc.sales_invoice_type != "Initial Prepayment":
+        return
+    
+    # Only check if prepayment_sales_order is set
+    if not doc.get("prepayment_sales_order"):
+        return
+    
+    # Check if another Initial Prepayment already exists for this Sales Order
+    filters = {
+        "prepayment_sales_order": doc.prepayment_sales_order,
+        "sales_invoice_type": "Initial Prepayment",
+        "docstatus": ["!=", 2]  # Not cancelled
+    }
+    
+    # Exclude current document if it's being updated
+    if not doc.is_new():
+        filters["name"] = ["!=", doc.name]
+    
+    existing_initial_prepayment = frappe.db.get_value(
+        "Sales Invoice",
+        filters,
+        "name"
+    )
+    
+    if existing_initial_prepayment:
+        frappe.throw(
+            _("Sales Order {0} already has an Initial Prepayment Sales Invoice ({1}). Each Sales Order can only have one Initial Prepayment invoice.").format(
+                frappe.bold(doc.prepayment_sales_order),
+                frappe.bold(existing_initial_prepayment)
+            ),
+            title=_("Duplicate Initial Prepayment")
+        )
+
+
 
 
 def _validate_return_requirements(doc):
