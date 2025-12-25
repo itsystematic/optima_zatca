@@ -1,0 +1,451 @@
+{#
+Sales Invoice Print Format for OPTIMA ZATCA
+Version: 2.0
+
+Note: This template expects context data from the Python controller.
+Add to your Print Format:
+- In the 'Custom Print Format' settings, set the module path to your controller
+#}
+
+{# Initialize context from controller #}
+{% set ctx = frappe.call('optima_zatca.optima_zatca.print_format.sales_invoice_controller.get_context', doc=doc) %}
+
+{# ==================== MACROS ==================== #}
+
+{# Macro for rendering bilingual labels #}
+{% macro bilingual_row(label_en, value, label_ar, value_class='text-center') %}
+<tr>
+    <td class="label-cell"><strong>{{ label_en }}</strong></td>
+    <td class="{{ value_class }}">{{ value or '' }}</td>
+    <td class="label-cell text-right" dir="rtl"><strong>{{ label_ar }}</strong></td>
+</tr>
+{% endmacro %}
+
+{# Macro for address fields #}
+{% macro address_section(address, is_seller=false) %}
+{{ bilingual_row('Building No:', address.building_no, 'رقم المبني:') }}
+{{ bilingual_row('Street Name:', address.custom_street_name, 'إسم الشارع:') }}
+{{ bilingual_row('District:', address.custom_district or address.district, 'الحي:') }}
+{{ bilingual_row('City:', address.city, 'المدينة:') }}
+{{ bilingual_row('Country:', address.country, 'الدولة:') }}
+{{ bilingual_row('Postal Code:', address.pincode, 'الرمز البريدي:') }}
+{% endmacro %}
+
+{# Macro for currency formatting with symbol #}
+{# Gets the proper symbol from Currency doctype and formats number separately #}
+{% macro format_currency(amount, currency=none) %}
+{% set curr = currency or doc.currency %}
+{% set symbol = frappe.db.get_value('Currency', curr, 'symbol') or curr %}
+<span class="currency-value">{{ frappe.utils.fmt_money(amount or 0, currency=curr) }}</span>
+{% endmacro %}
+
+{# Macro for totals row #}
+{% macro totals_row(label_en, label_ar, amount, currency=none, is_grand=false) %}
+<tr{% if is_grand %} class="grand-total-row" {% endif %}>
+    <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-en">
+        <strong>{{ label_en }}</strong>
+        </th>
+        <td class="{% if is_grand %}grand-total-value{% else %}value-cell-center{% endif %}">
+            {{ format_currency(amount, currency) }}
+        </td>
+        <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-ar" dir="rtl">
+            <strong>{{ label_ar }}</strong>
+            </th>
+            </tr>
+            {% endmacro %}
+
+            {# ==================== MAIN TEMPLATE ==================== #}
+
+            <div class="print-format-container">
+                <table class="main-table">
+                    {# ==================== HEADER ==================== #}
+                    <thead>
+                        <tr>
+                            <td>
+                                <div class="header-flex">
+                                    <table class="letterhead-table">
+                                        <tr>
+                                            <td>
+                                                {% if letter_head %}
+                                                {{ letter_head }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <table class="header_table">
+                                        <thead>
+                                            <tr>
+                                                <th class="header-title-en">{{ ctx.invoice_type.en }}</th>
+                                                <th class="header-spacer">&nbsp;</th>
+                                                <th class="header-title-ar" dir="rtl">{{ ctx.invoice_type.ar }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{ bilingual_row('Invoice No.', doc.name, 'رقم الفاتورة:') }}
+                                            {{ bilingual_row('Issue Date', frappe.format_date(doc.posting_date, 'dd MMMM
+                                            YYYY'), 'تاريخ الإصدار:') }}
+                                            {{ bilingual_row('Customer Ref:', doc.custom_customer_ref, 'البضائع
+                                            المستلمة') }}
+                                            {{ bilingual_row('Vendor ID:', doc.custom_vender_id, 'رقم البائع') }}
+
+                                            {% if doc.po_no %}
+                                            {{ bilingual_row('Purchase Order', doc.po_no, 'أمر الشراء') }}
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    </thead>
+
+                    {# ==================== BODY ==================== #}
+                    <tbody>
+                        <tr>
+                            <td>
+                                {# Seller and Client Information #}
+                                <div class="info-tables-container">
+                                    {# Seller Information #}
+                                    <table class="info-table info-table--seller">
+                                        <thead>
+                                            <tr>
+                                                <td class="info-header info-header--left" colspan="2">
+                                                    Seller Information
+                                                </td>
+                                                <td class="info-header info-header--right" dir="rtl">
+                                                    بيانات البائع
+                                                </td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {# Name rows #}
+                                            <tr>
+                                                <td class="label-cell label-cell--name">Name:</td>
+                                                <td class="text-center" colspan="2">{{ ctx.company.company_name }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2" class="text-right">{{ ctx.company.company_name_in_arabic
+                                                    }}</td>
+                                                <td class="label-cell text-right" dir="rtl">الإسم:</td>
+                                            </tr>
+
+                                            {# Address fields #}
+                                            {{ address_section(ctx.seller_address, is_seller=true) }}
+
+                                            {# Registration details #}
+                                            {{ bilingual_row('CR Number:', ctx.company.custom_commercial_register,
+                                            'السجل التجاري:') }}
+                                            {{ bilingual_row('VAT Number:', ctx.company.tax_id, 'الرقم الضريبي:') }}
+                                        </tbody>
+                                    </table>
+
+                                    {# Client Information #}
+                                    <table class="info-table info-table--client">
+                                        <thead>
+                                            <tr>
+                                                <td class="info-header info-header--left" colspan="2">
+                                                    Client Information
+                                                </td>
+                                                <td class="info-header info-header--right" dir="rtl">
+                                                    بيانات العميل
+                                                </td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {# Name rows #}
+                                            <tr>
+                                                <td class="label-cell label-cell--name">Name:</td>
+                                                <td class="text-center" colspan="2">{{ doc.customer }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2" class="text-right">{{ ctx.customer_address.address_line1
+                                                    }}</td>
+                                                <td class="label-cell text-right" dir="rtl">الإسم:</td>
+                                            </tr>
+
+                                            {# Address fields #}
+                                            {{ address_section(ctx.customer_address) }}
+
+                                            {# Registration details #}
+                                            {{ bilingual_row('CR Number:', ctx.customer_cr_number, 'السجل التجاري:') }}
+                                            {{ bilingual_row('VAT Number:', ctx.customer_tax_id, 'الرقم الضريبي:') }}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {# ==================== ITEMS TABLE ==================== #}
+                                <table class="items-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="items-header items-header--first">{{ _("Serial") }}</th>
+                                            <th class="items-header">{{ _("Part Number") }}</th>
+                                            <th class="items-header">{{ _("Description") }}</th>
+                                            <th class="items-header">{{ _("Unit") }}</th>
+                                            <th class="items-header">{{ _("Qty") }}</th>
+                                            <th class="items-header">{{ _("Currency") }}</th>
+                                            {% if doc.conversion_rate and doc.conversion_rate != 1 %}
+                                            <th class="items-header">{{ _("Cur. Rate") }}</th>
+                                            {% endif %}
+                                            <th class="items-header">{{ _("U. Price") }}</th>
+                                            <th class="items-header">{{ _("Before VAT") }}</th>
+                                            <th class="items-header">{{ _("VAT") }} ({{ ctx.vat_rate }}%)</th>
+                                            <th class="items-header items-header--last">{{ _("Total") }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in doc.items %}
+                                        <tr class="items-row">
+                                            <td class="items-cell items-cell--serial">{{ item.idx }}</td>
+                                            <td class="items-cell items-cell--part-number">
+                                                {{ item.custom_part_number or item.item_code }}
+                                            </td>
+                                            <td class="items-cell items-cell--description">{{ item.item_name }}</td>
+                                            <td class="items-cell items-cell--uom">{{ item.uom }}</td>
+                                            <td class="items-cell items-cell--qty">{{ item.qty }}</td>
+                                            <td class="items-cell items-cell--currency">{{ doc.currency }}</td>
+                                            {% if doc.conversion_rate and doc.conversion_rate != 1 %}
+                                            <td class="items-cell items-cell--rate">{{ doc.conversion_rate }}</td>
+                                            {% endif %}
+                                            <td class="items-cell items-cell--price">
+                                                {{ "{:.2f}".format(item.rate) if item.rate else "0.00" }}
+                                            </td>
+                                            <td class="items-cell items-cell--amount">
+                                                {{ "{:.2f}".format(item.amount) if item.amount else "0.00" }}
+                                            </td>
+                                            <td class="items-cell items-cell--tax">
+                                                {{ "{:.2f}".format(item.tax_amount) if item.tax_amount else "0.00" }}
+                                            </td>
+                                            <td class="items-cell items-cell--total">
+                                                {{ "{:.2f}".format(item.total_amount) if item.total_amount else "0.00"
+                                                }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    {# ==================== FOOTER ==================== #}
+                    <tfoot>
+                        <tr>
+                            <td>
+                                <div class="footer-container">
+                                    {# QR Code Section #}
+                                    <div class="footer-qr">
+                                        {% set qr_code = doc.ksa_einv_qr or doc.ksa_einv2_qr %}
+                                        {% if qr_code %}
+                                        <img src="{{ qr_code }}" alt="ZATCA QR Code" class="qr-image">
+                                        {% endif %}
+                                    </div>
+
+                                    {# Totals Section #}
+                                    <div class="footer-totals">
+                                        <table class="totals-table">
+                                            <tbody>
+                                                {# Primary Currency Totals #}
+                                                {{ totals_row('Total Before Discount', 'المبلغ قبل الخصم', doc.total) }}
+
+                                                {% if doc.discount_amount %}
+                                                {{ totals_row('Total Discount', 'خصم', doc.discount_amount) }}
+                                                {% endif %}
+
+                                                {{ totals_row('Total Before Tax', 'المبلغ قبل الضريبة', doc.net_total)
+                                                }}
+
+                                                {% for tax in doc.taxes %}
+                                                {% if 'VAT' in (tax.description or '').upper() %}
+                                                {{ totals_row('VAT (' ~ ctx.vat_rate ~ '%)', 'مجموع الضريبة',
+                                                tax.tax_amount) }}
+                                                {% elif 'RETENTION' in (tax.description or '').upper() %}
+                                                {{ totals_row('Retention', 'الاحتفاظ', tax.tax_amount) }}
+                                                {% endif %}
+                                                {% endfor %}
+
+                                                {{ totals_row('Total Amount', 'المجموع الاجمالى', doc.grand_total,
+                                                is_grand=true) }}
+                                                {{ totals_row('Paid Amount', 'المبلغ المدفوع', doc.grand_total -
+                                                doc.outstanding_amount) }}
+                                                {{ totals_row('Outstanding Amount', 'الصافي المستحق',
+                                                doc.outstanding_amount) }}
+
+                                                {# SAR Equivalent (if foreign currency) #}
+                                                {% if doc.currency != 'SAR' and doc.conversion_rate %}
+                                                <tr class="currency-separator">
+                                                    <td colspan="3" class="text-center">
+                                                        {# <strong>SAR Equivalent / المعادل بالريال السعودي</strong> #}
+                                                    </td>
+                                                </tr>
+                                                {{ totals_row('Total Before Discount', 'المبلغ قبل الخضم', doc.total *
+                                                doc.conversion_rate, 'SAR') }}
+                                                {{ totals_row('Total Before Tax', 'المبلغ قبل الضريبة', doc.net_total *
+                                                doc.conversion_rate, 'SAR') }}
+                                                {{ totals_row('VAT (' ~ ctx.vat_rate ~ '%)', 'مجموع الضريبة',
+                                                doc.total_taxes_and_charges * doc.conversion_rate, 'SAR') }}
+                                                {{ totals_row('Total Amount', 'المجموع الاجمالى', doc.grand_total *
+                                                doc.conversion_rate, 'SAR', is_grand=true) }}
+                                                {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+
+                        {# ==================== PAYMENT INFORMATION ==================== #}
+                        {% if ctx.payments and ctx.payments|length > 0 %}
+                        <tr>
+                            <td>
+                                <table class="payments-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="payments-header">Payment Date</th>
+                                            <th class="payments-header">Reference Name</th>
+                                            <th class="payments-header">Mode of Payment</th>
+                                            <th class="payments-header">Allocated Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in ctx.payments %}
+                                        <tr>
+                                            <td>{{ frappe.format_date(payment.posting_date, 'dd-MM-yyyy') }}</td>
+                                            <td>{{ payment.name }}</td>
+                                            <td>{{ payment.mode_of_payment }}</td>
+                                            <td class="text-center">
+                                                {{ format_currency(payment.allocated_amount) }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {# ==================== PREPAYMENT INVOICES ==================== #}
+                        {% if doc.prepayments_invcoies and doc.prepayments_invcoies|length > 0 %}
+                        <tr>
+                            <td>
+                                <table class="prepayments-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="prepayments-header" colspan="5">
+                                                Prepayment Details / تفاصيل الدفعات المقدمة
+                                            </th>
+                                        </tr>
+                                        <tr>
+                                            <th class="prepayments-header">
+                                                Reference Invoice<br>الفاتورة المرجعية
+                                            </th>
+                                            <th class="prepayments-header">Type<br>النوع</th>
+                                            <th class="prepayments-header">Taxable Amount<br>المبلغ الخاضع للضريبة</th>
+                                            <th class="prepayments-header">Tax Amount<br>مبلغ الضريبة</th>
+                                            <th class="prepayments-header">Grand Total<br>المجموع الكلي</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for prepayment in doc.prepayments_invcoies %}
+                                        <tr>
+                                            <td>{{ prepayment.reference_invoice }}</td>
+                                            <td>{{ prepayment.prepayment_type }}</td>
+                                            <td class="text-center">
+                                                {{ format_currency(prepayment.deducted_taxable_amount or
+                                                prepayment.taxable_amount) }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ format_currency(prepayment.deducted_tax_amount or
+                                                prepayment.tax_amount) }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ format_currency(prepayment.deducted_grand_total or
+                                                prepayment.grand_total) }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        <tr class="prepayments-totals">
+                                            <td colspan="2" class="text-right">
+                                                <strong>Total / المجموع</strong>
+                                            </td>
+                                            <td class="text-center">
+                                                {{ format_currency(doc.deducted_taxable_amount or
+                                                doc.total_taxable_amount) }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ format_currency(doc.deducted_tax_amount or doc.total_tax_amount) }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ format_currency(doc.deducted_grand_total or doc.total_grands) }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {# ==================== BANK DETAILS ==================== #}
+                        {% if ctx.bank_details.bank_name %}
+                        <tr>
+                            <td>
+                                <div class="bank-details">
+                                    <table class="bank-table">
+                                        <tr>
+                                            <td colspan="2">
+                                                <p><strong>Bank Name:</strong> {{ ctx.bank_details.bank_name }}</p>
+                                                {% if ctx.bank_details.branch_no %}
+                                                <p><strong>Branch No.:</strong> {{ ctx.bank_details.branch_no }}</p>
+                                                {% endif %}
+                                                {% if ctx.bank_details.branch_name %}
+                                                <p><strong>Branch Name:</strong> {{ ctx.bank_details.branch_name }}</p>
+                                                {% endif %}
+                                                {% if ctx.bank_details.id_number %}
+                                                <p><strong>ID Number:</strong> {{ ctx.bank_details.id_number }}</p>
+                                                {% endif %}
+                                                {% if ctx.bank_details.account_number %}
+                                                <p><strong>Account Number:</strong> {{ ctx.bank_details.account_number
+                                                    }}</p>
+                                                {% endif %}
+                                                {% if ctx.bank_details.iban %}
+                                                <p><strong>IBAN:</strong> <span class="iban-number">{{
+                                                        ctx.bank_details.iban }}</span></p>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {# ==================== AMOUNT IN WORDS ==================== #}
+                        <tr>
+                            <td>
+                                <div class="amount-in-words">
+                                    {{ frappe.utils.money_in_words(doc.base_grand_total) or doc.in_words }}
+                                </div>
+                            </td>
+                        </tr>
+
+                        {# ==================== SIGNATURES ==================== #}
+                        <tr>
+                            <td>
+                                <div class="signatures">
+                                    <div class="signature-block">
+                                        <span class="signature-label">Prepared by: </span>
+                                        <span class="signature-line"></span>
+                                    </div>
+                                    <div class="signature-block">
+                                        <span class="signature-label">Received by: </span>
+                                        <span class="signature-line"></span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            {% if footer %}
+            {{ footer }}
+            {% endif %}
