@@ -147,14 +147,32 @@ frappe.ui.form.on("Sales Invoice" , {
 
     
         frm.set_query("previous_prepayment", () => {
-            return {
-                filters: {
-                    is_linked: 0,
-                    prepayment_type: ["!=", "Final Adjustment"],
-                    customer: frm.doc.customer,
-                    currency: frm.doc.currency
-                }
+            // Get sales order from sales invoice
+            let sales_order = null;
+            
+            // Priority 1: Check prepayment_sales_order field
+            if (frm.doc.prepayment_sales_order) {
+                sales_order = frm.doc.prepayment_sales_order;
             }
+            // Priority 2: Check first item's sales_order field
+            else if (frm.doc.items && frm.doc.items.length > 0 && frm.doc.items[0].sales_order) {
+                sales_order = frm.doc.items[0].sales_order;
+            }
+            
+            // Build filters
+            let filters = {
+                is_linked: 0,
+                prepayment_type: ["!=", "Final Adjustment"],
+                customer: frm.doc.customer,
+                currency: frm.doc.currency
+            };
+            
+            // Add sales_order filter only if it exists
+            if (sales_order) {
+                filters.sales_order = sales_order;
+            }
+            
+            return { filters: filters };
         });
         
         frm.set_query("sales_invoice_type", () => {
