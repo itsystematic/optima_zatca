@@ -199,6 +199,15 @@ def create_custom_fields_with_validation():
                 "depends_on": "customer"
             },
             {
+                "fieldname": "prepayment_sales_order",
+                "fieldtype": "Link",
+                "label": "Sales Order",
+                "options": "Sales Order",
+                "insert_after": "due_date",
+                "read_only": 1,
+                "description": "Prepayment Sales Invoice is for this Sales Order"
+            },
+            {
                 "fieldname": "reason_for_issuance",
                 "fieldtype": "Small Text",
                 "label": "Reason For issuance",
