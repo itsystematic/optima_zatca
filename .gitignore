@@ -13,3 +13,6 @@ __pycache__/
 optima_zatca/public/node_modules
 optima_zatca/public/zatca-onboarding/
 optima_zatca/public/zatca-onboarding/zatca_onboarding.js
+
+# Print Format JSON files (auto-generated with embedded HTML/CSS)
+optima_zatca/optima_zatca/print_format/zatca_sales_invoice/zatca_sales_invoice.json

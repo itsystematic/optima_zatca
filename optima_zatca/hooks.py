@@ -91,7 +91,7 @@ doctype_js = {
 # ------------
 
 # before_install = "optima_zatca.install.before_install"
-# after_install = "optima_zatca.install.after_install"
+after_install = "optima_zatca.install.after_install"
 
 # Uninstallation
 # ------------
