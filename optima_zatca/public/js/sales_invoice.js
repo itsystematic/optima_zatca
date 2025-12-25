@@ -14,6 +14,22 @@ frappe.ui.form.on("Sales Invoice" , {
         
     },
 
+    onload(frm) {
+        // Clear prepayment_sales_order if not a prepayment invoice type
+        if (frm.doc.prepayment_sales_order && 
+            !PREPAYMENT_TYPES.includes(frm.doc.sales_invoice_type)) {
+            frm.set_value('prepayment_sales_order', '');
+        }
+    },
+
+    sales_invoice_type(frm) {
+        // Clear prepayment_sales_order when changing invoice type away from prepayment
+        if (frm.doc.prepayment_sales_order && 
+            !PREPAYMENT_TYPES.includes(frm.doc.sales_invoice_type)) {
+            frm.set_value('prepayment_sales_order', '');
+        }
+    },
+
     validate(frm) {
         if (frm.doc.sales_invoice_type == "Normal") {
             return;
@@ -141,6 +157,16 @@ frappe.ui.form.on("Sales Invoice" , {
             }
         });
         
+        frm.set_query("sales_invoice_type", () => {
+            if (frm.doc.prepayment_sales_order) {
+                return {
+                    filters: {
+                        name: ["in", ["Initial Prepayment", "Prepayment"]]
+                    }
+                };
+            }
+            return {};
+        });
 
     },
 
