@@ -71,8 +71,8 @@ frappe.ui.form.on("Sales Invoice" , {
                 // Validate for POS payments in adjustment types
         if (ADJUSTMENT_TYPES.includes(sales_invoice_type) && frm.doc.is_pos == 1) {
             const absDeductedGrandTotal = Math.abs(flt(frm.doc.deducted_grand_total));
-            const absPaidAmount = Math.abs(flt(frm.doc.paid_amount));
-            const absGrandTotal = Math.abs(flt(frm.doc.base_grand_total || frm.doc.grand_total));
+            const absPaidAmount = Math.abs(flt(frm.doc.base_paid_amount));
+            const absGrandTotal = Math.abs(flt(frm.doc.base_grand_total));
             
             if (absDeductedGrandTotal + absPaidAmount > absGrandTotal) {
                 frappe.throw(__("(Deducted Grand Total + Paid Amount) Must Be Less Than Or Equal To The Grand Total "));
@@ -82,8 +82,9 @@ frappe.ui.form.on("Sales Invoice" , {
         // Validate for non-POS payments in adjustment types
         if (ADJUSTMENT_TYPES.includes(sales_invoice_type) && frm.doc.is_pos == 0) {
             const absDeductedGrandTotal = Math.abs(flt(frm.doc.deducted_grand_total));
-            const absTotalAdvance = Math.abs(flt(frm.doc.total_advance));
-            const absGrandTotal = Math.abs(flt(frm.doc.base_grand_total || frm.doc.grand_total));
+            const totalAllocatedAdvance = (frm.doc.advances || []).reduce((sum, row) => sum + flt(row.allocated_amount), 0);
+            const absTotalAdvance = Math.abs(flt(totalAllocatedAdvance * frm.doc.conversion_rate));
+            const absGrandTotal = Math.abs(flt(frm.doc.base_grand_total));
             
             if (absDeductedGrandTotal + absTotalAdvance > absGrandTotal) {
                 frappe.throw(__("Deducted Grand Total + Total Advance Must Be Less Than Or Equal To The Grand Total"));

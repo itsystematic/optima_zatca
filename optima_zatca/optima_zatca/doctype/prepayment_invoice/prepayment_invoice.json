@@ -162,6 +162,8 @@
   {
    "fieldname": "prepayment_type",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Prepayment Type",
    "read_only": 1
   },
@@ -219,7 +221,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-25 16:42:24.513360",
+ "modified": "2025-12-30 09:34:19.402825",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Prepayment Invoice",
