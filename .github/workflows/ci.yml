@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  push:
+    branches: [ version-16-beta ]
+  pull_request:
+    branches: [ version-16-beta ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Dummy step
+      run: echo "CI file exists"
