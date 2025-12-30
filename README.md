@@ -92,6 +92,7 @@ Optima ZATCA is designed to be user-friendly and intuitive. Refer to our **[Yout
 
 ### Supported ERPNext Versions
 - ERPNext Version 15
+- ERPNext Version 16
 ---
 
 ## 📞 Support
