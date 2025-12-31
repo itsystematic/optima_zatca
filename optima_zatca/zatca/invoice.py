@@ -150,7 +150,11 @@ def update_itemised_tax_data(doc):
                 if included_in_print_rate :
                     row.line_extension_amount = flt(row.amount / ( ( row.tax_rate / 100 ) + 1 ) , 2)
                     taxable_amount = flt(row.amount / ( ( row.tax_rate / 100 ) + 1 ) , 2 )
-                    row.price_amount = flt(taxable_amount / row.get("qty") , 2)
+                    qty = flt(row.get("qty") or 0)
+                    if qty != 0:
+                        row.price_amount = flt(taxable_amount / qty , 2)
+                    else:
+                        row.price_amount = 0.0
                     row.tax_amount = flt(row.amount - taxable_amount , 2)
                     original_net_total = doc.net_total + ( doc.get("discount_amount" , 0.00) or 0.00 )
                     row.total_amount = row.amount
