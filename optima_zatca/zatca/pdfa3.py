@@ -9,7 +9,6 @@ import io
 import frappe
 from frappe import _
 from datetime import datetime
-from optima_zatca.zatca.utils import log_and_throw_error
 from frappe.utils.weasyprint import PrintFormatGenerator
 
 
@@ -27,16 +26,11 @@ def generate_pdfa3(sales_invoice: dict, print_format: str = None, letterhead: st
         bytes: PDF/A-3 compliant PDF as bytes
         
     """
-    print("="*20 + " generate_pdfa3 " + "*"*20)
-    print(sales_invoice)
-    print("="*50)
     # Get regular PDF with specified format
     regular_pdf = _get_regular_pdf(sales_invoice, print_format, letterhead, language)
     
-    
     # Get ZATCA XML
     zatca_xml = _get_zatca_xml(sales_invoice.name)
-    
     
     # Create PDF/A-3 with embedded files
     pdfa3_bytes = _create_pdfa3_with_attachments(
@@ -50,7 +44,7 @@ def generate_pdfa3(sales_invoice: dict, print_format: str = None, letterhead: st
     
 
 
-def _get_regular_pdf(sales_invoice, print_format: str = None, letterhead: str = None, language: str = None) -> bytes:
+def _get_regular_pdf(sales_invoice, print_format: str , letterhead: str, language: str) -> bytes:
     """
     Generate regular invoice PDF using existing WeasyPrint infrastructure.
     
@@ -63,19 +57,8 @@ def _get_regular_pdf(sales_invoice, print_format: str = None, letterhead: str = 
     Returns:
         bytes: Regular PDF as bytes
     """
-    # Use provided print format or fall back to defaults
-    if not print_format:
-        print_format = sales_invoice.meta.default_print_format or "Standard"
-        # Check if Zatca Sales Invoice print format exists
-        if frappe.db.exists("Print Format", "Zatca Sales Invoice"):
-            print_format = "Zatca Sales Invoice"
     
-    # Get print format document to check its type
     print_format_doc = frappe.get_doc("Print Format", print_format)
-    
-    # Use provided letterhead or fall back to invoice letterhead
-    if not letterhead:
-        letterhead = sales_invoice.get("letter_head") or None
     
     # Set language context if provided
     if language:
@@ -176,10 +159,6 @@ def _create_pdfa3_with_attachments(
         bytes: PDF/A-3 compliant PDF as bytes
     """
     import pikepdf
-
-    print("="*20 + " zatca_xml " + "*"*20)
-    print(f"zatca_xml: {zatca_xml[:100]}... ({len(zatca_xml)} bytes)")
-    print("="*50)
     
     # Open the regular PDF
     pdf = pikepdf.Pdf.open(io.BytesIO(regular_pdf))

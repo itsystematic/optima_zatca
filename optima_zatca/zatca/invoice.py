@@ -336,6 +336,47 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
     return items[0].get("tax_rate") if items else 0
 
 
+def get_pdfa3_settings(sales_invoice, zatca_settings):
+    """
+    Determine print format, letterhead, and language for PDF/A-3 generation.
+    
+    Priority order:
+    1. Zatca Main Settings
+    2. Sales Invoice document settings
+    3. System defaults
+    
+    Args:
+        sales_invoice: Sales Invoice document
+        zatca_settings: Zatca Main Settings document
+        
+    Returns:
+        dict: Dictionary containing print_format, letterhead, and language
+    """
+    print_format = (
+        zatca_settings.get("print_format") or
+        sales_invoice.meta.default_print_format or
+        "Standard"
+    )
+    
+    letterhead = (
+        zatca_settings.get("letter_head") or
+        sales_invoice.get("letter_head") or
+        None
+    )
+    
+    language = (
+        zatca_settings.get("language") or
+        frappe.local.lang or
+        "en"
+    )
+    
+    return {
+        "print_format": print_format,
+        "letterhead": letterhead,
+        "language": language
+    }
+
+
 @frappe.whitelist()
 def generate_pdfa3_for_invoice(sales_invoice_name: str):
     """
@@ -356,36 +397,15 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str):
         
         zatca_settings = frappe.get_single("Zatca Main Settings")
         
-        # Determine print format
-        final_print_format = (
-            sales_invoice.get("pdfa3_print_format") or
-            zatca_settings.get("print_format") or
-            sales_invoice.meta.default_print_format or
-            "Standard"
-        )
+        settings = get_pdfa3_settings(sales_invoice, zatca_settings)
         
-        # Determine letterhead
-        final_letterhead = (
-            sales_invoice.get("pdfa3_letterhead") or
-            zatca_settings.get("letter_head") or
-            sales_invoice.get("letter_head") or
-            None
-        )
-        
-        # Determine language
-        final_language = (
-            sales_invoice.get("pdfa3_language") or
-            zatca_settings.get("language") or
-            frappe.local.lang or
-            "en"
-        )
         
         # Generate PDF/A-3 with specified settings
         pdfa3_bytes = generate_pdfa3(
             sales_invoice=sales_invoice,
-            print_format=final_print_format,
-            letterhead=final_letterhead,
-            language=final_language
+            print_format=settings["print_format"],
+            letterhead=settings["letterhead"],
+            language=settings["language"]
         )
         
         # Delete existing PDF/A-3 file if it exists
@@ -417,11 +437,6 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str):
         return {
             "file_url": pdfa3_file.file_url,
             "file_name": file_name,
-            "settings_used": {
-                "print_format": final_print_format,
-                "letterhead": final_letterhead,
-                "language": final_language
-            }
         }
         
     except Exception as e:
