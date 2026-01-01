@@ -6,6 +6,7 @@ const ADJUSTMENT_TYPES = ["Adjustment", "Final Adjustment"];
 frappe.ui.form.on("Sales Invoice" , {
     async refresh(frm) {
         frm.trigger("add_zatca_button") ;
+        frm.trigger("add_pdfa3_button") ;
         frm.trigger('remove_send_to_zatca_button') ;
         frm.trigger("setup_query_filters") ;
         if (shouldSetPreviousPrepayment(frm.doc)) {
@@ -127,6 +128,67 @@ frappe.ui.form.on("Sales Invoice" , {
             "color" : "white"
         })
     } ,
+
+    add_pdfa3_button(frm) {
+        // Show button only when invoice was sent to ZATCA
+        if (frm.is_new() || !frm.doc.sent_to_zatca) return;
+        
+        frm.add_custom_button(__("Generate PDF/A-3"), function () {
+            if (frm.is_dirty()) {
+                frappe.throw(__("Please save the document first."));
+            }
+
+            frappe.dom.freeze(__("Generating PDF/A-3..."));
+            
+            // Get settings from custom fields or use null for backend fallback
+            const print_format = frm.doc.pdfa3_print_format || null;
+            const letterhead = frm.doc.pdfa3_letterhead || null;
+            const language = frm.doc.pdfa3_language || null;
+
+            frappe.call({
+                method: "optima_zatca.zatca.invoice.generate_pdfa3_for_invoice",
+                args: {
+                    sales_invoice_name: frm.doc.name,
+                    print_format: print_format,
+                    letterhead: letterhead,
+                    language: language
+                },
+                callback: function(r) {
+                    frappe.dom.unfreeze();
+                    
+                    if (r.message && r.message.file_url) {
+                        // Open PDF in new tab
+                        window.open(r.message.file_url, '_blank');
+                        
+                        // Show success message with settings used
+                        const settings_info = r.message.settings_used;
+                        frappe.show_alert({
+                            message: __('PDF/A-3 generated with: Print Format: {0}, Letterhead: {1}, Language: {2}', [
+                                settings_info.print_format,
+                                settings_info.letterhead || 'None',
+                                settings_info.language
+                            ]),
+                            indicator: 'green'
+                        }, 5);
+                        
+                        // Reload to show attached file
+                        frm.reload_doc();
+                    }
+                },
+                error: function(r) {
+                    frappe.dom.unfreeze();
+                    frappe.msgprint({
+                        title: __('Error'),
+                        indicator: 'red',
+                        message: __('Failed to generate PDF/A-3. Please check Error Log.')
+                    });
+                }
+            });
+        }).css({
+            "background-color": "#0066cc",
+            "color": "white"
+        });
+    },
     setup_query_filters(frm) {
 
         frm.set_query("tax_exemption" , "items" , (doc ,cdt,cdn) => {
