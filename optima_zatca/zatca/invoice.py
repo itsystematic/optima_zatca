@@ -337,37 +337,27 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
 
 
 @frappe.whitelist()
-def generate_pdfa3_for_invoice(sales_invoice_name: str, print_format: str = None, letterhead: str = None, language: str = None):
+def generate_pdfa3_for_invoice(sales_invoice_name: str):
     """
     Generate PDF/A-3 compliant PDF for a Sales Invoice that was sent to ZATCA.
     
     Args:
         sales_invoice_name: Name of the Sales Invoice document
-        print_format: Optional print format to use (falls back to invoice field or settings)
-        letterhead: Optional letterhead to use (falls back to invoice field or settings)
-        language: Optional language to use (falls back to invoice field or settings)
         
     Returns:
         dict: File information including file_url for download
     """
     try:
         sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
-        sales_invoice.check_permission("read")
         
         # Validate invoice was sent to ZATCA
         if not sales_invoice.get("sent_to_zatca"):
             frappe.throw(_("Invoice must be sent to ZATCA before generating PDF/A-3"))
         
-        # Get PDF/A-3 settings with fallback priority:
-        # 1. Function parameters (from frontend button)
-        # 2. Invoice custom fields
-        # 3. Zatca Main Settings
-        # 4. System defaults
         zatca_settings = frappe.get_single("Zatca Main Settings")
         
         # Determine print format
         final_print_format = (
-            print_format or
             sales_invoice.get("pdfa3_print_format") or
             zatca_settings.get("print_format") or
             sales_invoice.meta.default_print_format or
@@ -376,7 +366,6 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str, print_format: str = None
         
         # Determine letterhead
         final_letterhead = (
-            letterhead or
             sales_invoice.get("pdfa3_letterhead") or
             zatca_settings.get("letter_head") or
             sales_invoice.get("letter_head") or
@@ -385,7 +374,6 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str, print_format: str = None
         
         # Determine language
         final_language = (
-            language or
             sales_invoice.get("pdfa3_language") or
             zatca_settings.get("language") or
             frappe.local.lang or
@@ -443,14 +431,3 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str, print_format: str = None
             exception=e
         )
 
-
-# def log_and_throw_error(invoice_name: str, exception: Exception) -> None:
-#     """Log the error and throw a user-friendly message."""
-#     error_message = str(exception)
-#     error_trace = traceback.format_exc()
-    
-#     frappe.log_error(
-#         title=f"Failed to create Prepayment Invoice for {invoice_name}",
-#         message=f"Error: {error_message}\n{error_trace}"
-#     )
-#     frappe.throw(_("Failed to create Prepayment Invoice. Check Error Log."))
