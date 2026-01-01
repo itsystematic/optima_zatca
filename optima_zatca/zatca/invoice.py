@@ -9,6 +9,7 @@ from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
 from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
+from optima_zatca.zatca.pdfa3 import generate_pdfa3
 # from erpnext.controllers.taxes_and_totals import get_itemised_tax
 
 
@@ -333,6 +334,114 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
     """Extract tax rate from the first item in the sales invoice."""
     items = sales_invoice.get("items", [])
     return items[0].get("tax_rate") if items else 0
+
+
+@frappe.whitelist()
+def generate_pdfa3_for_invoice(sales_invoice_name: str, print_format: str = None, letterhead: str = None, language: str = None):
+    """
+    Generate PDF/A-3 compliant PDF for a Sales Invoice that was sent to ZATCA.
+    
+    Args:
+        sales_invoice_name: Name of the Sales Invoice document
+        print_format: Optional print format to use (falls back to invoice field or settings)
+        letterhead: Optional letterhead to use (falls back to invoice field or settings)
+        language: Optional language to use (falls back to invoice field or settings)
+        
+    Returns:
+        dict: File information including file_url for download
+    """
+    try:
+        sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
+        sales_invoice.check_permission("read")
+        
+        # Validate invoice was sent to ZATCA
+        if not sales_invoice.get("sent_to_zatca"):
+            frappe.throw(_("Invoice must be sent to ZATCA before generating PDF/A-3"))
+        
+        # Get PDF/A-3 settings with fallback priority:
+        # 1. Function parameters (from frontend button)
+        # 2. Invoice custom fields
+        # 3. Zatca Main Settings
+        # 4. System defaults
+        zatca_settings = frappe.get_single("Zatca Main Settings")
+        
+        # Determine print format
+        final_print_format = (
+            print_format or
+            sales_invoice.get("pdfa3_print_format") or
+            zatca_settings.get("print_format") or
+            sales_invoice.meta.default_print_format or
+            "Standard"
+        )
+        
+        # Determine letterhead
+        final_letterhead = (
+            letterhead or
+            sales_invoice.get("pdfa3_letterhead") or
+            zatca_settings.get("letter_head") or
+            sales_invoice.get("letter_head") or
+            None
+        )
+        
+        # Determine language
+        final_language = (
+            language or
+            sales_invoice.get("pdfa3_language") or
+            zatca_settings.get("language") or
+            frappe.local.lang or
+            "en"
+        )
+        
+        # Generate PDF/A-3 with specified settings
+        pdfa3_bytes = generate_pdfa3(
+            sales_invoice=sales_invoice,
+            print_format=final_print_format,
+            letterhead=final_letterhead,
+            language=final_language
+        )
+        
+        # Delete existing PDF/A-3 file if it exists
+        frappe.db.delete("File", {
+            "attached_to_doctype": "Sales Invoice",
+            "attached_to_name": sales_invoice_name,
+            "attached_to_field": "ksa_einv_pdfa3"
+        })
+        
+        # Create file name
+        file_name = f"{sales_invoice_name}_PDFA3.pdf".replace("/", "-")
+        
+        # Create and save file
+        pdfa3_file = frappe.get_doc({
+            "doctype": "File",
+            "file_name": file_name,
+            "is_private": 0,
+            "content": pdfa3_bytes,
+            "attached_to_doctype": "Sales Invoice",
+            "attached_to_name": sales_invoice_name,
+            "attached_to_field": "ksa_einv_pdfa3"
+        })
+        pdfa3_file.save()
+        
+        # Update Sales Invoice with PDF/A-3 file URL if field exists
+        if hasattr(sales_invoice, "ksa_einv_pdfa3"):
+            sales_invoice.db_set("ksa_einv_pdfa3", pdfa3_file.file_url)
+        
+        return {
+            "file_url": pdfa3_file.file_url,
+            "file_name": file_name,
+            "settings_used": {
+                "print_format": final_print_format,
+                "letterhead": final_letterhead,
+                "language": final_language
+            }
+        }
+        
+    except Exception as e:
+        log_and_throw_error(
+            operation="Generate PDF/A-3 for invoice",
+            document_name=sales_invoice_name,
+            exception=e
+        )
 
 
 # def log_and_throw_error(invoice_name: str, exception: Exception) -> None:

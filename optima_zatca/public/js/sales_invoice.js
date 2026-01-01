@@ -139,19 +139,11 @@ frappe.ui.form.on("Sales Invoice" , {
             }
 
             frappe.dom.freeze(__("Generating PDF/A-3..."));
-            
-            // Get settings from custom fields or use null for backend fallback
-            const print_format = frm.doc.pdfa3_print_format || null;
-            const letterhead = frm.doc.pdfa3_letterhead || null;
-            const language = frm.doc.pdfa3_language || null;
 
             frappe.call({
                 method: "optima_zatca.zatca.invoice.generate_pdfa3_for_invoice",
                 args: {
                     sales_invoice_name: frm.doc.name,
-                    print_format: print_format,
-                    letterhead: letterhead,
-                    language: language
                 },
                 callback: function(r) {
                     frappe.dom.unfreeze();
@@ -177,11 +169,6 @@ frappe.ui.form.on("Sales Invoice" , {
                 },
                 error: function(r) {
                     frappe.dom.unfreeze();
-                    frappe.msgprint({
-                        title: __('Error'),
-                        indicator: 'red',
-                        message: __('Failed to generate PDF/A-3. Please check Error Log.')
-                    });
                 }
             });
         }).css({
