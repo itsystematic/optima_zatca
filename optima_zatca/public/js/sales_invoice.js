@@ -141,7 +141,7 @@ frappe.ui.form.on("Sales Invoice" , {
             frappe.dom.freeze(__("Generating PDF/A-3..."));
 
             frappe.call({
-                method: "optima_zatca.zatca.invoice.generate_pdfa3_for_invoice",
+                method: "optima_zatca.zatca.pdfa3.generate_pdfa3_for_invoice",
                 args: {
                     sales_invoice_name: frm.doc.name,
                 },

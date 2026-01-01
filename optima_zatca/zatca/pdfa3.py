@@ -8,11 +8,123 @@ with embedded ZATCA XML invoice and regular invoice PDF attachments.
 import io
 import frappe
 from frappe import _
+from frappe.model.document import Document
 from datetime import datetime
 from frappe.utils.weasyprint import PrintFormatGenerator
+from optima_zatca.zatca.utils import log_and_throw_error
 
 
-def generate_pdfa3(sales_invoice: dict, print_format: str = None, letterhead: str = None, language: str = None) -> bytes:
+@frappe.whitelist()
+def generate_pdfa3_for_invoice(sales_invoice_name: str):
+    """
+    Generate PDF/A-3 compliant PDF for a Sales Invoice that was sent to ZATCA.
+    
+    Args:
+        sales_invoice_name: Name of the Sales Invoice document
+        
+    Returns:
+        dict: File information including file_url for download
+    """
+    try:
+        sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
+        
+        # Validate invoice was sent to ZATCA
+        if not sales_invoice.get("sent_to_zatca"):
+            frappe.throw(_("Invoice must be sent to ZATCA before generating PDF/A-3"))
+        
+        zatca_settings = frappe.get_single("Zatca Main Settings")
+        
+        settings = get_pdfa3_settings(sales_invoice, zatca_settings)
+        
+        # Generate PDF/A-3 with specified settings
+        pdfa3_bytes = generate_pdfa3(
+            sales_invoice=sales_invoice,
+            print_format=settings["print_format"],
+            letterhead=settings["letterhead"],
+            language=settings["language"]
+        )
+        
+        # Delete existing PDF/A-3 file if it exists
+        frappe.db.delete("File", {
+            "attached_to_doctype": "Sales Invoice",
+            "attached_to_name": sales_invoice_name,
+            "attached_to_field": "ksa_einv_pdfa3"
+        })
+        
+        # Create file name
+        file_name = f"{sales_invoice_name}_PDFA3.pdf".replace("/", "-")
+        
+        # Create and save file
+        pdfa3_file = frappe.get_doc({
+            "doctype": "File",
+            "file_name": file_name,
+            "is_private": 0,
+            "content": pdfa3_bytes,
+            "attached_to_doctype": "Sales Invoice",
+            "attached_to_name": sales_invoice_name,
+            "attached_to_field": "ksa_einv_pdfa3"
+        })
+        pdfa3_file.save()
+        
+        # Update Sales Invoice with PDF/A-3 file URL if field exists
+        if hasattr(sales_invoice, "ksa_einv_pdfa3"):
+            sales_invoice.db_set("ksa_einv_pdfa3", pdfa3_file.file_url)
+        
+        return {
+            "file_url": pdfa3_file.file_url,
+            "file_name": file_name,
+        }
+        
+    except Exception as e:
+        log_and_throw_error(
+            operation="Generate PDF/A-3 for invoice",
+            document_name=sales_invoice_name,
+            exception=e
+        )
+
+
+def get_pdfa3_settings(sales_invoice, zatca_settings):
+    """
+    Determine print format, letterhead, and language for PDF/A-3 generation.
+    
+    Priority order:
+    1. Zatca Main Settings
+    2. Sales Invoice document settings
+    3. System defaults
+    
+    Args:
+        sales_invoice: Sales Invoice document
+        zatca_settings: Zatca Main Settings document
+        
+    Returns:
+        dict: Dictionary containing print_format, letterhead, and language
+    """
+    print_format = (
+        zatca_settings.get("print_format") or
+        sales_invoice.meta.default_print_format or
+        "Standard"
+    )
+    
+    letterhead = (
+        zatca_settings.get("letter_head") or
+        sales_invoice.get("letter_head") or
+        None
+    )
+    
+    language = (
+        zatca_settings.get("language") or
+        frappe.local.lang or
+        "en"
+    )
+    
+    return {
+        "print_format": print_format,
+        "letterhead": letterhead,
+        "language": language
+    }
+
+
+def generate_pdfa3(sales_invoice: Document, print_format: str, letterhead: str, language: str) -> bytes:
     """
     Main function to generate PDF/A-3 compliant PDF for a Sales Invoice.
     
@@ -41,10 +153,9 @@ def generate_pdfa3(sales_invoice: dict, print_format: str = None, letterhead: st
     
     return pdfa3_bytes
         
-    
 
 
-def _get_regular_pdf(sales_invoice, print_format: str , letterhead: str, language: str) -> bytes:
+def _get_regular_pdf(sales_invoice: Document, print_format: str , letterhead: str, language: str) -> bytes:
     """
     Generate regular invoice PDF using existing WeasyPrint infrastructure.
     
