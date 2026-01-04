@@ -9,7 +9,6 @@ from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
 from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
-# from erpnext.controllers.taxes_and_totals import get_itemised_tax
 
 
 @frappe.whitelist()
@@ -339,13 +338,3 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
     return items[0].get("tax_rate") if items else 0
 
 
-# def log_and_throw_error(invoice_name: str, exception: Exception) -> None:
-#     """Log the error and throw a user-friendly message."""
-#     error_message = str(exception)
-#     error_trace = traceback.format_exc()
-    
-#     frappe.log_error(
-#         title=f"Failed to create Prepayment Invoice for {invoice_name}",
-#         message=f"Error: {error_message}\n{error_trace}"
-#     )
-#     frappe.throw(_("Failed to create Prepayment Invoice. Check Error Log."))
