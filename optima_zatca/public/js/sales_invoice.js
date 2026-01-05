@@ -133,7 +133,7 @@ frappe.ui.form.on("Sales Invoice" , {
         // Show button only when invoice was sent to ZATCA
         if (frm.is_new() || !frm.doc.sent_to_zatca) return;
         
-        frm.add_custom_button(__("Generate PDF/A-3"), function () {
+        frm.page.add_menu_item(__("Generate PDF/A-3"), function () {
             if (frm.is_dirty()) {
                 frappe.throw(__("Please save the document first."));
             }
@@ -174,7 +174,7 @@ frappe.ui.form.on("Sales Invoice" , {
         }).css({
             "background-color": "#0066cc",
             "color": "white"
-        });
+        }), true;
     },
     setup_query_filters(frm) {
 
