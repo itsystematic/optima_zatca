@@ -6,7 +6,7 @@ Called after app installation via after_install hook.
 import frappe
 import click
 
-from optima_zatca.setup.set_tax_configuration import set_tax_configuration
+from optima_zatca.setup.setup_vat_system.set_tax_configuration import create_complete_vat_system
 from optima_zatca.setup.add_default_print_format import install_print_formats
 
 
@@ -18,7 +18,7 @@ def after_install():
     click.secho("🚀 Starting Optima ZATCA installation...", fg="cyan")
     
     install_print_formats()
-    set_tax_configuration()
+    create_complete_vat_system()
     
     frappe.db.commit()
     click.secho("✅ Optima ZATCA installation completed!", fg="green")

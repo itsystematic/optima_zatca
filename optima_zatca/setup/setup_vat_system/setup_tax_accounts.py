@@ -1,7 +1,5 @@
-import frappe
 import click
-
-TAX_CATEGORIES = ["S - Buying", "Z - Buying", "E - Buying", "O - Buying"]
+import frappe
 
 TAX_ACCOUNTS_CONFIG = {
     "sales": {
@@ -27,66 +25,14 @@ TAX_ACCOUNTS_CONFIG = {
 }
 
 
-def set_tax_configuration():
-    """
-    Main function to set up all tax configuration.
-    Can be called from install, patches, or manually.
-    """
-    click.secho("🔧 Setting up tax configuration...", fg="yellow")
-    
-    try:
-        create_tax_categories()
-        click.secho("✅ Tax configuration completed successfully!", fg="green")
-    except Exception as e:
-        click.secho(f"❌ Error in tax configuration: {str(e)}", fg="red")
-        raise
-
-
-def create_tax_categories():
-    """
-    Create tax categories if they don't exist.
-    Avoids duplicates and provides detailed feedback.
-    """
-    click.secho("📋 Creating tax categories...", fg="cyan")
-    
-    created_count = 0
-    existing_count = 0
-    
-    for category_name in TAX_CATEGORIES:
-        if frappe.db.exists("Tax Category", category_name):
-            click.secho(f"  ⚠️  Tax category '{category_name}' already exists", fg="yellow")
-            existing_count += 1
-        else:
-            try:
-                tax_category = frappe.new_doc("Tax Category")
-                tax_category.name = category_name
-                tax_category.title = category_name
-
-                tax_category.insert(ignore_permissions=True)
-                
-                click.secho(f"  ✅ Created tax category '{category_name}'", fg="green")
-                created_count += 1
-                
-            except Exception as e:
-                click.secho(f"  ❌ Failed to create '{category_name}': {str(e)}", fg="red")
-                raise
-    
-    # Summary
-    total = len(TAX_CATEGORIES)
-    click.secho(
-        f"📊 Tax categories summary: {created_count} created, {existing_count} existing, {total} total", 
-        fg="blue"
-    )
-
-
 def create_tax_accounts():
     """Create tax accounts in proper accounting locations"""
-    click.secho("💰 Creating tax accounts...", fg="cyan")
+    click.secho(" Creating tax accounts...", fg="cyan")
     
     companies = frappe.get_all("Company", fields=["name", "abbr"])
     
     for company in companies:
-        click.secho(f"  📊 Setting up tax accounts for {company.name}...", fg="blue")
+        click.secho(f"   Setting up tax accounts for {company.name}...", fg="blue")
         
         # Create sales accounts (under Liabilities)
         sales_parent = get_or_create_duties_and_taxes_parent(company.name, company.abbr)
@@ -102,7 +48,7 @@ def get_or_create_duties_and_taxes_parent(company_name, company_abbr):
     duties_taxes_name = f"Duties and Taxes - {company_abbr}"
     
     if frappe.db.exists("Account", duties_taxes_name):
-        click.secho(f"    🎯 Using existing Duties and Taxes", fg="blue")
+        click.secho(f"     Using existing Duties and Taxes", fg="blue")
         return duties_taxes_name
     
     # Find Current Liabilities (bulletproof - always exists)
@@ -128,7 +74,7 @@ def get_or_create_duties_and_taxes_parent(company_name, company_abbr):
         frappe.throw(f"No Liability accounts found for {company_name}")
     
     # Create Duties and Taxes
-    click.secho(f"    🏗️ Creating Duties and Taxes under {parent_account}", fg="yellow")
+    click.secho(f"     Creating Duties and Taxes under {parent_account}", fg="yellow")
     
     duties_taxes = frappe.new_doc("Account")
     duties_taxes.account_name = "Duties and Taxes"
@@ -148,7 +94,7 @@ def get_or_create_tax_assets_parent(company_name, company_abbr):
     tax_assets_name = f"Tax Assets - {company_abbr}"
     
     if frappe.db.exists("Account", tax_assets_name):
-        click.secho(f"    🎯 Using existing Tax Assets", fg="blue")
+        click.secho(f"     Using existing Tax Assets", fg="blue")
         return tax_assets_name
     
     # Find Current Assets (bulletproof)
@@ -170,7 +116,7 @@ def get_or_create_tax_assets_parent(company_name, company_abbr):
         parent_account = current_assets_name
     
     # Create Tax Assets
-    click.secho(f"    🏗️ Creating Tax Assets under {parent_account}", fg="yellow")
+    click.secho(f"     Creating Tax Assets under {parent_account}", fg="yellow")
     
     tax_assets = frappe.new_doc("Account")
     tax_assets.account_name = "Tax Assets"
