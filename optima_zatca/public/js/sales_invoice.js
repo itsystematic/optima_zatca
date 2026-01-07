@@ -759,3 +759,20 @@ frappe.ui.form.on("Sales Invoice Item" , {
         }
     }
 })
+
+frappe.ui.form.on("Sales Invoice Payment", {
+    mode_of_payment: function(frm , cdt, cdn) {
+        const row = locals[cdt][cdn];
+        if (!row.mode_of_payment) return;
+
+        let final_amount = flt(frm.doc.outstanding_amount);
+
+        if (ADJUSTMENT_TYPES.includes(frm.doc.sales_invoice_type)) {
+            final_amount = flt(frm.doc.outstanding_amount) - flt(frm.doc.deducted_grand_total);
+        }
+
+        if (flt(row.amount) !== final_amount) { //Only set value if it's different.
+            frappe.model.set_value(cdt, cdn, "amount", final_amount);
+        }
+    }
+})
