@@ -88,7 +88,13 @@ Follow these steps to install Optima ZATCA on your ERPNext setup:
 
 ## 🛠️ How to Use
 
-Optima ZATCA is designed to be user-friendly and intuitive. Refer to our **[Youtube channel](https://www.youtube.com/@itsystematic)** for detailed instructions.
+Optima ZATCA is designed to be user-friendly and intuitive. 
+
+### Documentation
+For comprehensive setup guides and detailed instructions, visit our **[Documentation](optima_zatca/documentation/)**.
+
+### Video Tutorials
+Watch our step-by-step tutorials on our **[Youtube channel](https://www.youtube.com/@itsystematic)**.
 
 ### Supported ERPNext Versions
 - ERPNext Version 15

@@ -61,9 +61,9 @@ The **Zatca Sales Invoice** print format is automatically installed with Optima 
 For optimal display in the ZATCA Sales Invoice print format, your logo should match these specifications:
 
 #### **Display Dimensions**
-- **Width:** 120 pixels
-- **Height:** 160 pixels
-- **Aspect Ratio:** 3:4 (portrait orientation)
+- **Width:** 160 pixels
+- **Height:** 120 pixels
+- **Aspect Ratio:** 4:3 (portrait orientation)
 
 > These dimensions are specifically designed for the Zatca Sales Invoice layout and provide the best balance between visibility and page space utilization.
 
@@ -92,11 +92,11 @@ For optimal display in the ZATCA Sales Invoice print format, your logo should ma
 ```
 ┌─────────────┐
 │             │ 
-│    LOGO     │ ← 160px height
+│    LOGO     │ ← 120px height
 │             │
 │             │
 └─────────────┘
-  ← 120px width
+  ← 160px width
 ```
 
 #### **Safe Area**
@@ -136,14 +136,14 @@ If your logo is larger than 120×160px:
 2. **Save Optimized Version**
    ```
    Original: company-logo.png (2000×2000px, 5MB)
-   Optimized: company-logo-invoice.png (120×160px, 50KB)
+   Optimized: company-logo-invoice.png (160×120px, 50KB)
    ```
 
 #### **Option 2: Creating from Scratch**
 
 1. **Canvas Setup**
-   - Width: 120px
-   - Height: 160px
+   - Width: 160px
+   - Height: 120px
    - Resolution: 150 DPI
    - Color mode: RGB
    - Background: Transparent
@@ -159,8 +159,8 @@ The current CSS implementation:
 
 ```css
 .letterhead-table img {
-    height: 160px;
-    width: 120px;
+    height: 120px;
+    width: 160px;
 }
 ```
 
@@ -173,7 +173,7 @@ This ensures your logo displays consistently across all invoices.
 ### Step 1: Prepare Your Logo
 
 Before creating a letterhead:
-1. ✅ Resize logo to 120×160px
+1. ✅ Resize logo to 160×120px
 2. ✅ Save as PNG (preferred) or JPG
 3. ✅ Optimize file size (under 500KB)
 4. ✅ Test image opens correctly
@@ -294,8 +294,8 @@ If your logo has different proportions, modify the CSS:
 **Example: Maintain Aspect Ratio**
 ```css
 .letterhead-table img {
-    max-height: 160px;
-    max-width: 120px;
+    max-height: 120px;
+    max-width: 160px;
     height: auto;
     width: auto;
 }
@@ -495,8 +495,8 @@ Changes:
 2. **Use Aspect-Ratio CSS**
    ```css
    .letterhead-table img {
-       max-height: 160px;
-       max-width: 120px;
+       max-height: 120px;
+       max-width: 160px;
        height: auto;
        width: auto;
        object-fit: contain;
@@ -624,9 +624,9 @@ Changes:
 
 | Specification | Value |
 |--------------|-------|
-| Width | 120px |
-| Height | 160px |
-| Aspect Ratio | 3:4 (portrait) |
+| Width | 160px |
+| Height | 120px |
+| Aspect Ratio | 4:3 (portrait) |
 | File Format | PNG (preferred), JPG, SVG |
 | Max File Size | 500 KB |
 | Recommended Size | 50-200 KB |
