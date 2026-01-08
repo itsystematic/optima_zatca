@@ -1,6 +1,6 @@
 {
   "name": "optima_zatca",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "App For Zatca Phase Two",
   "main": "index.js",
   "scripts": {
