@@ -120,15 +120,16 @@ def get_payment_details(reference_doctype, reference_name):
         )
         
         pe_map = {pe.name: pe for pe in payment_entries}
-
-        # Determine the correct currency based on payment type
-        if pe.get("payment_type") == "Receive":
-            payment_currency = pe.get("paid_from_account_currency")
-        else:  # Pay
-            payment_currency = pe.get("paid_to_account_currency")
         
         for ref in payment_refs:
             pe = pe_map.get(ref.parent, {})
+
+            # Determine the correct currency based on payment type
+            if pe.get("payment_type") == "Receive":
+                payment_currency = pe.get("paid_from_account_currency")
+            else:  # Pay
+                payment_currency = pe.get("paid_to_account_currency")
+            
             payments.append({
                 "name": ref.parent,
                 "posting_date": pe.get("posting_date"),
