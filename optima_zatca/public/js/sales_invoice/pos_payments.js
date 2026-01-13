@@ -137,12 +137,7 @@ frappe.ui.form.on("Sales Invoice", {
 /**
  * Sales Invoice Payment child table handlers
  */
-frappe.ui.form.on("Sales Invoice Payment", {
-    amount(frm) {
-        // Recalculate if user manually edits amounts
-        optima_zatca.sales_invoice.pos.recalculatePayments(frm);
-    },
-    
+frappe.ui.form.on("Sales Invoice Payment", {    
     mode_of_payment(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         if (!row.mode_of_payment) return;
