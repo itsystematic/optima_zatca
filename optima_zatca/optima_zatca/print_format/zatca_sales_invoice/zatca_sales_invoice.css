@@ -52,7 +52,6 @@
     --font-size-2xl: 24px;
 
     /* Font Families */
-    --font-family-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --font-family-currency: 'Claudion', sans-serif;
     /* Claudion supports SAR symbol */
 
@@ -122,7 +121,6 @@
    3. BASE STYLES
    ============================================================ */
 .print-format-container {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: var(--font-size-base);
     color: var(--color-text);
     line-height: var(--line-height-normal);
@@ -172,12 +170,6 @@
 .letterhead-table th,
 .letterhead-table td {
     padding: 0 !important;
-    vertical-align: middle !important;
-}
-
-.letterhead-table img {
-    height: 160px;
-    width: 120px;
 }
 
 .header_table {
@@ -190,7 +182,6 @@
 
 .header_table th {
     background-color: var(--primary-bg);
-    padding: var(--spacing-sm) !important;
     font-weight: bold;
     text-align: center;
     border-bottom: 1px solid var(--border-color);
@@ -233,7 +224,7 @@
 }
 
 .header-table tbody td {
-    padding: var(--spacing-xs) var(--spacing-sm) !important;
+    padding: 0 0 !important;
     border-bottom: var(--border-width) solid var(--color-border-light);
     font-size: var(--font-size-base);
 }
@@ -352,14 +343,6 @@
     width: 20%;
 }
 
-.items-cell--qty,
-.items-cell--price,
-.items-cell--amount,
-.items-cell--tax,
-.items-cell--total {
-    font-family: 'Consolas', 'Monaco', monospace;
-}
-
 /* ============================================================
    8. FOOTER SECTION
    ============================================================ */
@@ -423,7 +406,6 @@
 .totals-table td {
     text-align: center;
     width: 35%;
-    font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .grand-total-row {
@@ -497,7 +479,6 @@
 
 .iban-number {
     font-weight: 700;
-    font-family: 'Consolas', 'Monaco', monospace;
     letter-spacing: 1px;
 }
 
@@ -557,9 +538,6 @@
     font-weight: 700 !important;
 }
 
-.font-mono {
-    font-family: 'Consolas', 'Monaco', monospace !important;
-}
 
 /* Currency Value Styling */
 .currency-value {

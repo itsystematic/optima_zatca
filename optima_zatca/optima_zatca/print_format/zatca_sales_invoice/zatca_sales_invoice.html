@@ -44,15 +44,15 @@ Add to your Print Format:
 <tr{% if is_grand %} class="grand-total-row" {% endif %}>
     <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-en">
         <strong>{{ label_en }}</strong>
-        </th>
-        <td class="{% if is_grand %}grand-total-value{% else %}value-cell-center{% endif %}">
-            {{ format_currency(amount, currency) }}
-        </td>
-        <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-ar" dir="rtl">
-            <strong>{{ label_ar }}</strong>
-            </th>
-            </tr>
-            {% endmacro %}
+    </th>
+    <td class="{% if is_grand %}grand-total-value{% else %}value-cell-center{% endif %}">
+        {{ format_currency(amount, currency) }}
+    </td>
+    <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-ar" dir="rtl">
+        <strong>{{ label_ar }}</strong>
+    </th>
+</tr>
+{% endmacro %}
 
             {# ==================== MAIN TEMPLATE ==================== #}
 
@@ -285,6 +285,9 @@ Add to your Print Format:
                                                 doc.total_taxes_and_charges * doc.conversion_rate, 'SAR') }}
                                                 {{ totals_row('Total Amount', 'المجموع الاجمالى', doc.grand_total *
                                                 doc.conversion_rate, 'SAR', is_grand=true) }}
+                                                {{ totals_row('Paid Amount', 'المبلغ المدفوع', (doc.grand_total - doc.outstanding_amount) * doc.conversion_rate, 'SAR') }}
+                                                {{ totals_row('Outstanding Amount', 'الصافي المستحق',
+                                                doc.outstanding_amount * doc.conversion_rate, 'SAR') }}
                                                 {% endif %}
                                             </tbody>
                                         </table>
@@ -313,7 +316,7 @@ Add to your Print Format:
                                             <td>{{ payment.name }}</td>
                                             <td>{{ payment.mode_of_payment }}</td>
                                             <td class="text-center">
-                                                {{ format_currency(payment.allocated_amount) }}
+                                                {{ format_currency(payment.allocated_amount, payment.currency) }}
                                             </td>
                                         </tr>
                                         {% endfor %}
