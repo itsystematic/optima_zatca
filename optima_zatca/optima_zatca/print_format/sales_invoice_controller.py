@@ -116,7 +116,7 @@ def get_payment_details(reference_doctype, reference_name):
         payment_entries = frappe.get_all(
             "Payment Entry",
             filters={"name": ["in", parent_names]},
-            fields=["name", "posting_date", "mode_of_payment"]
+            fields=["name", "posting_date", "mode_of_payment", "paid_from_account_currency", "paid_to_account_currency", "payment_type"]
         )
         
         pe_map = {pe.name: pe for pe in payment_entries}
