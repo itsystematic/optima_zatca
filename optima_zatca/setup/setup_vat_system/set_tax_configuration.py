@@ -1,6 +1,9 @@
 import click
 
-from optima_zatca.setup.setup_vat_system.setup_item_tax_templates import create_item_tax_templates
+from optima_zatca.setup.setup_vat_system.setup_item_tax_templates import (
+    create_item_tax_templates,
+    setup_item_table_property_setter
+)
 from optima_zatca.setup.setup_vat_system.setup_tax_accounts import create_tax_accounts
 from optima_zatca.setup.setup_vat_system.setup_tax_cateogries import create_tax_categories
 
@@ -22,6 +25,9 @@ def create_complete_vat_system():
         
         # Step 3: Create Item Tax Templates (8 templates)
         create_item_tax_templates()
+        
+        # Step 4: Set Item taxes table as required In Item DocType
+        setup_item_table_property_setter()
         
         click.secho("\nKSA VAT SYSTEM SETUP COMPLETE!", fg="green", bold=True)
         click.secho("Tax Categories: S, Z, E, O", fg="green")

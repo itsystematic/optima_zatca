@@ -1,5 +1,7 @@
 import click
 import frappe
+from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
 
 
 ITEM_TAX_TEMPLATES_CONFIG = [
@@ -110,3 +112,20 @@ def create_single_tax_template(company, template_config):
     except Exception as e:
         click.secho(f"    Failed to create '{template_name}': {str(e)}", fg="red")
         raise
+
+
+def setup_item_table_property_setter():
+    """
+    Set 'taxes' table in 'Item' DocType as required.
+    """
+    click.secho("Setting Item taxes table as required...", fg="cyan")
+    make_property_setter(
+        "Item",
+        "taxes",
+        "reqd",
+        "1",
+        "Check",
+        for_doctype=False,
+        is_system_generated=False
+    )
+    click.secho("Property Setter for Item taxes created/updated.", fg="green")

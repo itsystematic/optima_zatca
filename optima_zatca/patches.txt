@@ -8,3 +8,4 @@ optima_zatca.patches.v15.create_prepayment_related_doctypes
 optima_zatca.patches.v15.create_prepayment_fields
 optima_zatca.patches.v15.setup_customizations
 optima_zatca.patches.v15.add_default_print_format_for_sales_invoice
+optima_zatca.patches.v15.set_item_taxes_reqd
