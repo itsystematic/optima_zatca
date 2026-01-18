@@ -2,3 +2,4 @@ cryptography>=44.0.1
 asn1==2.7.1
 qrcode==8.0
 pikepdf>=8.0.0
+weasyprint>=60.0
