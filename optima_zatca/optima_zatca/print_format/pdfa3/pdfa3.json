@@ -23,7 +23,7 @@
  "name": "PDFA3",
  "owner": "Administrator",
  "page_number": "Hide",
- "pdf_generator": "wkhtmltopdf",
+ "pdf_generator": "weasyprint",
  "print_format_builder": 0,
  "print_format_builder_beta": 0,
  "print_format_for": "DocType",

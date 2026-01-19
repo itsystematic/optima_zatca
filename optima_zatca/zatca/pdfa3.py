@@ -1,5 +1,6 @@
 import io
 import base64
+import mimetypes
 import pikepdf
 from datetime import datetime
 
@@ -51,7 +52,7 @@ class ZatcaPDFA3Generator:
         final_pdf_bytes = self._embed_xml_file(visual_pdf_bytes, xml_content)
 
         # 4. Save to File Doctype (Saving the VISUAL bytes directly)
-        return self._save_file(visual_pdf_bytes)
+        return self._save_file(final_pdf_bytes)
 
     def _get_print_settings(self):
         return {
@@ -75,38 +76,75 @@ class ZatcaPDFA3Generator:
     def _generate_visual_pdf(self) -> bytes:
         import os
         from frappe import get_app_path
+        from frappe.utils import get_files_path
         from weasyprint import HTML
 
         # 1. Get Absolute Paths to fonts
-        # We use 'file://' protocol so WeasyPrint reads directly from disk (Fast & Secure)
         font_path_claudion_regular = "file://" + os.path.join(get_app_path("optima_zatca"), "public", "fonts", "Claudion.ttf")
         font_path_marai_regular = "file://" + os.path.join(get_app_path("optima_zatca"), "public", "fonts", "Almarai-Regular.ttf")
         font_path_marai_bold = "file://" + os.path.join(get_app_path("optima_zatca"), "public", "fonts", "Almarai-Bold.ttf")
+        
+        # 2. RESOLVE LETTERHEAD IMAGE
+        letterhead_name = self.print_settings["letterhead"]
+        letterhead_image_src = "" 
+        
+        if letterhead_name:
+            lh_doc = frappe.get_doc("Letter Head", letterhead_name)
+            
+            if lh_doc.image:
+                # --- FIX START ---
+                file_url = lh_doc.image # e.g., "/files/sESE.png"
+                
+                # 1. Extract just the filename ("sESE.png")
+                filename = file_url.split("/")[-1]
+                
+                # 2. Determine if it is Private or Public based on the URL
+                is_private = "/private/files/" in file_url
+                
+                # 3. Get the correct absolute path
+                abs_path = get_files_path(filename, is_private=is_private)
+                # --- FIX END ---
 
+                print(f"DEBUG: Attempting to load image from: {abs_path}")
 
-        # 2. Get the HTML from Frappe (Standard Process)
-        # This pulls the HTML + The CSS you wrote in the Print Format Builder
+                if os.path.exists(abs_path):
+                    # Guess MIME type (png/jpg)
+                    mime_type, _ = mimetypes.guess_type(abs_path)
+                    if not mime_type: 
+                        mime_type = "image/png"
+
+                    # Read file and convert to Base64
+                    with open(abs_path, "rb") as img_file:
+                        b64_string = base64.b64encode(img_file.read()).decode("utf-8")
+                        letterhead_image_src = f"data:{mime_type};base64,{b64_string}"
+                else:
+                    print(f"DEBUG: Image file STILL not found at {abs_path}")
+
+        # 3. Get the HTML from Frappe
         html_content = frappe.get_print(
             doctype=self.invoice.doctype,
             name=self.invoice.name,
             print_format=self.print_settings["print_format"],
             doc=self.invoice,
-            letterhead=self.print_settings["letterhead"],
-            no_letterhead=0 if self.print_settings["letterhead"] else 1,
+            # We pass no_letterhead=1 because we are handling the logo manually above
+            no_letterhead=1, 
         )
 
-        # 3. The Magic Linker
-        # We replace the placeholders defined in your CSS with the actual local paths
+        # 4. The Magic Linker (Replacements)
+        # Fonts
         html_content = html_content.replace("__FONT_REG_CLAUDION_PATH__", font_path_claudion_regular)
         html_content = html_content.replace("__FONT_REG_MARAI_PATH__", font_path_marai_regular)
         html_content = html_content.replace("__FONT_BOLD_MARAI_PATH__", font_path_marai_bold)
+        
+        # Letterhead Image
+        # If no image found, we replace with empty string (or a transparent pixel data uri if you prefer)
+        html_content = html_content.replace("__LETTERHEAD_LOGO_PATH__", letterhead_image_src)
 
-        # 4. Generate PDF
-        # No extra CSS injected here. We trust the Print Format.
+        # 5. Generate PDF
         pdf_bytes = HTML(string=html_content).write_pdf()
         
         return pdf_bytes
-
+    
 
     def _get_zatca_xml(self) -> bytes:
         log_entry = frappe.db.get_value(
