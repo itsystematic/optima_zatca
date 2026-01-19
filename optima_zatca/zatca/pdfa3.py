@@ -1,13 +1,13 @@
+import frappe
 import io
+import os
 import base64
-import mimetypes
+import re
 import pikepdf
 from datetime import datetime
-
-import frappe
 from frappe import _
-
-from optima_zatca.zatca.utils import log_and_throw_error
+from frappe import get_app_path, get_site_path
+from frappe.utils.pdf import get_pdf
 
 @frappe.whitelist()
 def generate_pdfa3_for_invoice(sales_invoice_name: str):
@@ -15,136 +15,191 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str):
         generator = ZatcaPDFA3Generator(sales_invoice_name)
         return generator.generate_and_save()
     except Exception as e:
-        log_and_throw_error(
-            operation="Generate PDF/A-3 for invoice",
-            document_name=sales_invoice_name,
-            exception=e
-        )
+        frappe.log_error(title="ZATCA PDF Generation Error", message=frappe.get_traceback())
+        # Return a clean error message to the UI
+        frappe.throw(_("PDF Generation Failed: {0}").format(str(e)))
 
 class ZatcaPDFA3Generator:
-    """
-    Service class to handle the end-to-end generation of ZATCA compliant PDF/A-3.
-    """
-    
     def __init__(self, invoice_name: str):
         self.invoice_name = invoice_name
         self.invoice = frappe.get_doc("Sales Invoice", invoice_name)
-        
-        # Commented out for visual debugging (optional)
-        # if not self.invoice.get("sent_to_zatca"):
-        #     frappe.throw(_("Invoice must be sent to ZATCA before generating PDF/A-3"))
-            
         self.zatca_settings = frappe.get_single("Zatca Main Settings")
         self.print_settings = self._get_print_settings()
+        self.icc_profile_path = os.path.join(get_app_path("optima_zatca"), "sRGB.icc")
 
     def generate_and_save(self):
-        # 1. Generate Visual PDF (Raw Bytes from Frappe/WeasyPrint)
         visual_pdf_bytes = self._generate_visual_pdf()
-
-        # ============================================================
-        # DEBUGGING MODE: XML EMBEDDING DISABLED
-        # ============================================================
-        
-        # 2. Get XML Data
         xml_content = self._get_zatca_xml()
-
-        # 3. Embed XML using PikePDF (Manual Method for Compatibility)
-        final_pdf_bytes = self._embed_xml_file(visual_pdf_bytes, xml_content)
-
-        # 4. Save to File Doctype (Saving the VISUAL bytes directly)
+        final_pdf_bytes = self._convert_to_pdfa3(visual_pdf_bytes, xml_content)
         return self._save_file(final_pdf_bytes)
 
     def _get_print_settings(self):
+        # Get the print format from settings or fallback to defaults
+        print_format = (
+            self.zatca_settings.get("print_format") or 
+            self.invoice.meta.default_print_format or 
+            "Standard"
+        )
+        
+        letterhead = (
+            self.zatca_settings.get("letter_head") or 
+            self.invoice.get("letter_head")
+        )
+        
+        language = (
+            self.zatca_settings.get("language") or 
+            frappe.local.lang or 
+            "en"
+        )
+        
+        # Debug logging
+        frappe.logger().info(f"PDF/A-3 Print Settings for {self.invoice_name}:")
+        frappe.logger().info(f"  Print Format: {print_format}")
+        frappe.logger().info(f"  Letterhead: {letterhead}")
+        frappe.logger().info(f"  Language: {language}")
+        
         return {
-            "print_format": (
-                self.zatca_settings.get("print_format") or 
-                self.invoice.meta.default_print_format or 
-                "Standard"
-            ),
-            "letterhead": (
-                self.zatca_settings.get("letter_head") or 
-                self.invoice.get("letter_head")
-            ),
-            "language": (
-                self.zatca_settings.get("language") or 
-                frappe.local.lang or 
-                "en"
-            )
+            "print_format": print_format,
+            "letterhead": letterhead,
+            "language": language
         }
 
-
     def _generate_visual_pdf(self) -> bytes:
-        import os
-        from frappe import get_app_path
-        from frappe.utils import get_files_path
-        from weasyprint import HTML
+        """
+        Generates PDF with robust handling for local file paths to prevent
+        wkhtmltopdf ContentNotFoundError.
+        """
+        original_lang = frappe.local.lang
+        target_lang = self.print_settings["language"]
+        print('*' *80)
+        print(self.print_settings["print_format"])
+        try:
+            frappe.local.lang = target_lang
+            html_content = frappe.get_print(
+                doctype=self.invoice.doctype,
+                name=self.invoice.name,
+                print_format=self.print_settings["print_format"],
+                # doc=self.invoice,
+                no_letterhead=0 if self.print_settings["letterhead"] else 1,
+                letterhead=self.print_settings["letterhead"]
+            )
+        finally:
+            frappe.local.lang = original_lang
 
-        # 1. Get Absolute Paths to fonts
-        font_path_claudion_regular = "file://" + os.path.join(get_app_path("optima_zatca"), "public", "fonts", "Claudion.ttf")
-        font_path_marai_regular = "file://" + os.path.join(get_app_path("optima_zatca"), "public", "fonts", "Almarai-Regular.ttf")
-        font_path_marai_bold = "file://" + os.path.join(get_app_path("optima_zatca"), "public", "fonts", "Almarai-Bold.ttf")
+        # --- FIX: Preprocess HTML to fix paths and remove broken links ---
+        html_content = self._preprocess_html_resources(html_content)
         
-        # 2. RESOLVE LETTERHEAD IMAGE
-        letterhead_name = self.print_settings["letterhead"]
-        letterhead_image_src = "" 
+        return get_pdf(html_content)
+
+    def _preprocess_html_resources(self, html):
+        """
+        Parses HTML using regex (no external libraries).
+        1. Converts relative paths (/files/...) to Absolute Local Paths (file:///...).
+        2. Checks if the file exists on disk. If not, removes the src to prevent crash.
+        3. Ensures all img tags have a src attribute for Frappe's PDF processing.
+        """
+        if not html:
+            return ""
         
-        if letterhead_name:
-            lh_doc = frappe.get_doc("Letter Head", letterhead_name)
+        # Resolve the absolute path to the site directory
+        site_abs_path = os.path.abspath(get_site_path())
+        
+        # Transparent 1x1 pixel placeholder
+        PLACEHOLDER_IMAGE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+        
+        def resolve_local_path(url):
+            if not url: 
+                return PLACEHOLDER_IMAGE
             
-            if lh_doc.image:
-                # --- FIX START ---
-                file_url = lh_doc.image # e.g., "/files/sESE.png"
-                
-                # 1. Extract just the filename ("sESE.png")
-                filename = file_url.split("/")[-1]
-                
-                # 2. Determine if it is Private or Public based on the URL
-                is_private = "/private/files/" in file_url
-                
-                # 3. Get the correct absolute path
-                abs_path = get_files_path(filename, is_private=is_private)
-                # --- FIX END ---
+            # Strip whitespace
+            url = url.strip()
+            
+            # Ignore Data URIs (Base64) and external links (http/https)
+            if url.startswith("data:") or url.startswith("http"):
+                return url
 
-                print(f"DEBUG: Attempting to load image from: {abs_path}")
+            file_path = None
+            
+            # Handle /files/ (Public)
+            if url.startswith("/files/"):
+                clean_path = url.split("?")[0].split("#")[0]
+                file_path = os.path.join(site_abs_path, "public", clean_path.lstrip("/"))
+            
+            # Handle /private/files/
+            elif url.startswith("/private/files/"):
+                clean_path = url.split("?")[0].split("#")[0]
+                file_path = os.path.join(site_abs_path, clean_path.lstrip("/"))
+            
+            # Handle /assets/
+            elif url.startswith("/assets/"):
+                clean_path = url.split("?")[0].split("#")[0]
+                sites_dir = os.path.dirname(site_abs_path)
+                file_path = os.path.join(sites_dir, "assets", clean_path.replace("/assets/", "", 1))
 
-                if os.path.exists(abs_path):
-                    # Guess MIME type (png/jpg)
-                    mime_type, _ = mimetypes.guess_type(abs_path)
-                    if not mime_type: 
-                        mime_type = "image/png"
-
-                    # Read file and convert to Base64
-                    with open(abs_path, "rb") as img_file:
-                        b64_string = base64.b64encode(img_file.read()).decode("utf-8")
-                        letterhead_image_src = f"data:{mime_type};base64,{b64_string}"
+            if file_path:
+                if os.path.exists(file_path):
+                    return f"file://{file_path}"
                 else:
-                    print(f"DEBUG: Image file STILL not found at {abs_path}")
+                    frappe.log_error(f"Missing file for PDF: {file_path}", "PDF Generation - Missing File")
+                    return PLACEHOLDER_IMAGE
+            
+            # For any other relative paths, return placeholder
+            return PLACEHOLDER_IMAGE
 
-        # 3. Get the HTML from Frappe
-        html_content = frappe.get_print(
-            doctype=self.invoice.doctype,
-            name=self.invoice.name,
-            print_format=self.print_settings["print_format"],
-            doc=self.invoice,
-            # We pass no_letterhead=1 because we are handling the logo manually above
-            no_letterhead=1, 
+        # 1. Remove any img tags without src attribute entirely or add placeholder
+        def fix_img_tag(match):
+            img_tag = match.group(0)
+            # Check if this img tag has a src attribute
+            if not re.search(r'\bsrc\s*=', img_tag, re.IGNORECASE):
+                # Add src attribute with placeholder
+                if img_tag.endswith('/>'):
+                    return img_tag[:-2] + f' src="{PLACEHOLDER_IMAGE}" />'
+                elif img_tag.endswith('>'):
+                    return img_tag[:-1] + f' src="{PLACEHOLDER_IMAGE}">'
+            return img_tag
+        
+        # Match all img tags (including self-closing and multi-line)
+        img_tag_pattern = re.compile(r'<img\b[^>]*>', re.IGNORECASE | re.DOTALL)
+        html = img_tag_pattern.sub(fix_img_tag, html)
+        
+        # 2. Now fix existing src attributes (handle both empty and valid values)
+        def replace_img_src(match):
+            prefix = match.group(1)  # Everything before src
+            quote = match.group(2)   # Quote type (" or ')
+            url = match.group(3) if match.group(3) else ""  # URL (may be empty)
+            new_url = resolve_local_path(url)
+            return f'{prefix}src{quote}{new_url}{quote}'
+        
+        # Pattern to match src="..." or src='...' within img tags (including empty)
+        # This captures everything before src to preserve it
+        img_src_pattern = re.compile(
+            r'(<img\b[^>]*?\s)src\s*=\s*(["\'])([^"\']*)\2',
+            re.IGNORECASE | re.DOTALL
         )
-
-        # 4. The Magic Linker (Replacements)
-        # Fonts
-        html_content = html_content.replace("__FONT_REG_CLAUDION_PATH__", font_path_claudion_regular)
-        html_content = html_content.replace("__FONT_REG_MARAI_PATH__", font_path_marai_regular)
-        html_content = html_content.replace("__FONT_BOLD_MARAI_PATH__", font_path_marai_bold)
+        html = img_src_pattern.sub(replace_img_src, html)
         
-        # Letterhead Image
-        # If no image found, we replace with empty string (or a transparent pixel data uri if you prefer)
-        html_content = html_content.replace("__LETTERHEAD_LOGO_PATH__", letterhead_image_src)
-
-        # 5. Generate PDF
-        pdf_bytes = HTML(string=html_content).write_pdf()
+        # 3. Fix inline styles (background-image: url(...))
+        def replace_css_url(match):
+            url = match.group(1) if match.group(1) else ""
+            new_url = resolve_local_path(url)
+            return f"url('{new_url}')"
         
-        return pdf_bytes
-    
+        # Pattern to match url(...) in style attributes
+        css_url_pattern = re.compile(r"url\s*\(\s*['\"]?\s*([^'\")]*?)\s*['\"]?\s*\)", re.IGNORECASE)
+        
+        # Find all style attributes and process them
+        def replace_style_attr(match):
+            quote = match.group(1)
+            style_content = match.group(2)
+            # Replace URLs within this style attribute
+            new_style = css_url_pattern.sub(replace_css_url, style_content)
+            return f'style{quote}{new_style}{quote}'
+        
+        # Handle both single and double quoted style attributes
+        style_pattern = re.compile(r'style\s*=\s*(["\'])([^\1]*?)\1', re.IGNORECASE | re.DOTALL)
+        html = style_pattern.sub(replace_style_attr, html)
+        
+        return html
 
     def _get_zatca_xml(self) -> bytes:
         log_entry = frappe.db.get_value(
@@ -160,101 +215,126 @@ class ZatcaPDFA3Generator:
         )
         
         if not log_entry:
-            frappe.throw(_("ZATCA XML not found in logs."))
+            frappe.throw(_("ZATCA XML not found in logs. Please submit to ZATCA first."))
             
         if log_entry.get("xml_content"):
             return log_entry.xml_content.encode("utf-8")
         elif log_entry.get("invoice"):
+            # Fallback if stored as base64
             return base64.b64decode(log_entry.invoice)
         else:
             frappe.throw(_("ZATCA XML content is empty."))
 
-    def _embed_xml_file(self, pdf_bytes: bytes, xml_bytes: bytes) -> bytes:
-        """
-        Embeds the XML into the PDF using low-level PikePDF objects.
-        """
+    def _convert_to_pdfa3(self, pdf_bytes: bytes, xml_bytes: bytes) -> bytes:
+        # Open PDF from bytes (don't use allow_overwriting_input with BytesIO)
         pdf = pikepdf.Pdf.open(io.BytesIO(pdf_bytes))
         
-        # 1. Add Standard Metadata
         company = frappe.db.get_value("Global Defaults", None, "default_company") or "Company"
         with pdf.open_metadata() as meta:
+            meta["pdf:Trapped"] = "False"
+            meta["dc:creator"] = [company]
             meta["dc:title"] = self.invoice_name
-            meta["dc:creator"] = company
             meta["dc:description"] = "ZATCA E-Invoice"
+            meta["dc:date"] = datetime.now().isoformat()
 
-        # 2. Prepare the XML Stream
-        xml_stream = pikepdf.Stream(pdf, xml_bytes)
-        
-        xml_stream.Type = pikepdf.Name("/EmbeddedFile")
-        xml_stream.Subtype = pikepdf.Name("/text#2Fxml") 
-        xml_stream.Params = pikepdf.Dictionary(
-            Size=len(xml_bytes),
-            ModDate=pikepdf.String(datetime.now().strftime("D:%Y%m%d%H%M%S"))
-        )
-
-        # 3. Create the File Specification Dictionary
-        filename = f"{self.invoice_name.replace('/', '-')}_zatca.xml"
-        file_spec = pikepdf.Dictionary(
-            Type=pikepdf.Name("/Filespec"),
-            F=pikepdf.String(filename),
-            UF=pikepdf.String(filename),
-            Desc=pikepdf.String("ZATCA Invoice XML"),
-            AFRelationship=pikepdf.Name("/Data"), 
-            EF=pikepdf.Dictionary(
-                F=xml_stream 
-            )
-        )
-
-        # 4. Add to /Names/EmbeddedFiles
-        if "/Names" not in pdf.Root:
-            pdf.Root.Names = pikepdf.Dictionary()
-            
-        if "/EmbeddedFiles" not in pdf.Root.Names:
-            pdf.Root.Names.EmbeddedFiles = pikepdf.Dictionary(
-                Names=pikepdf.Array()
-            )
-            
-        pdf.Root.Names.EmbeddedFiles.Names.append(pikepdf.String(filename))
-        pdf.Root.Names.EmbeddedFiles.Names.append(file_spec)
-
-        # 5. Add to /AF (Associated Files) Array
-        if "/AF" not in pdf.Root:
-            pdf.Root.AF = pikepdf.Array()
-        pdf.Root.AF.append(file_spec)
-
-        # 6. Inject XMP Metadata
         self._inject_xmp_metadata(pdf)
+        self._embed_xml_attachment(pdf, xml_bytes)
+        self._inject_output_intent(pdf)
 
-        # 7. Save
+        pdf.Root["/GTS_PDFA1"] = pikepdf.Name("/PDF/A-3B")
+        if "/MarkInfo" not in pdf.Root:
+            pdf.Root["/MarkInfo"] = pikepdf.Dictionary({"/Marked": True})
+        else:
+            pdf.Root.MarkInfo["/Marked"] = True
+            
+        if "/Lang" not in pdf.Root:
+            pdf.Root["/Lang"] = pikepdf.String("en-US")
+
         output = io.BytesIO()
         pdf.save(output)
         output.seek(0)
         return output.read()
 
     def _inject_xmp_metadata(self, pdf):
-        """
-        Injects RDF/XMP metadata required for PDF/A-3.
-        """
-        # We construct a minimal XMP packet that declares PDF/A-3B conformance
-        metadata = f"""<?xpacket begin='' id='W5M0MpCehiHzreSzNTczkc9d'?>
-        <x:xmpmeta xmlns:x='adobe:ns:meta/'>
-            <rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
-                <rdf:Description rdf:about='' xmlns:pdfaid='http://www.aiim.org/pdfa/ns/id/'>
+        xmp_metadata = f"""<?xpacket begin='' id='W5M0MpCehiHzreSzNTczkc9d'?>
+        <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP toolkit 2.9.1-13, framework 1.6">
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description rdf:about=""
+                    xmlns:dc="http://purl.org/dc/elements/1.1/"
+                    xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+                    xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
+                    xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
+                    <pdf:Producer>pikepdf</pdf:Producer>
+                    <pdf:Trapped>False</pdf:Trapped>
+                    <dc:format>application/pdf</dc:format>
+                    <dc:title>
+                        <rdf:Alt>
+                            <rdf:li xml:lang="x-default">{self.invoice_name}</rdf:Alt>
+                        </rdf:Alt>
+                    </dc:title>
+                    <dc:description>
+                        <rdf:Alt>
+                            <rdf:li xml:lang="x-default">ZATCA E-Invoice</rdf:li>
+                        </rdf:Alt>
+                    </dc:description>
+                    <xmp:CreateDate>{datetime.now().isoformat()}</xmp:CreateDate>
                     <pdfaid:part>3</pdfaid:part>
                     <pdfaid:conformance>B</pdfaid:conformance>
                 </rdf:Description>
             </rdf:RDF>
         </x:xmpmeta>
-        <?xpacket end='w'?>"""
+        <?xpacket end="w"?>"""
+        pdf.Root["/Metadata"] = pdf.make_stream(xmp_metadata.encode("utf-8"))
 
-        # Create a metadata stream and attach it to Root
-        metadata_stream = pdf.make_stream(metadata.encode('utf-8'))
-        metadata_stream.Type = pikepdf.Name("/Metadata")
-        metadata_stream.Subtype = pikepdf.Name("/XML")
-        pdf.Root.Metadata = metadata_stream
+    def _embed_xml_attachment(self, pdf, xml_bytes):
+        filename = f"{self.invoice_name.replace('/', '-')}_zatca.xml"
+        embedded_file_stream = pdf.make_stream(xml_bytes)
+        embedded_file_stream.Type = pikepdf.Name("/EmbeddedFile")
+        embedded_file_stream.Subtype = pikepdf.Name("/text#2Fxml")
+        embedded_file_stream.Params = pikepdf.Dictionary(
+            Size=len(xml_bytes),
+            ModDate=pikepdf.String(datetime.now().strftime("D:%Y%m%d%H%M%S"))
+        )
+        file_spec = pikepdf.Dictionary(
+            Type=pikepdf.Name("/Filespec"),
+            F=pikepdf.String(filename),
+            UF=pikepdf.String(filename),
+            Desc=pikepdf.String("ZATCA Invoice XML"),
+            AFRelationship=pikepdf.Name("/Source"), 
+            EF=pikepdf.Dictionary(F=embedded_file_stream)
+        )
+        if "/Names" not in pdf.Root:
+            pdf.Root.Names = pikepdf.Dictionary()
+        if "/EmbeddedFiles" not in pdf.Root.Names:
+            pdf.Root.Names.EmbeddedFiles = pikepdf.Dictionary(Names=pikepdf.Array())
+            
+        pdf.Root.Names.EmbeddedFiles.Names.append(pikepdf.String(filename))
+        pdf.Root.Names.EmbeddedFiles.Names.append(file_spec)
+
+        if "/AF" not in pdf.Root:
+            pdf.Root.AF = pikepdf.Array()
+        pdf.Root.AF.append(file_spec)
+
+    def _inject_output_intent(self, pdf):
+        if not os.path.exists(self.icc_profile_path):
+            return
+
+        with open(self.icc_profile_path, "rb") as f:
+            profile_bytes = f.read()
+
+        icc_profile_stream = pdf.make_stream(profile_bytes)
+        output_intent = pikepdf.Dictionary(
+            Type=pikepdf.Name("/OutputIntent"),
+            S=pikepdf.Name("/GTS_PDFA1"),
+            OutputConditionIdentifier=pikepdf.String("sRGB"),
+            Info=pikepdf.String("sRGB IEC61966-2.1"),
+            DestOutputProfile=icc_profile_stream
+        )
+        if "/OutputIntents" not in pdf.Root:
+            pdf.Root.OutputIntents = pikepdf.Array()
+        pdf.Root.OutputIntents.append(output_intent)
 
     def _save_file(self, content: bytes):
-        # Cleanup existing file
         frappe.db.delete("File", {
             "attached_to_doctype": "Sales Invoice",
             "attached_to_name": self.invoice_name,
@@ -262,7 +342,6 @@ class ZatcaPDFA3Generator:
         })
 
         file_name = f"{self.invoice_name}_PDFA3.pdf".replace("/", "-")
-        
         saved_file = frappe.get_doc({
             "doctype": "File",
             "file_name": file_name,
@@ -274,11 +353,7 @@ class ZatcaPDFA3Generator:
         })
         saved_file.save()
         
-        # Update Invoice Link
         if hasattr(self.invoice, "ksa_einv_pdfa3"):
             self.invoice.db_set("ksa_einv_pdfa3", saved_file.file_url)
             
-        return {
-            "file_url": saved_file.file_url,
-            "file_name": file_name
-        }
+        return {"file_url": saved_file.file_url, "file_name": file_name}
