@@ -1,6 +1,8 @@
 import frappe
-from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
+from frappe.utils import flt, cint
+
 from optima_zatca.zatca.utils import log_and_throw_error
+from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
 
 class CustomSalesInvoice(SalesInvoice):
     ADVANCE_PAYMENT_ITEM = "advance payment"
@@ -257,3 +259,44 @@ class CustomSalesInvoice(SalesInvoice):
             })
         
         return self.get_gl_dict(gl_dict, currency, item=self)
+
+    @frappe.whitelist()
+    def set_advances(self):
+        """
+        Override of AccountsController.set_advances
+        To make sure deducted grand total is considered while allocating advances
+        Reviewe how 'amount' is calculated below
+        Returns list of advances against Account, Party, Reference
+        """
+
+        res = self.get_advance_entries(
+            include_unallocated = not cint(self.get("only_include_allocated_payments"))
+        )
+
+        self.set("advances", [])
+        advance_allocated = 0
+        for d in res:
+            if self.get("party_account_currency") == self.company_currency:
+                amount = (self.get("base_rounded_total") or self.base_grand_total) - self.get("deducted_grand_total", 0)
+            else:
+                amount = (self.get("rounded_total") or self.grand_total) - self.get("deducted_grand_total", 0)
+            allocated_amount = min(amount - advance_allocated, d.amount)
+            advance_allocated += flt(allocated_amount)
+
+            advance_row = {
+                "doctype": self.doctype + " Advance",
+                "reference_type": d.reference_type,
+                "reference_name": d.reference_name,
+                "reference_row": d.reference_row,
+                "remarks": d.remarks,
+                "advance_amount": flt(d.amount),
+                "allocated_amount": allocated_amount,
+                "ref_exchange_rate": flt(d.exchange_rate),  # exchange_rate of advance entry
+                "difference_posting_date": self.posting_date,
+            }
+            if d.get("paid_from"):
+                advance_row["account"] = d.paid_from
+            if d.get("paid_to"):
+                advance_row["account"] = d.paid_to
+
+            self.append("advances", advance_row)

@@ -199,6 +199,7 @@ table, tbody, thead, tfoot, tr, th, td {
 
 .header-table tbody td {
     padding: 0 0 !important;
+    padding: 0 0 !important;
     border-bottom: var(--border-width) solid var(--color-border-light);
     font-size: var(--font-size-base);
 }

@@ -149,7 +149,11 @@ def update_itemised_tax_data(doc):
                 if included_in_print_rate :
                     row.line_extension_amount = flt(row.amount / ( ( row.tax_rate / 100 ) + 1 ) , 2)
                     taxable_amount = flt(row.amount / ( ( row.tax_rate / 100 ) + 1 ) , 2 )
-                    row.price_amount = flt(taxable_amount / row.get("qty") , 2)
+                    qty = flt(row.get("qty") or 0)
+                    if qty != 0:
+                        row.price_amount = flt(taxable_amount / qty , 2)
+                    else:
+                        row.price_amount = 0.0
                     row.tax_amount = flt(row.amount - taxable_amount , 2)
                     original_net_total = doc.net_total + ( doc.get("discount_amount" , 0.00) or 0.00 )
                     row.total_amount = row.amount
@@ -265,7 +269,7 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
         # This ensures we always store amounts in company currency
         grand_total = sales_invoice.get("base_grand_total") or sales_invoice.get("grand_total")
         tax_amount = sales_invoice.get("base_total_taxes_and_charges") or sales_invoice.get("total_taxes_and_charges")
-        taxable_amount = sales_invoice.get("base_total") or sales_invoice.get("base_net_total") or sales_invoice.get("total") or sales_invoice.get("net_total")
+        taxable_amount = sales_invoice.get("base_net_total") or sales_invoice.get("net_total")
 
         # Create and insert the document
         new_prepayment = frappe.get_doc({
