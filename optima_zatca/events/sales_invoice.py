@@ -9,7 +9,7 @@ from frappe.utils import getdate , get_time , add_to_date, flt
 from optima_zatca.zatca.utils import log_and_throw_error
 
 
-def sales_invoice_on_cancel(doc , event) :
+def sales_invoice_before_cancel(doc , event) :
 
     enable_cancel_invoice = frappe.db.get_single_value("Zatca Main Settings" , "enable_cancel_invoice")
     
