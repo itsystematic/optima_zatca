@@ -9,7 +9,6 @@ from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
 from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
-# from erpnext.controllers.taxes_and_totals import get_itemised_tax
 
 
 @frappe.whitelist()
@@ -150,7 +149,11 @@ def update_itemised_tax_data(doc):
                 if included_in_print_rate :
                     row.line_extension_amount = flt(row.amount / ( ( row.tax_rate / 100 ) + 1 ) , 2)
                     taxable_amount = flt(row.amount / ( ( row.tax_rate / 100 ) + 1 ) , 2 )
-                    row.price_amount = flt(taxable_amount / row.get("qty") , 2)
+                    qty = flt(row.get("qty") or 0)
+                    if qty != 0:
+                        row.price_amount = flt(taxable_amount / qty , 2)
+                    else:
+                        row.price_amount = 0.0
                     row.tax_amount = flt(row.amount - taxable_amount , 2)
                     original_net_total = doc.net_total + ( doc.get("discount_amount" , 0.00) or 0.00 )
                     row.total_amount = row.amount
@@ -266,7 +269,7 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
         # This ensures we always store amounts in company currency
         grand_total = sales_invoice.get("base_grand_total") or sales_invoice.get("grand_total")
         tax_amount = sales_invoice.get("base_total_taxes_and_charges") or sales_invoice.get("total_taxes_and_charges")
-        taxable_amount = sales_invoice.get("base_total") or sales_invoice.get("base_net_total") or sales_invoice.get("total") or sales_invoice.get("net_total")
+        taxable_amount = sales_invoice.get("base_net_total") or sales_invoice.get("net_total")
 
         # Create and insert the document
         new_prepayment = frappe.get_doc({
@@ -335,13 +338,3 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
     return items[0].get("tax_rate") if items else 0
 
 
-# def log_and_throw_error(invoice_name: str, exception: Exception) -> None:
-#     """Log the error and throw a user-friendly message."""
-#     error_message = str(exception)
-#     error_trace = traceback.format_exc()
-    
-#     frappe.log_error(
-#         title=f"Failed to create Prepayment Invoice for {invoice_name}",
-#         message=f"Error: {error_message}\n{error_trace}"
-#     )
-#     frappe.throw(_("Failed to create Prepayment Invoice. Check Error Log."))

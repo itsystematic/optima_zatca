@@ -44,15 +44,15 @@ Add to your Print Format:
 <tr{% if is_grand %} class="grand-total-row" {% endif %}>
     <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-en">
         <strong>{{ label_en }}</strong>
-        </th>
-        <td class="{% if is_grand %}grand-total-value{% else %}value-cell-center{% endif %}">
-            {{ format_currency(amount, currency) }}
-        </td>
-        <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-ar" dir="rtl">
-            <strong>{{ label_ar }}</strong>
-            </th>
-            </tr>
-            {% endmacro %}
+    </th>
+    <td class="{% if is_grand %}grand-total-value{% else %}value-cell-center{% endif %}">
+        {{ format_currency(amount, currency) }}
+    </td>
+    <th{% if is_grand %} class="grand-total-label" {% endif %} class="totals-label-ar" dir="rtl">
+        <strong>{{ label_ar }}</strong>
+    </th>
+</tr>
+{% endmacro %}
 
             {# ==================== MAIN TEMPLATE ==================== #}
 
@@ -62,39 +62,47 @@ Add to your Print Format:
                     <thead>
                         <tr>
                             <td>
-                                <div class="header-flex">
-                                    <table class="letterhead-table">
-                                        <tr>
-                                            <td>
-                                                {% if letter_head %}
-                                                {{ letter_head }}
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    </table>
+                                <table class="layout-grid-table" style="width: 100%;"> 
+                                    <tr>
+                                        <td style="width: 28%; vertical-align: top; padding: 0;">
+                                            <table class="letterhead-table">
+                                                <tr>
+                                                    <td>
+                                                        <!-- We use a placeholder that Python will replace with the absolute path -->
+                                                        <img src="__LETTERHEAD_LOGO_PATH__" class="company-logo" alt="Company Logo" 
+                                                            style="max-width: 100%; max-height: 120px; object-fit: contain;" 
+                                                            onerror="this.style.display='none'"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        <td style="width: 2%;"></td>
+                                        <td style="width: 70%; vertical-align: top; padding: 0;">
+                                            <table class="header_table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="header-title-en">{{ ctx.invoice_type.en }}</th>
+                                                            <th class="header-spacer">&nbsp;</th>
+                                                            <th class="header-title-ar" dir="rtl">{{ ctx.invoice_type.ar }}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {{ bilingual_row('Invoice No.', doc.name, 'رقم الفاتورة:') }}
+                                                        {{ bilingual_row('Issue Date', frappe.format_date(doc.posting_date, 'dd MMMM
+                                                        YYYY'), 'تاريخ الإصدار:') }}
+                                                        {{ bilingual_row('Customer Ref:', doc.custom_customer_ref, 'البضائع
+                                                        المستلمة') }}
+                                                        {{ bilingual_row('Vendor ID:', doc.custom_vender_id, 'رقم البائع') }}
 
-                                    <table class="header_table">
-                                        <thead>
-                                            <tr>
-                                                <th class="header-title-en">{{ ctx.invoice_type.en }}</th>
-                                                <th class="header-spacer">&nbsp;</th>
-                                                <th class="header-title-ar" dir="rtl">{{ ctx.invoice_type.ar }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {{ bilingual_row('Invoice No.', doc.name, 'رقم الفاتورة:') }}
-                                            {{ bilingual_row('Issue Date', frappe.format_date(doc.posting_date, 'dd MMMM
-                                            YYYY'), 'تاريخ الإصدار:') }}
-                                            {{ bilingual_row('Customer Ref:', doc.custom_customer_ref, 'البضائع
-                                            المستلمة') }}
-                                            {{ bilingual_row('Vendor ID:', doc.custom_vender_id, 'رقم البائع') }}
-
-                                            {% if doc.po_no %}
-                                            {{ bilingual_row('Purchase Order', doc.po_no, 'أمر الشراء') }}
-                                            {% endif %}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                        {% if doc.po_no %}
+                                                        {{ bilingual_row('Purchase Order', doc.po_no, 'أمر الشراء') }}
+                                                        {% endif %}
+                                                    </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
                             </td>
                         </tr>
                     </thead>
@@ -103,75 +111,76 @@ Add to your Print Format:
                     <tbody>
                         <tr>
                             <td>
-                                {# Seller and Client Information #}
-                                <div class="info-tables-container">
-                                    {# Seller Information #}
-                                    <table class="info-table info-table--seller">
-                                        <thead>
-                                            <tr>
-                                                <td class="info-header info-header--left" colspan="2">
-                                                    Seller Information
-                                                </td>
-                                                <td class="info-header info-header--right" dir="rtl">
-                                                    بيانات البائع
-                                                </td>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {# Name rows #}
-                                            <tr>
-                                                <td class="label-cell label-cell--name">Name:</td>
-                                                <td class="text-center" colspan="2">{{ ctx.company.company_name }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="2" class="text-right">{{ ctx.company.company_name_in_arabic
-                                                    }}</td>
-                                                <td class="label-cell text-right" dir="rtl">الإسم:</td>
-                                            </tr>
+                                {# --- LAYOUT TABLE FOR SELLER / CLIENT --- #}
+                                {# This guarantees 50/50 width without squeezing #}
+                                <table class="layout-grid-table" style="width: 100%; margin-bottom: 20px;">
+                                    <tr>
+                                        {# SELLER COLUMN (Left) #}
+                                        <td style="width: 49%; vertical-align: top; padding: 0;">
+                                            <table class="info-table info-table--seller">
+                                                <thead>
+                                                    <tr>
+                                                        <td class="info-header info-header--left" colspan="2">
+                                                            Seller Information
+                                                        </td>
+                                                        <td class="info-header info-header--right" dir="rtl">
+                                                            بيانات البائع
+                                                        </td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="label-cell label-cell--name">Name:</td>
+                                                        <td class="text-center" colspan="2">{{ ctx.company.company_name }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2" class="text-right">{{ ctx.company.company_name_in_arabic }}</td>
+                                                        <td class="label-cell text-right" dir="rtl">الإسم:</td>
+                                                    </tr>
 
-                                            {# Address fields #}
-                                            {{ address_section(ctx.seller_address, is_seller=true) }}
+                                                    {{ address_section(ctx.seller_address, is_seller=true) }}
 
-                                            {# Registration details #}
-                                            {{ bilingual_row('CR Number:', ctx.company.custom_commercial_register,
-                                            'السجل التجاري:') }}
-                                            {{ bilingual_row('VAT Number:', ctx.company.tax_id, 'الرقم الضريبي:') }}
-                                        </tbody>
-                                    </table>
+                                                    {{ bilingual_row('CR Number:', ctx.company.custom_commercial_register, 'السجل التجاري:') }}
+                                                    {{ bilingual_row('VAT Number:', ctx.company.tax_id, 'الرقم الضريبي:') }}
+                                                </tbody>
+                                            </table>
+                                        </td>
 
-                                    {# Client Information #}
-                                    <table class="info-table info-table--client">
-                                        <thead>
-                                            <tr>
-                                                <td class="info-header info-header--left" colspan="2">
-                                                    Client Information
-                                                </td>
-                                                <td class="info-header info-header--right" dir="rtl">
-                                                    بيانات العميل
-                                                </td>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {# Name rows #}
-                                            <tr>
-                                                <td class="label-cell label-cell--name">Name:</td>
-                                                <td class="text-center" colspan="2">{{ doc.customer }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="2" class="text-right">{{ ctx.customer_address.address_line1
-                                                    }}</td>
-                                                <td class="label-cell text-right" dir="rtl">الإسم:</td>
-                                            </tr>
+                                        {# SPACER COLUMN #}
+                                        <td style="width: 2%;"></td>
 
-                                            {# Address fields #}
-                                            {{ address_section(ctx.customer_address) }}
+                                        {# CLIENT COLUMN (Right) #}
+                                        <td style="width: 49%; vertical-align: top; padding: 0;">
+                                            <table class="info-table info-table--client">
+                                                <thead>
+                                                    <tr>
+                                                        <td class="info-header info-header--left" colspan="2">
+                                                            Client Information
+                                                        </td>
+                                                        <td class="info-header info-header--right" dir="rtl">
+                                                            بيانات العميل
+                                                        </td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="label-cell label-cell--name">Name:</td>
+                                                        <td class="text-center" colspan="2">{{ doc.customer }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="2" class="text-right">{{ ctx.customer_address.address_line1 }}</td>
+                                                        <td class="label-cell text-right" dir="rtl">الإسم:</td>
+                                                    </tr>
 
-                                            {# Registration details #}
-                                            {{ bilingual_row('CR Number:', ctx.customer_cr_number, 'السجل التجاري:') }}
-                                            {{ bilingual_row('VAT Number:', ctx.customer_tax_id, 'الرقم الضريبي:') }}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                    {{ address_section(ctx.customer_address) }}
+
+                                                    {{ bilingual_row('CR Number:', ctx.customer_cr_number, 'السجل التجاري:') }}
+                                                    {{ bilingual_row('VAT Number:', ctx.customer_tax_id, 'الرقم الضريبي:') }}
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
 
                                 {# ==================== ITEMS TABLE ==================== #}
                                 <table class="items-table">
@@ -216,8 +225,7 @@ Add to your Print Format:
                                                 {{ "{:.2f}".format(item.tax_amount) if item.tax_amount else "0.00" }}
                                             </td>
                                             <td class="items-cell items-cell--total">
-                                                {{ "{:.2f}".format(item.total_amount) if item.total_amount else "0.00"
-                                                }}
+                                                {{ "{:.2f}".format(item.total_amount) if item.total_amount else "0.00" }}
                                             </td>
                                         </tr>
                                         {% endfor %}
@@ -285,6 +293,9 @@ Add to your Print Format:
                                                 doc.total_taxes_and_charges * doc.conversion_rate, 'SAR') }}
                                                 {{ totals_row('Total Amount', 'المجموع الاجمالى', doc.grand_total *
                                                 doc.conversion_rate, 'SAR', is_grand=true) }}
+                                                {{ totals_row('Paid Amount', 'المبلغ المدفوع', (doc.grand_total - doc.outstanding_amount) * doc.conversion_rate, 'SAR') }}
+                                                {{ totals_row('Outstanding Amount', 'الصافي المستحق',
+                                                doc.outstanding_amount * doc.conversion_rate, 'SAR') }}
                                                 {% endif %}
                                             </tbody>
                                         </table>
@@ -313,7 +324,7 @@ Add to your Print Format:
                                             <td>{{ payment.name }}</td>
                                             <td>{{ payment.mode_of_payment }}</td>
                                             <td class="text-center">
-                                                {{ format_currency(payment.allocated_amount) }}
+                                                {{ format_currency(payment.allocated_amount, payment.currency) }}
                                             </td>
                                         </tr>
                                         {% endfor %}

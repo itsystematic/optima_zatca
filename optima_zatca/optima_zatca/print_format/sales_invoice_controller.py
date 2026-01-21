@@ -116,18 +116,27 @@ def get_payment_details(reference_doctype, reference_name):
         payment_entries = frappe.get_all(
             "Payment Entry",
             filters={"name": ["in", parent_names]},
-            fields=["name", "posting_date", "mode_of_payment"]
+            fields=["name", "posting_date", "mode_of_payment", "paid_from_account_currency", "paid_to_account_currency", "payment_type"]
         )
         
         pe_map = {pe.name: pe for pe in payment_entries}
         
         for ref in payment_refs:
             pe = pe_map.get(ref.parent, {})
+
+            # Determine the correct currency based on payment type
+            if pe.get("payment_type") == "Receive":
+                payment_currency = pe.get("paid_from_account_currency")
+            else:  # Pay
+                payment_currency = pe.get("paid_to_account_currency")
+            
             payments.append({
                 "name": ref.parent,
                 "posting_date": pe.get("posting_date"),
                 "mode_of_payment": pe.get("mode_of_payment", ""),
-                "allocated_amount": ref.allocated_amount
+                "allocated_amount": ref.allocated_amount,
+                "currency": payment_currency,
+                "entry_type": "Payment Entry"
             })
     
     # Get Journal Entry References
@@ -138,7 +147,7 @@ def get_payment_details(reference_doctype, reference_name):
             "reference_name": reference_name,
             "docstatus": 1
         },
-        fields=["parent", "credit_in_account_currency", "debit_in_account_currency"]
+        fields=["parent", "credit_in_account_currency", "debit_in_account_currency", "account_currency"]
     )
     
     if journal_refs:
@@ -158,7 +167,9 @@ def get_payment_details(reference_doctype, reference_name):
                 "name": ref.parent,
                 "posting_date": je.get("posting_date"),
                 "mode_of_payment": je.get("mode_of_payment", ""),
-                "allocated_amount": allocated
+                "allocated_amount": allocated,
+                "currency": ref.account_currency,
+                "entry_type": "Journal Entry"
             })
     
     return payments

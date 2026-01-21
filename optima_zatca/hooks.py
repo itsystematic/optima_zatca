@@ -26,7 +26,14 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/optima_zatca/css/optima_zatca.css"
-# app_include_js = "/assets/optima_zatca/js/optima_zatca.js"
+
+# Load modular JS files in dependency order
+app_include_js = [
+    # Sales Invoice modules (load in dependency order)
+    "/assets/optima_zatca/js/sales_invoice/prepayment.js",      # Must load first (provides constants)
+    "/assets/optima_zatca/js/sales_invoice/pos_payments.js",    # Depends on prepayment constants
+    "/assets/optima_zatca/js/sales_invoice/zatca_buttons.js",   # Independent
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/optima_zatca/css/optima_zatca.css"

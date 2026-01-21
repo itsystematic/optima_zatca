@@ -11,7 +11,12 @@
   "manual_submit",
   "sending_is_restricted_to_todays_date",
   "column_break_cehc",
-  "phase"
+  "phase",
+  "pdf_a3_defaults_section",
+  "print_format",
+  "language",
+  "column_break_huqc",
+  "letter_head"
  ],
  "fields": [
   {
@@ -53,13 +58,41 @@
    "fieldname": "sending_is_restricted_to_todays_date",
    "fieldtype": "Check",
    "label": "Sending is Restricted to Today's Date"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "pdf_a3_defaults_section",
+   "fieldtype": "Section Break",
+   "label": "PDF A3 Defaults"
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "label": "Print Format",
+   "options": "Print Format"
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language",
+   "options": "Language"
+  },
+  {
+   "fieldname": "column_break_huqc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "letter_head",
+   "fieldtype": "Link",
+   "label": "Letter Head",
+   "options": "Letter Head"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-28 13:12:55.199089",
+ "modified": "2026-01-01 14:31:49.049198",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Zatca Main Settings",
