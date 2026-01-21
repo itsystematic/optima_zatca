@@ -1,15 +1,10 @@
-import frappe
 import io
 import os
-import os
 import base64
-import re
+import mimetypes
 import pikepdf
 import qrcode
 from datetime import datetime
-from frappe import _
-from frappe import get_app_path, get_site_path
-from frappe.utils.pdf import get_pdf
 
 import frappe
 from frappe import _, get_app_path
@@ -26,9 +21,11 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str):
         generator = ZatcaPDFA3Generator(sales_invoice_name)
         return generator.generate_and_save()
     except Exception as e:
-        frappe.log_error(title="ZATCA PDF Generation Error", message=frappe.get_traceback())
-        # Return a clean error message to the UI
-        frappe.throw(_("PDF Generation Failed: {0}").format(str(e)))
+        log_and_throw_error(
+            operation="Generate PDF/A-3 for invoice",
+            document_name=sales_invoice_name,
+            exception=e
+        )
 
 class ZatcaPDFA3Generator:
     """
@@ -42,7 +39,6 @@ class ZatcaPDFA3Generator:
         self.invoice = frappe.get_doc("Sales Invoice", invoice_name)
         self.zatca_settings = frappe.get_single("Zatca Main Settings")
         self.print_settings = self._get_print_settings()
-        self.icc_profile_path = os.path.join(get_app_path("optima_zatca"), "sRGB.icc")
 
     def generate_and_save(self):
         """
@@ -208,12 +204,11 @@ class ZatcaPDFA3Generator:
         )
         
         if not log_entry:
-            frappe.throw(_("ZATCA XML not found in logs. Please submit to ZATCA first."))
+            frappe.throw(_("ZATCA XML not found in logs."))
             
         if log_entry.get("xml_content"):
             return log_entry.xml_content.encode("utf-8")
         elif log_entry.get("invoice"):
-            # Fallback if stored as base64
             return base64.b64decode(log_entry.invoice)
         else:
             frappe.throw(_("ZATCA XML content is empty."))
@@ -225,88 +220,49 @@ class ZatcaPDFA3Generator:
         """
         pdf = pikepdf.Pdf.open(io.BytesIO(pdf_bytes))
         
+        # 1. Add Standard Metadata
         company = frappe.db.get_value("Global Defaults", None, "default_company") or "Company"
         with pdf.open_metadata() as meta:
-            meta["pdf:Trapped"] = "False"
-            meta["dc:creator"] = [company]
             meta["dc:title"] = self.invoice_name
+            meta["dc:creator"] = company
             meta["dc:description"] = "ZATCA E-Invoice"
-            meta["dc:date"] = datetime.now().isoformat()
 
-        self._inject_xmp_metadata(pdf)
-        self._embed_xml_attachment(pdf, xml_bytes)
-        self._inject_output_intent(pdf)
-
-        pdf.Root["/GTS_PDFA1"] = pikepdf.Name("/PDF/A-3B")
-        if "/MarkInfo" not in pdf.Root:
-            pdf.Root["/MarkInfo"] = pikepdf.Dictionary({"/Marked": True})
-        else:
-            pdf.Root.MarkInfo["/Marked"] = True
-            
-        if "/Lang" not in pdf.Root:
-            pdf.Root["/Lang"] = pikepdf.String("en-US")
-
-        output = io.BytesIO()
-        pdf.save(output)
-        output.seek(0)
-        return output.read()
-
-    def _inject_xmp_metadata(self, pdf):
-        xmp_metadata = f"""<?xpacket begin='' id='W5M0MpCehiHzreSzNTczkc9d'?>
-        <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP toolkit 2.9.1-13, framework 1.6">
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-                <rdf:Description rdf:about=""
-                    xmlns:dc="http://purl.org/dc/elements/1.1/"
-                    xmlns:xmp="http://ns.adobe.com/xap/1.0/"
-                    xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
-                    xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
-                    <pdf:Producer>pikepdf</pdf:Producer>
-                    <pdf:Trapped>False</pdf:Trapped>
-                    <dc:format>application/pdf</dc:format>
-                    <dc:title>
-                        <rdf:Alt>
-                            <rdf:li xml:lang="x-default">{self.invoice_name}</rdf:Alt>
-                        </rdf:Alt>
-                    </dc:title>
-                    <dc:description>
-                        <rdf:Alt>
-                            <rdf:li xml:lang="x-default">ZATCA E-Invoice</rdf:li>
-                        </rdf:Alt>
-                    </dc:description>
-                    <xmp:CreateDate>{datetime.now().isoformat()}</xmp:CreateDate>
-                    <pdfaid:part>3</pdfaid:part>
-                    <pdfaid:conformance>B</pdfaid:conformance>
-                </rdf:Description>
-            </rdf:RDF>
-        </x:xmpmeta>
-        <?xpacket end="w"?>"""
-        pdf.Root["/Metadata"] = pdf.make_stream(xmp_metadata.encode("utf-8"))
-
-    def _embed_xml_attachment(self, pdf, xml_bytes):
-        filename = f"{self.invoice_name.replace('/', '-')}_zatca.xml"
-        embedded_file_stream = pdf.make_stream(xml_bytes)
-        embedded_file_stream.Type = pikepdf.Name("/EmbeddedFile")
-        embedded_file_stream.Subtype = pikepdf.Name("/text#2Fxml")
-        embedded_file_stream.Params = pikepdf.Dictionary(
+        # 2. Prepare the XML Stream
+        xml_stream = pikepdf.Stream(pdf, xml_bytes)
+        
+        xml_stream.Type = pikepdf.Name("/EmbeddedFile")
+        xml_stream.Subtype = pikepdf.Name("/text#2Fxml") 
+        xml_stream.Params = pikepdf.Dictionary(
             Size=len(xml_bytes),
             ModDate=pikepdf.String(datetime.now().strftime("D:%Y%m%d%H%M%S"))
         )
+
+        # 3. Create the File Specification Dictionary
+        filename = f"{self.invoice_name.replace('/', '-')}_zatca.xml"
         file_spec = pikepdf.Dictionary(
             Type=pikepdf.Name("/Filespec"),
             F=pikepdf.String(filename),
             UF=pikepdf.String(filename),
             Desc=pikepdf.String("ZATCA Invoice XML"),
-            AFRelationship=pikepdf.Name("/Source"), 
-            EF=pikepdf.Dictionary(F=embedded_file_stream)
+            AFRelationship=pikepdf.Name("/Data"), 
+            EF=pikepdf.Dictionary(
+                F=xml_stream 
+            )
         )
+
+        # 4. Add to /Names/EmbeddedFiles
         if "/Names" not in pdf.Root:
             pdf.Root.Names = pikepdf.Dictionary()
+            
         if "/EmbeddedFiles" not in pdf.Root.Names:
-            pdf.Root.Names.EmbeddedFiles = pikepdf.Dictionary(Names=pikepdf.Array())
+            pdf.Root.Names.EmbeddedFiles = pikepdf.Dictionary(
+                Names=pikepdf.Array()
+            )
             
         pdf.Root.Names.EmbeddedFiles.Names.append(pikepdf.String(filename))
         pdf.Root.Names.EmbeddedFiles.Names.append(file_spec)
 
+        # 5. Add to /AF (Associated Files) Array
         if "/AF" not in pdf.Root:
             pdf.Root.AF = pikepdf.Array()
         pdf.Root.AF.append(file_spec)
@@ -352,6 +308,7 @@ class ZatcaPDFA3Generator:
         })
 
         file_name = f"{self.invoice_name}_PDFA3.pdf".replace("/", "-")
+        
         saved_file = frappe.get_doc({
             "doctype": "File",
             "file_name": file_name,
@@ -363,7 +320,11 @@ class ZatcaPDFA3Generator:
         })
         saved_file.save()
         
+        # Update Invoice Link
         if hasattr(self.invoice, "ksa_einv_pdfa3"):
             self.invoice.db_set("ksa_einv_pdfa3", saved_file.file_url)
             
-        return {"file_url": saved_file.file_url, "file_name": file_name}
+        return {
+            "file_url": saved_file.file_url,
+            "file_name": file_name
+        }
