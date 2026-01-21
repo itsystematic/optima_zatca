@@ -111,7 +111,7 @@ class ZatcaPDFA3Generator:
         """
         Generates a QR code image from the TLV/Base64 string stored in the invoice.
         """
-        qr_data = self.invoice.get("ksa_einv2_qr") or self.invoice.get("zatca_qr_code")
+        qr_data = self.invoice.get("ksa_einv2_qr") or self.invoice.get("ksa_einv_qr")
         
         if not qr_data:
             return ""
