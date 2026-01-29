@@ -263,7 +263,7 @@ website_route_rules = [{'from_route': '/zatca-onboarding/<path:app_path>', 'to_r
 
 regional_overrides = {
 	'Saudi Arabia': {
-		'erpnext.controllers.taxes_and_totals.update_itemised_tax_data': 'optima_zatca.zatca.invoice.update_itemised_tax_data'
+		'erpnext.controllers.taxes_and_totals.update_itemised_tax_data': 'optima_zatca.zatca.itemised_tax.update_itemised_tax_data'
 	}
 }
 
