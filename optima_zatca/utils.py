@@ -86,6 +86,76 @@ SellingChildTable = [
     },
 ]
 
+# Purchase Invoice Item fields - visible in item table for VAT tracking
+PurchaseChildTable = [
+    {
+        "fieldname" : "tax_category" ,
+        "fieldtype" : "Link" ,
+        "label" : "Tax Category" ,
+        "insert_after" : "item_tax_template",
+        "options" : "Tax Category",
+        "read_only" : 1,
+        "hidden" : 1,
+    },
+    {
+        "fieldname" : "price_amount" ,
+        "label" : "Price Amount" ,
+        "fieldtype" : "Float" ,
+        "insert_after" : "tax_category",
+        "read_only" : 1,
+        "hidden" : 1,
+        "no_copy" : 1,
+    },
+    {
+        "fieldname" : "line_extension_amount" ,
+        "label" : "Line Extension Amount" ,
+        "fieldtype" : "Float" ,
+        "insert_after" : "price_amount",
+        "read_only" : 1,
+        "hidden" : 1,
+        "no_copy" : 1,
+    },
+    {
+        "fieldname" : "item_discount" ,
+        "label" : "Item Discount" ,
+        "fieldtype" : "Float" ,
+        "insert_after" : "line_extension_amount",
+        "read_only" : 1,
+        "hidden" : 1,
+        "no_copy" : 1,
+    },
+    {
+        "fieldname" : "tax_rate" ,
+        "fieldtype" : "Float" ,
+        "label" : "Tax Rate" ,
+        "insert_after" : "item_discount",
+        "read_only" : 1,
+        "in_list_view" : 1,
+    },
+    {
+        "fieldname" : "tax_amount" ,
+        "fieldtype" : "Currency" ,
+        "label" : "Tax Amount" ,
+        "insert_after" : "tax_rate",
+        "read_only" : 1,
+        "in_list_view" : 1,
+    },
+    {
+        "fieldname" : "total_amount" ,
+        "fieldtype" : "Currency" ,
+        "label" : "Total Amount" ,
+        "insert_after" : "tax_amount",
+        "read_only" : 1,
+    },
+    {
+        "fieldname" : "tax_exemption" ,
+        "fieldtype" : "Link" ,
+        "label" : "Tax Exemption" ,
+        "insert_after" : "total_amount" ,
+        "options" : "Tax Exemption"
+    },
+]
+
 def after_app_install(app_name) :
 
     if app_name != "optima_zatca" : return 
@@ -243,6 +313,7 @@ def create_additional_fields() :
         "Sales Order Item" : SellingChildTable ,
         "Delivery Note Item" : SellingChildTable ,
         "POS Invoice Item" : SellingChildTable ,
+        "Purchase Invoice Item" : PurchaseChildTable ,
         
         "Customer" : [
             {

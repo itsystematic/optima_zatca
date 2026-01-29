@@ -108,6 +108,76 @@ def create_custom_fields_with_validation():
         },
     ]
     
+    # Purchase Invoice Item fields - visible in item table for VAT tracking
+    purchase_child_table_fields = [
+        {
+            "fieldname": "tax_category",
+            "fieldtype": "Link",
+            "label": "Tax Category",
+            "insert_after": "item_tax_template",
+            "options": "Tax Category",
+            "read_only": 1,
+            "hidden": 1,
+        },
+        {
+            "fieldname": "price_amount",
+            "label": "Price Amount",
+            "fieldtype": "Float",
+            "insert_after": "tax_category",
+            "read_only": 1,
+            "hidden": 1,
+            "no_copy": 1,
+        },
+        {
+            "fieldname": "line_extension_amount",
+            "label": "Line Extension Amount",
+            "fieldtype": "Float",
+            "insert_after": "price_amount",
+            "read_only": 1,
+            "hidden": 1,
+            "no_copy": 1,
+        },
+        {
+            "fieldname": "item_discount",
+            "label": "Item Discount",
+            "fieldtype": "Float",
+            "insert_after": "line_extension_amount",
+            "read_only": 1,
+            "hidden": 1,
+            "no_copy": 1,
+        },
+        {
+            "fieldname": "tax_rate",
+            "fieldtype": "Float",
+            "label": "Tax Rate",
+            "insert_after": "item_discount",
+            "read_only": 1,
+            "in_list_view": 1,
+        },
+        {
+            "fieldname": "tax_amount",
+            "fieldtype": "Currency",
+            "label": "Tax Amount",
+            "insert_after": "tax_rate",
+            "read_only": 1,
+            "in_list_view": 1,
+        },
+        {
+            "fieldname": "total_amount",
+            "fieldtype": "Currency",
+            "label": "Total Amount",
+            "insert_after": "tax_amount",
+            "read_only": 1,
+        },
+        {
+            "fieldname": "tax_exemption",
+            "fieldtype": "Link",
+            "label": "Tax Exemption",
+            "insert_after": "total_amount",
+            "options": "Tax Exemption"
+        },
+    ]
+    
     custom_fields_map = {
         "Company": [
             {
@@ -243,6 +313,7 @@ def create_custom_fields_with_validation():
         "Sales Order Item": selling_child_table_fields,
         "Delivery Note Item": selling_child_table_fields,
         "POS Invoice Item": selling_child_table_fields,
+        "Purchase Invoice Item": purchase_child_table_fields,
         "Customer": [
             {
                 "fieldname": "registration_type",
