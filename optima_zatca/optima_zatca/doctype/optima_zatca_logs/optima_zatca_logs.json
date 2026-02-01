@@ -10,13 +10,20 @@
   "company",
   "commercial_register",
   "column_break_ltbp",
-  "method",
+  "environment",
   "reference_doctype",
   "reference_name",
+  "conclusion_section",
+  "conclusion",
+  "zatca_message_tab",
   "section_break_okjd",
   "message",
+  "invoice_body_tab",
+  "section_break_zfyz",
+  "invoice",
+  "invoice_details_tab",
   "invoice_details_section",
-  "environment",
+  "method",
   "api_endpoint",
   "uuid",
   "pih",
@@ -25,8 +32,6 @@
   "column_break_bhzr",
   "qr_code",
   "qr_code_generated",
-  "section_break_zfyz",
-  "invoice",
   "xml_tab",
   "xml_content"
  ],
@@ -71,7 +76,6 @@
    "search_index": 1
   },
   {
-   "collapsible": 1,
    "fieldname": "invoice_details_section",
    "fieldtype": "Section Break",
    "label": "Invoice Details"
@@ -153,11 +157,35 @@
    "fieldname": "xml_content",
    "fieldtype": "Code",
    "label": "XML Content"
+  },
+  {
+   "fieldname": "conclusion_section",
+   "fieldtype": "Section Break",
+   "label": "Conclusion"
+  },
+  {
+   "fieldname": "conclusion",
+   "fieldtype": "Long Text"
+  },
+  {
+   "fieldname": "zatca_message_tab",
+   "fieldtype": "Tab Break",
+   "label": "Zatca Message"
+  },
+  {
+   "fieldname": "invoice_body_tab",
+   "fieldtype": "Tab Break",
+   "label": "Invoice Body"
+  },
+  {
+   "fieldname": "invoice_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Invoice Details"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-16 10:36:11.675115",
+ "modified": "2026-02-01 10:41:57.216506",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Logs",
@@ -187,6 +215,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
