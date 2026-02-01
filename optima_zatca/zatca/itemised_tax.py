@@ -26,6 +26,7 @@ def _calculate_sales_document_item_taxes(doc):
     """
     try:
         itemised_tax = get_itemised_tax(doc.taxes)
+        # Returns: {item_code: {tax_description: {tax_rate, tax_amount, included_in_print_rate}}}
 
         for row in doc.items:
             try:
@@ -43,8 +44,8 @@ def _calculate_sales_document_item_taxes(doc):
                     # Sum up all taxes for this item
                     for d, tax in itemised_tax.get(row.item_code).items():
                         tax_rate += tax.get('tax_rate', 0)
-                        tax_amount += tax.get("tax_amount")
-                        included_in_print_rate += tax.get("included_in_print_rate")
+                        tax_amount += tax.get("tax_amount", 0)
+                        included_in_print_rate += tax.get("included_in_print_rate", 0)
 
                 row.tax_rate = flt(tax_rate, row.precision("tax_rate"))
 
