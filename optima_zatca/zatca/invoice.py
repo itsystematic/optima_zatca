@@ -8,6 +8,39 @@ from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_e
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
 
 
+def format_zatca_response(response):
+    """
+    Format ZATCA validation response into human-readable message.
+    
+    Args:
+        response (dict): ZATCA response dictionary
+        
+    Returns:
+        str: Formatted human-readable message
+    """
+    validation_results = response.get('validationResults', {})
+    error_messages = validation_results.get('errorMessages', [])
+    warning_messages = validation_results.get('warningMessages', [])
+    
+    # Check for error messages first
+    if error_messages:
+        result = "🔴 Failed Invoice\n"
+        for error in error_messages:
+            result += f"{error['message']}\n"
+        return result.rstrip()  # Remove trailing newline
+    
+    # Check for warning messages
+    elif warning_messages:
+        result = "🟡 Success Invoice but there is a Warning\n"
+        for warning in warning_messages:
+            result += f"{warning['message']}\n"
+        return result.rstrip()  # Remove trailing newline
+    
+    # No errors or warnings
+    else:
+        return "🟢 Success Invoice"
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
@@ -61,6 +94,11 @@ def send_to_zatca(sales_invoice_name):
     else :
         frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=  _("Rejected"), indicator="red" , alert=True)
             
+    # Format the conclusion from response
+    try:
+        conclusion_text = format_zatca_response(response.json())
+    except Exception:
+        conclusion_text = response.text
 
     make_action_log(
         method ="send_to_zatca" ,
@@ -79,7 +117,8 @@ def send_to_zatca(sales_invoice_name):
         environment = invoice.zatca_invoice.get("Environment"),
         pih = invoice.zatca_invoice.get("PIH"),
         icv = invoice.zatca_invoice.get("InvoiceCounter"),
-        xml_content = etree.tostring(invoice.xml.root , encoding="utf-8")
+        xml_content = etree.tostring(invoice.xml.root , encoding="utf-8"),
+        conclusion = conclusion_text
     )
 
     # Create Prepayment Invoice doctype when success
