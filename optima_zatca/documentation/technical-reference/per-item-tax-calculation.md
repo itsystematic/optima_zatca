@@ -207,9 +207,21 @@ The calculated fields are used when generating UBL 2.1 XML for ZATCA submission:
 
 ---
 
+## Known Rounding Behavior
+
+For tax-inclusive items, the per-item tax amount computed here (subtraction method) may
+differ by 0.01 from ERPNext's tax table (multiplication method). This is an inherent
+limitation of fixed-precision decimal arithmetic, not a bug.
+
+See [Tax-Inclusive Rounding Pipeline](./tax-inclusive-rounding-pipeline.md) for the full
+analysis and [Tax Rounding Fix Plan](./tax-rounding-fix-plan.md) for the proposed solution.
+
+---
+
 ## Related Files
 
-- **Function Implementation**: `optima_zatca/zatca/invoice.py`
+- **Function Implementation**: `optima_zatca/zatca/itemised_tax.py`
 - **Custom Field Definitions**: `optima_zatca/patches/v15/setup_customizations.py`
 - **Hook Configuration**: `optima_zatca/hooks.py`
-- **Legacy Field Definitions**: `optima_zatca/utils.py`
+- **Rounding Analysis**: `documentation/technical-reference/tax-inclusive-rounding-pipeline.md`
+- **Fix Plan**: `documentation/technical-reference/tax-rounding-fix-plan.md`
