@@ -89,10 +89,12 @@ doctype_js = {
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "optima_zatca.utils.jinja_methods",
-# 	"filters": "optima_zatca.utils.jinja_filters"
-# }
+jinja = {
+	"methods": [
+		"optima_zatca.money_in_words.custom_money_in_words",
+	],
+	# "filters": "optima_zatca.utils.jinja_filters"
+}
 
 # Installation
 # ------------
@@ -154,11 +156,42 @@ override_doctype_class = {
 
 doc_events = {
 	"Sales Invoice": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
         "validate": "optima_zatca.events.sales_invoice.validate_prepayments",
 		"before_cancel": "optima_zatca.events.sales_invoice.sales_invoice_before_cancel",
 		"on_trash": "optima_zatca.events.sales_invoice.sales_invoice_on_trash",
         "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit",
-	}
+	},
+	"Purchase Invoice": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Sales Order": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Purchase Order": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Quotation": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Supplier Quotation": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Delivery Note": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Purchase Receipt": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Payment Entry": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Journal Entry": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
+	"Salary Slip": {
+		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
+	},
 }
 
 # Scheduled Tasks
