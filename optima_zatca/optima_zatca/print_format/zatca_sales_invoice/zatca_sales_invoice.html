@@ -111,13 +111,11 @@ Add to your Print Format:
                     <tbody>
                         <tr>
                             <td>
-                                {# --- LAYOUT TABLE FOR SELLER / CLIENT --- #}
-                                {# This guarantees 50/50 width without squeezing #}
-                                <table class="layout-grid-table" style="width: 100%; margin-bottom: 20px;">
-                                    <tr>
-                                        {# SELLER COLUMN (Left) #}
-                                        <td style="width: 49%; vertical-align: top; padding: 0;">
-                                            <table class="info-table info-table--seller">
+                                {# --- FLEX LAYOUT FOR SELLER / CLIENT --- #}
+                                {# Flex guarantees equal height for both tables #}
+                                <div class="info-tables-container">
+                                    {# SELLER TABLE (Left) #}
+                                    <table class="info-table info-table--seller">
                                                 <thead>
                                                     <tr>
                                                         <td class="info-header info-header--left" colspan="2">
@@ -143,15 +141,10 @@ Add to your Print Format:
                                                     {{ bilingual_row('CR Number:', ctx.company.custom_commercial_register, 'السجل التجاري:') }}
                                                     {{ bilingual_row('VAT Number:', ctx.company.tax_id, 'الرقم الضريبي:') }}
                                                 </tbody>
-                                            </table>
-                                        </td>
+                                    </table>
 
-                                        {# SPACER COLUMN #}
-                                        <td style="width: 2%;"></td>
-
-                                        {# CLIENT COLUMN (Right) #}
-                                        <td style="width: 49%; vertical-align: top; padding: 0;">
-                                            <table class="info-table info-table--client">
+                                    {# CLIENT TABLE (Right) #}
+                                    <table class="info-table info-table--client">
                                                 <thead>
                                                     <tr>
                                                         <td class="info-header info-header--left" colspan="2">
@@ -177,10 +170,8 @@ Add to your Print Format:
                                                     {{ bilingual_row('CR Number:', ctx.customer_cr_number, 'السجل التجاري:') }}
                                                     {{ bilingual_row('VAT Number:', ctx.customer_tax_id, 'الرقم الضريبي:') }}
                                                 </tbody>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                </table>
+                                    </table>
+                                </div>
 
                                 {# ==================== ITEMS TABLE ==================== #}
                                 <table class="items-table">
@@ -299,8 +290,9 @@ Add to your Print Format:
                                                 {% endif %}
                                             </tbody>
                                         </table>
-                                    </div>
-                                </div>
+                                    </td>
+                                    </tr>
+                                </table>
                             </td>
                         </tr>
 

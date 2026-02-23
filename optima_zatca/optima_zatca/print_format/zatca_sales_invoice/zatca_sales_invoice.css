@@ -328,18 +328,19 @@ table, tbody, thead, tfoot, tr, th, td {
 }
 
 .footer-qr {
-    flex: 0 0 25%;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: var(--spacing-md);
+    flex: 0 0 28%;
+    position: relative;
+    overflow: hidden;
+    padding: var(--spacing-sm);
 }
 
 .qr-image {
-    max-width: 180px;
-    height: auto;
-    border: 2px solid var(--color-text);
-    border-radius: var(--border-radius-sm);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-height: calc(100% - 2 * var(--spacing-sm));
+    object-fit: contain;
 }
 
 .footer-totals {
