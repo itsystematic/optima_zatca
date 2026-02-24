@@ -178,7 +178,7 @@ Add to your Print Format:
                                     <thead>
                                         <tr>
                                             <th class="items-header items-header--first">{{ _("Serial") }}</th>
-                                            <th class="items-header">{{ _("Part Number") }}</th>
+                                            <th class="items-header">{{ _("Item Code") }}</th>
                                             <th class="items-header">{{ _("Description") }}</th>
                                             <th class="items-header">{{ _("Unit") }}</th>
                                             <th class="items-header">{{ _("Qty") }}</th>
@@ -196,8 +196,8 @@ Add to your Print Format:
                                         {% for item in doc.items %}
                                         <tr class="items-row">
                                             <td class="items-cell items-cell--serial">{{ item.idx }}</td>
-                                            <td class="items-cell items-cell--part-number">
-                                                {{ item.custom_part_number or item.item_code }}
+                                            <td class="items-cell items-cell--item-code">
+                                                {{ item.item_code }}
                                             </td>
                                             <td class="items-cell items-cell--description">{{ item.item_name }}</td>
                                             <td class="items-cell items-cell--uom">{{ item.uom }}</td>

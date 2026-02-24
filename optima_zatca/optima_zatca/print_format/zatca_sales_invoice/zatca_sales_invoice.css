@@ -309,7 +309,7 @@ table, tbody, thead, tfoot, tr, th, td {
     width: 5%;
 }
 
-.items-cell--part-number,
+.items-cell--item-code,
 .items-cell--description {
     text-align: left;
 }
