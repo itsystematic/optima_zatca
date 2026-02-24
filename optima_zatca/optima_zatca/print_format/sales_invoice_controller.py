@@ -46,7 +46,17 @@ def get_context(doc):
     
     # Get VAT rate from Tax Template or settings
     context.vat_rate = get_vat_rate(doc)
-    
+
+    # Get retention details
+    retention_percentage = getattr(doc, 'retention_percentage', 0) or 0
+    context.retention_percentage = retention_percentage
+    if retention_percentage > 0:
+        context.retention_amount = doc.grand_total * retention_percentage / 100
+        context.amount_after_retention = doc.grand_total - context.retention_amount
+    else:
+        context.retention_amount = 0
+        context.amount_after_retention = doc.grand_total
+
     return context
 
 

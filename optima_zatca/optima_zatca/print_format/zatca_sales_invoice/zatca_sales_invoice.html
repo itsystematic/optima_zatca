@@ -264,6 +264,12 @@ Add to your Print Format:
 
                                                 {{ totals_row('Total Amount', 'المجموع الاجمالى', doc.grand_total,
                                                 is_grand=true) }}
+
+                                                {% if ctx.retention_percentage and ctx.retention_percentage > 0 %}
+                                                {{ totals_row('Retention (' ~ ctx.retention_percentage ~ '%)', 'الاستقطاع (' ~ ctx.retention_percentage ~ '%)', ctx.retention_amount) }}
+                                                {{ totals_row('Amount After Retention', 'المبلغ بعد الاستقطاع', ctx.amount_after_retention) }}
+                                                {% endif %}
+
                                                 {{ totals_row('Paid Amount', 'المبلغ المدفوع', doc.grand_total -
                                                 doc.outstanding_amount) }}
                                                 {{ totals_row('Outstanding Amount', 'الصافي المستحق',
@@ -284,6 +290,12 @@ Add to your Print Format:
                                                 doc.total_taxes_and_charges * doc.conversion_rate, 'SAR') }}
                                                 {{ totals_row('Total Amount', 'المجموع الاجمالى', doc.grand_total *
                                                 doc.conversion_rate, 'SAR', is_grand=true) }}
+
+                                                {% if ctx.retention_percentage and ctx.retention_percentage > 0 %}
+                                                {{ totals_row('Retention (' ~ ctx.retention_percentage ~ '%)', 'الاستقطاع (' ~ ctx.retention_percentage ~ '%)', ctx.retention_amount * doc.conversion_rate, 'SAR') }}
+                                                {{ totals_row('Amount After Retention', 'المبلغ بعد الاستقطاع', ctx.amount_after_retention * doc.conversion_rate, 'SAR') }}
+                                                {% endif %}
+
                                                 {{ totals_row('Paid Amount', 'المبلغ المدفوع', (doc.grand_total - doc.outstanding_amount) * doc.conversion_rate, 'SAR') }}
                                                 {{ totals_row('Outstanding Amount', 'الصافي المستحق',
                                                 doc.outstanding_amount * doc.conversion_rate, 'SAR') }}
