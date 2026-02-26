@@ -51,7 +51,7 @@ def get_context(doc):
     retention_percentage = getattr(doc, 'retention_percentage', 0) or 0
     context.retention_percentage = retention_percentage
     if retention_percentage > 0:
-        context.retention_amount = doc.retension_amount or 0
+        context.retention_amount = doc.retention_amount or 0
         context.amount_after_retention = doc.grand_total - context.retention_amount
     else:
         context.retention_amount = 0
