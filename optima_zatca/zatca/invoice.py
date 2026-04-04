@@ -256,10 +256,10 @@ def format_issue_time(posting_time: str) -> str:
     if "." in time_str:
         time_str = time_str.split(".")[0]
     
-    # Zero-pad the hours if needed
+    # Zero-pad all time components if needed
     parts = time_str.split(":")
     if len(parts) >= 1:
-        parts[0] = parts[0].zfill(2)
+        parts = [part.zfill(2) for part in parts]
         time_str = ":".join(parts)
         
     return time_str
@@ -269,5 +269,4 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
     """Extract tax rate from the first item in the sales invoice."""
     items = sales_invoice.get("items", [])
     return items[0].get("tax_rate") if items else 0
-
 
