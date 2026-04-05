@@ -50,6 +50,22 @@ def _encode_invoice_xml(invoice: ZatcaInvoiceData) -> str:
     ).decode("utf-8")
 
 
+def _validate_before_send(sales_invoice) -> bool:
+    """Runs Frappe lifecycle hooks and permission checks. Returns False on failure."""
+    try:
+        sales_invoice.run_method("validate")
+        sales_invoice.run_method("before_submit")
+        sales_invoice.check_permission("submit")
+        return True
+    except Exception as e:
+        log_and_throw_error(
+            operation="Send to ZATCA",
+            document_name=sales_invoice.name,
+            exception=e,
+        )
+        return False
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
@@ -57,18 +73,7 @@ def send_to_zatca(sales_invoice_name):
     invoice = ZatcaInvoiceData(sales_invoice)
     invoice_encoded = _encode_invoice_xml(invoice)
 
-    # Run all validations and pre-submit hooks BEFORE sending to ZATCA for auto-submit later
-    try:
-        sales_invoice.run_method("validate")
-        sales_invoice.run_method("before_submit")
-        sales_invoice.check_permission("submit")
-        
-    except Exception as e:
-        log_and_throw_error(
-            operation="Send to ZATCA",
-            document_name = sales_invoice.name,
-            exception=e
-        )
+    if not _validate_before_send(sales_invoice):
         return False
 
 

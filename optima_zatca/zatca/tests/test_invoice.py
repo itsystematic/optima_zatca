@@ -148,3 +148,28 @@ class TestEncodeInvoiceXml(unittest.TestCase):
 
         self.assertIn("<Invoice>", decoded)
         self.assertIn("test", decoded)
+
+
+class TestValidateBeforeSend(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.invoice_module = _load_invoice_module()
+
+    def test_validate_before_send_returns_false_on_exception(self):
+        mock_invoice = MagicMock()
+        mock_invoice.run_method.side_effect = Exception("Validation failed")
+
+        with patch.object(self.invoice_module, "log_and_throw_error") as mock_log:
+            result = self.invoice_module._validate_before_send(mock_invoice)
+
+        self.assertFalse(result)
+        mock_log.assert_called_once()
+
+    def test_validate_before_send_returns_true_on_success(self):
+        mock_invoice = MagicMock()
+        mock_invoice.run_method.return_value = None
+        mock_invoice.check_permission.return_value = None
+
+        result = self.invoice_module._validate_before_send(mock_invoice)
+
+        self.assertTrue(result)
