@@ -43,12 +43,19 @@ def format_zatca_response(response):
         return "🟢 Success Invoice"
 
 
+def _encode_invoice_xml(invoice: ZatcaInvoiceData) -> str:
+    """Serializes invoice XML to base64-encoded UTF-8 string."""
+    return base64.b64encode(
+        etree.tostring(invoice.xml.root, encoding="utf-8")
+    ).decode("utf-8")
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
     sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
     invoice = ZatcaInvoiceData(sales_invoice)
-    invoice_encoded = base64.b64encode(etree.tostring(invoice.xml.root , encoding="utf-8")).decode("utf-8")
+    invoice_encoded = _encode_invoice_xml(invoice)
 
     # Run all validations and pre-submit hooks BEFORE sending to ZATCA for auto-submit later
     try:
@@ -269,4 +276,3 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
     """Extract tax rate from the first item in the sales invoice."""
     items = sales_invoice.get("items", [])
     return items[0].get("tax_rate") if items else 0
-

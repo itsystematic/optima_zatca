@@ -127,3 +127,24 @@ class TestFormatIssueTime(unittest.TestCase):
             "09:00:00",
         )
 
+
+class TestEncodeInvoiceXml(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.invoice_module = _load_invoice_module()
+
+    def test_encode_invoice_xml_returns_valid_base64(self):
+        from lxml import etree
+        import base64
+
+        root = etree.Element("Invoice")
+        root.text = "test"
+        mock_invoice = MagicMock()
+        mock_invoice.xml.root = root
+
+        result = self.invoice_module._encode_invoice_xml(mock_invoice)
+
+        decoded = base64.b64decode(result).decode("utf-8")
+
+        self.assertIn("<Invoice>", decoded)
+        self.assertIn("test", decoded)
