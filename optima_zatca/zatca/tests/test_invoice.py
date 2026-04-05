@@ -173,3 +173,27 @@ class TestValidateBeforeSend(unittest.TestCase):
         result = self.invoice_module._validate_before_send(mock_invoice)
 
         self.assertTrue(result)
+
+
+class TestSubmitToZatcaApi(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.invoice_module = _load_invoice_module()
+
+    def test_submit_to_zatca_api_calls_make_invoice_request(self):
+        mock_invoice = MagicMock()
+        mock_invoice.zatca_invoice = {
+            "Clearance-Status": "1",
+            "UUID": "test-uuid",
+            "EndPoint": "https://example.com",
+        }
+        mock_invoice.company_settings = {"authorization": "Bearer token"}
+        mock_invoice.xml.hash = "abc123"
+
+        with patch.object(self.invoice_module, "make_invoice_request") as mock_request:
+            mock_request.return_value = MagicMock(status_code=200)
+
+            result = self.invoice_module._submit_to_zatca_api(mock_invoice, "encoded_xml")
+
+        self.assertEqual(result.status_code, 200)
+        mock_request.assert_called_once()

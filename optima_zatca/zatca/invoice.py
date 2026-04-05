@@ -66,6 +66,20 @@ def _validate_before_send(sales_invoice) -> bool:
         return False
 
 
+def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
+    """Fires the ZATCA API request. Returns the raw response object."""
+    zi = invoice.zatca_invoice
+    return make_invoice_request(
+        zi.get("Clearance-Status"),
+        invoice.company_settings.get("authorization"),
+        invoice.xml.hash,
+        zi.get("UUID"),
+        invoice_encoded,
+        invoice.company_settings,
+        zi.get("EndPoint"),
+    )
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
@@ -77,15 +91,7 @@ def send_to_zatca(sales_invoice_name):
         return False
 
 
-    response = make_invoice_request(
-        invoice.zatca_invoice.get("Clearance-Status") , 
-        invoice.company_settings.get("authorization") , 
-        invoice.xml.hash , 
-        invoice.zatca_invoice.get("UUID") , 
-        invoice_encoded , 
-        invoice.company_settings , 
-        invoice.zatca_invoice.get("EndPoint")
-    )
+    response = _submit_to_zatca_api(invoice, invoice_encoded)
     Status , qrcode = "Failed" , ""
     sucess_status = response.status_code in [200 , 202]
 
