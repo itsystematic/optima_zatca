@@ -97,6 +97,38 @@ def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, succ
     frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=_("Accepted"), indicator="green", alert=True)
 
 
+def _log_action(sales_invoice, invoice, response, invoice_encoded: str, qrcode: str, success: bool) -> None:
+    """Writes a ZATCA action log entry. No document mutations."""
+    zi = invoice.zatca_invoice
+    status = "Success" if response.status_code == 200 else ("Warning" if success else "Failed")
+
+    try:
+        conclusion = format_zatca_response(response.json())
+    except Exception:
+        conclusion = response.text
+
+    make_action_log(
+        method="send_to_zatca",
+        status=status,
+        message=response.text,
+        reference_doctype="Sales Invoice",
+        reference_name=sales_invoice.name,
+        company=sales_invoice.get("company"),
+        commercial_register=sales_invoice.get("commercial_register"),
+        uuid=zi.get("UUID"),
+        invoice=invoice_encoded,
+        hash=invoice.xml.hash,
+        qr_code=qrcode,
+        qr_code_generated=invoice.xml.qr_code,
+        api_endpoint=zi.get("EndPoint"),
+        environment=zi.get("Environment"),
+        pih=zi.get("PIH"),
+        icv=zi.get("InvoiceCounter"),
+        xml_content=etree.tostring(invoice.xml.root, encoding="utf-8"),
+        conclusion=conclusion,
+    )
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
@@ -109,41 +141,14 @@ def send_to_zatca(sales_invoice_name):
 
 
     response = _submit_to_zatca_api(invoice, invoice_encoded)
-    Status , qrcode = "Failed" , ""
+    qrcode = ""
     sucess_status = response.status_code in [200 , 202]
 
     if sucess_status: 
-        Status = "Success"  if response.status_code == 200 else "Warning"  
         qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
     
     _update_invoice_document(sales_invoice, invoice, response, qrcode, sucess_status)
-            
-    # Format the conclusion from response
-    try:
-        conclusion_text = format_zatca_response(response.json())
-    except Exception:
-        conclusion_text = response.text
-
-    make_action_log(
-        method ="send_to_zatca" ,
-        status = Status  ,
-        message = response.text ,
-        reference_doctype = "Sales Invoice",
-        reference_name = sales_invoice.name,
-        company = sales_invoice.get("company") ,
-        commercial_register = sales_invoice.get("commercial_register") ,
-        uuid = invoice.zatca_invoice.get("UUID"),
-        invoice = invoice_encoded,
-        hash = invoice.xml.hash ,
-        qr_code = qrcode ,
-        qr_code_generated = invoice.xml.qr_code ,
-        api_endpoint = invoice.zatca_invoice.get("EndPoint") ,
-        environment = invoice.zatca_invoice.get("Environment"),
-        pih = invoice.zatca_invoice.get("PIH"),
-        icv = invoice.zatca_invoice.get("InvoiceCounter"),
-        xml_content = etree.tostring(invoice.xml.root , encoding="utf-8"),
-        conclusion = conclusion_text
-    )
+    _log_action(sales_invoice, invoice, response, invoice_encoded, qrcode, sucess_status)
 
     # Create Prepayment Invoice doctype when success
     if sales_invoice.get("sales_invoice_type") != "Normal" and sucess_status:

@@ -241,3 +241,48 @@ class TestUpdateInvoiceDocument(unittest.TestCase):
             )
 
         mock_invoice_doc.save.assert_not_called()
+
+
+class TestLogAction(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.invoice_module = _load_invoice_module()
+
+    def test_log_action_calls_make_action_log(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_response.text = ""
+
+        mock_invoice_doc = MagicMock()
+        mock_invoice_doc.name = "SINV-0001"
+        mock_invoice_doc.get.return_value = ""
+
+        mock_zatca_invoice = MagicMock()
+        mock_zatca_invoice.zatca_invoice = {
+            "UUID": "uuid",
+            "EndPoint": "ep",
+            "Environment": "sim",
+            "PIH": "pih",
+            "InvoiceCounter": 1,
+        }
+        mock_zatca_invoice.xml.hash = "hash"
+        mock_zatca_invoice.xml.qr_code = "qr"
+        mock_zatca_invoice.xml.root = MagicMock()
+
+        with (
+            patch.object(self.invoice_module, "etree") as mock_etree,
+            patch.object(self.invoice_module, "make_action_log") as mock_log,
+        ):
+            mock_etree.tostring.return_value = b"<xml/>"
+
+            self.invoice_module._log_action(
+                mock_invoice_doc,
+                mock_zatca_invoice,
+                mock_response,
+                "encoded",
+                "qrcode",
+                True,
+            )
+
+        mock_log.assert_called_once()
