@@ -197,3 +197,47 @@ class TestSubmitToZatcaApi(unittest.TestCase):
 
         self.assertEqual(result.status_code, 200)
         mock_request.assert_called_once()
+
+
+class TestUpdateInvoiceDocument(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.invoice_module = _load_invoice_module()
+
+    def test_update_invoice_document_on_success(self):
+        mock_invoice_doc = MagicMock()
+        mock_invoice_doc.name = "SINV-0001"
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"clearanceStatus": "CLEARED"}
+
+        with (
+            patch.object(self.invoice_module, "create_qr_code_for_invoice") as mock_qr,
+            patch.object(self.invoice_module, "frappe"),
+        ):
+            mock_qr.return_value = "/path/to/qr.png"
+
+            self.invoice_module._update_invoice_document(
+                mock_invoice_doc,
+                MagicMock(),
+                mock_response,
+                "qrcode_value",
+                True,
+            )
+
+        self.assertEqual(mock_invoice_doc.sent_to_zatca, 1)
+        self.assertEqual(mock_invoice_doc.clearance_or_reporting, "CLEARED")
+        mock_invoice_doc.save.assert_called_once()
+
+    def test_update_invoice_document_on_failure_does_not_save(self):
+        mock_invoice_doc = MagicMock()
+
+        with patch.object(self.invoice_module, "frappe"):
+            self.invoice_module._update_invoice_document(
+                mock_invoice_doc,
+                MagicMock(),
+                MagicMock(),
+                "",
+                False,
+            )
+
+        mock_invoice_doc.save.assert_not_called()

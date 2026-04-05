@@ -80,6 +80,23 @@ def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
     )
 
 
+def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, success: bool) -> None:
+    """Mutates and persists sales invoice fields after ZATCA response."""
+    if not success:
+        frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=_("Rejected"), indicator="red", alert=True)
+        return
+
+    response_json = response.json()
+    sales_invoice.sent_to_zatca = 1
+    sales_invoice.clearance_or_reporting = (
+        response_json.get("clearanceStatus") or response_json.get("reportingStatus")
+    )
+    sales_invoice.ksa_einv_qr = create_qr_code_for_invoice(sales_invoice.name, qrcode)
+    sales_invoice.save(ignore_permissions=True, ignore_version=True)
+
+    frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=_("Accepted"), indicator="green", alert=True)
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
@@ -96,23 +113,10 @@ def send_to_zatca(sales_invoice_name):
     sucess_status = response.status_code in [200 , 202]
 
     if sucess_status: 
-        ResponseJson = response.json()
-        sales_invoice.sent_to_zatca = 1
-        sales_invoice.clearance_or_reporting = ResponseJson.get("clearanceStatus") or ResponseJson.get("reportingStatus")
-
-        frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=  _("Accepted"),indicator="green" ,alert=True)
-        
         Status = "Success"  if response.status_code == 200 else "Warning"  
         qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
-        qrcode_url = create_qr_code_for_invoice(sales_invoice.name , qrcode)
-        sales_invoice.ksa_einv_qr = qrcode_url
-
-        # Save the document with ZATCA updates
-        sales_invoice.save(ignore_permissions=True, ignore_version=True)
-
-
-    else :
-        frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=  _("Rejected"), indicator="red" , alert=True)
+    
+    _update_invoice_document(sales_invoice, invoice, response, qrcode, sucess_status)
             
     # Format the conclusion from response
     try:
