@@ -1,11 +1,13 @@
 import frappe 
-import base64
 from frappe import _
+
+import base64
 from lxml import etree
+
 from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
-from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
+from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 
 
 def format_zatca_response(response):
@@ -254,10 +256,10 @@ def format_issue_time(posting_time: str) -> str:
     if "." in time_str:
         time_str = time_str.split(".")[0]
     
-    # Zero-pad the hours if needed
+    # Zero-pad all time components if needed
     parts = time_str.split(":")
     if len(parts) >= 1:
-        parts[0] = parts[0].zfill(2)
+        parts = [part.zfill(2) for part in parts]
         time_str = ":".join(parts)
         
     return time_str
@@ -267,5 +269,4 @@ def get_tax_rate_from_items(sales_invoice: dict) -> float:
     """Extract tax rate from the first item in the sales invoice."""
     items = sales_invoice.get("items", [])
     return items[0].get("tax_rate") if items else 0
-
 
