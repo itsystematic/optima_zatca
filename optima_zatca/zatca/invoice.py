@@ -143,29 +143,35 @@ def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
         frappe.db.commit()
 
 
+def _is_successful_response(response) -> bool:
+    """Returns whether ZATCA accepted the response."""
+    return response.status_code in [200, 202]
+
+
+def _get_response_qrcode(response, invoice, success: bool) -> str:
+    """Returns the response QR code once for this orchestration flow."""
+    if not success:
+        return ""
+
+    return get_qr_code_from_zatca(response, invoice.xml.qr_code)
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
-
     sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
-    invoice = ZatcaInvoiceData(sales_invoice)
-    invoice_encoded = _encode_invoice_xml(invoice)
-
     if not _validate_before_send(sales_invoice):
         return False
 
-
+    invoice = ZatcaInvoiceData(sales_invoice)
+    invoice_encoded = _encode_invoice_xml(invoice)
     response = _submit_to_zatca_api(invoice, invoice_encoded)
-    qrcode = ""
-    sucess_status = response.status_code in [200 , 202]
-
-    if sucess_status: 
-        qrcode = get_qr_code_from_zatca(response , invoice.xml.qr_code)
-    
-    _update_invoice_document(sales_invoice, invoice, response, qrcode, sucess_status)
-    _log_action(sales_invoice, invoice, response, invoice_encoded, qrcode, sucess_status)
-    _handle_post_success(sales_invoice, invoice, sucess_status)
+    success = _is_successful_response(response)
+    qrcode = _get_response_qrcode(response, invoice, success)
+    _update_invoice_document(sales_invoice, invoice, response, qrcode, success)
+    _log_action(sales_invoice, invoice, response, invoice_encoded, qrcode, success)
+    _handle_post_success(sales_invoice, invoice, success)
         
-    return True if sucess_status else False
+    return success
 
 
 def get_qr_code_from_zatca(zatca_response, generated_qrcode) :
@@ -175,8 +181,9 @@ def get_qr_code_from_zatca(zatca_response, generated_qrcode) :
 
     if zatca_response.status_code in [200 , 202] :
         response = zatca_response.json()
-        if response.get("clearedInvoice") :
-            invoice_xml = base64.b64decode(response.get("clearedInvoice")).decode("utf-8")
+        cleared_invoice = response.get("clearedInvoice") if isinstance(response, dict) else None
+        if cleared_invoice :
+            invoice_xml = base64.b64decode(cleared_invoice).decode("utf-8")
             xml_qrcode = get_qrcode_from_xml(invoice_xml)
             if xml_qrcode :
                 qrcode = xml_qrcode

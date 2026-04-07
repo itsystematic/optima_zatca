@@ -335,3 +335,58 @@ class TestHandlePostSuccess(unittest.TestCase):
 
         mock_prepayment.assert_not_called()
         mock_invoice_doc.submit.assert_not_called()
+
+
+class TestSendToZatcaOrchestrator(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.invoice_module = _load_invoice_module()
+
+    def test_send_to_zatca_orchestrates_all_helpers(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        mock_invoice = MagicMock()
+        mock_invoice.xml.qr_code = "qr"
+
+        with (
+            patch.object(self.invoice_module, "frappe") as mock_frappe,
+            patch.object(self.invoice_module, "ZatcaInvoiceData") as mock_zatca_cls,
+            patch.object(self.invoice_module, "_validate_before_send") as mock_validate,
+            patch.object(self.invoice_module, "_encode_invoice_xml") as mock_encode,
+            patch.object(self.invoice_module, "_submit_to_zatca_api") as mock_submit,
+            patch.object(self.invoice_module, "_update_invoice_document") as mock_update,
+            patch.object(self.invoice_module, "_log_action") as mock_log,
+            patch.object(self.invoice_module, "_handle_post_success") as mock_post,
+        ):
+            mock_frappe.get_doc.return_value = MagicMock()
+            mock_validate.return_value = True
+            mock_encode.return_value = "encoded"
+            mock_submit.return_value = mock_response
+            mock_zatca_cls.return_value = mock_invoice
+
+            result = self.invoice_module.send_to_zatca("SINV-0001")
+
+        self.assertTrue(result)
+        mock_validate.assert_called_once()
+        mock_encode.assert_called_once()
+        mock_submit.assert_called_once()
+        mock_update.assert_called_once()
+        mock_log.assert_called_once()
+        mock_post.assert_called_once()
+
+    def test_send_to_zatca_returns_false_when_validation_fails(self):
+        with (
+            patch.object(self.invoice_module, "frappe") as mock_frappe,
+            patch.object(self.invoice_module, "ZatcaInvoiceData") as mock_zatca_cls,
+            patch.object(self.invoice_module, "_validate_before_send") as mock_validate,
+            patch.object(self.invoice_module, "_encode_invoice_xml") as mock_encode,
+        ):
+            mock_frappe.get_doc.return_value = MagicMock()
+            mock_validate.return_value = False
+
+            result = self.invoice_module.send_to_zatca("SINV-0001")
+
+        self.assertFalse(result)
+        mock_zatca_cls.assert_not_called()
+        mock_encode.assert_not_called()
