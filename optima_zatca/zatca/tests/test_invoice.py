@@ -286,3 +286,52 @@ class TestLogAction(unittest.TestCase):
             )
 
         mock_log.assert_called_once()
+
+
+class TestHandlePostSuccess(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.invoice_module = _load_invoice_module()
+
+    def test_handle_post_success_skips_on_failure(self):
+        with (
+            patch.object(self.invoice_module, "create_prepayment_invoice") as mock_prepayment,
+            patch.object(self.invoice_module, "frappe"),
+        ):
+            self.invoice_module._handle_post_success(MagicMock(), MagicMock(), False)
+
+        mock_prepayment.assert_not_called()
+
+    def test_handle_post_success_auto_submits_when_flag_is_false(self):
+        mock_invoice_doc = MagicMock()
+        mock_invoice_doc.get.return_value = "Normal"
+
+        mock_invoice = MagicMock()
+        mock_invoice.zatca_invoice = {"UUID": "uuid"}
+
+        with (
+            patch.object(self.invoice_module, "create_prepayment_invoice") as mock_prepayment,
+            patch.object(self.invoice_module, "frappe") as mock_frappe,
+        ):
+            mock_frappe.db.get_single_value.return_value = 0
+
+            self.invoice_module._handle_post_success(mock_invoice_doc, mock_invoice, True)
+
+        mock_prepayment.assert_not_called()
+        mock_invoice_doc.submit.assert_called_once()
+        mock_frappe.db.commit.assert_called_once()
+
+    def test_handle_post_success_skips_submit_when_manual_flag_is_true(self):
+        mock_invoice_doc = MagicMock()
+        mock_invoice_doc.get.return_value = "Normal"
+
+        with (
+            patch.object(self.invoice_module, "create_prepayment_invoice") as mock_prepayment,
+            patch.object(self.invoice_module, "frappe") as mock_frappe,
+        ):
+            mock_frappe.db.get_single_value.return_value = 1
+
+            self.invoice_module._handle_post_success(mock_invoice_doc, MagicMock(), True)
+
+        mock_prepayment.assert_not_called()
+        mock_invoice_doc.submit.assert_not_called()

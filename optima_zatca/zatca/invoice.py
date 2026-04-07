@@ -129,6 +129,20 @@ def _log_action(sales_invoice, invoice, response, invoice_encoded: str, qrcode: 
     )
 
 
+def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
+    """Triggers prepayment creation and auto-submit on successful ZATCA response."""
+    if not success:
+        return
+
+    if sales_invoice.get("sales_invoice_type") != "Normal":
+        create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
+
+    manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
+    if not manual_submit:
+        sales_invoice.submit()
+        frappe.db.commit()
+
+
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name):
 
@@ -149,15 +163,7 @@ def send_to_zatca(sales_invoice_name):
     
     _update_invoice_document(sales_invoice, invoice, response, qrcode, sucess_status)
     _log_action(sales_invoice, invoice, response, invoice_encoded, qrcode, sucess_status)
-
-    # Create Prepayment Invoice doctype when success
-    if sales_invoice.get("sales_invoice_type") != "Normal" and sucess_status:
-        create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
-
-    manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
-    if not manual_submit and sucess_status: # Auto Submit
-        sales_invoice.submit()
-        frappe.db.commit()
+    _handle_post_success(sales_invoice, invoice, sucess_status)
         
     return True if sucess_status else False
 
