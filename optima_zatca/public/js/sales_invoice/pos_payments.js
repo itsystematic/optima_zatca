@@ -54,18 +54,17 @@ Object.assign(optima_zatca.sales_invoice.pos, {
             // Sync paid_amount for adjustment types
             if (ADJUSTMENT_TYPES.includes(frm.doc.sales_invoice_type)) {
                 frm.set_value("paid_amount", target);
-            }
 
             // Single payment row: set full amount
-            if (frm.doc.payments.length === 1) {
-                const row = frm.doc.payments[0];
-                frappe.model.set_value(row.doctype, row.name, "amount", target);
-                return;
+                if (frm.doc.payments.length === 1) {
+                    const row = frm.doc.payments[0];
+                    frappe.model.set_value(row.doctype, row.name, "amount", target);
+                    return;
+                }
+            
+                // Multiple rows: distribute proportionally
+                optima_zatca.sales_invoice.pos.distributePaymentAmounts(frm, target);
             }
-
-            // Multiple rows: distribute proportionally
-            optima_zatca.sales_invoice.pos.distributePaymentAmounts(frm, target);
-
         } finally {
             frm.__optima_recalc_payments = false;
         }
