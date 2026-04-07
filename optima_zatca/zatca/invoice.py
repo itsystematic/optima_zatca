@@ -10,44 +10,27 @@ from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
 from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 
 
-def format_zatca_response(response):
-    """
-    Format ZATCA validation response into human-readable message.
-    
-    Args:
-        response (dict): ZATCA response dictionary
-        
-    Returns:
-        str: Formatted human-readable message
-    """
-    validation_results = response.get('validationResults', {})
-    error_messages = validation_results.get('errorMessages', [])
-    warning_messages = validation_results.get('warningMessages', [])
-    
-    # Check for error messages first
-    if error_messages:
-        result = "🔴 Failed Invoice\n"
-        for error in error_messages:
-            result += f"{error['message']}\n"
-        return result.rstrip()  # Remove trailing newline
-    
-    # Check for warning messages
-    elif warning_messages:
-        result = "🟡 Success Invoice but there is a Warning\n"
-        for warning in warning_messages:
-            result += f"{warning['message']}\n"
-        return result.rstrip()  # Remove trailing newline
-    
-    # No errors or warnings
-    else:
-        return "🟢 Success Invoice"
+# Public API
 
 
-def _encode_invoice_xml(invoice: ZatcaInvoiceData) -> str:
-    """Serializes invoice XML to base64-encoded UTF-8 string."""
-    return base64.b64encode(
-        etree.tostring(invoice.xml.root, encoding="utf-8")
-    ).decode("utf-8")
+@frappe.whitelist()
+def send_to_zatca(sales_invoice_name):
+    sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
+    if not _validate_before_send(sales_invoice):
+        return False
+
+    invoice = ZatcaInvoiceData(sales_invoice)
+    invoice_encoded = _encode_invoice_xml(invoice)
+    response = _submit_to_zatca_api(invoice, invoice_encoded)
+    success = _is_successful_response(response)
+    qrcode = _get_response_qrcode(response, invoice, success)
+    _update_invoice_document(sales_invoice, invoice, response, qrcode, success)
+    _log_action(sales_invoice, invoice, response, invoice_encoded, qrcode, success)
+    _handle_post_success(sales_invoice, invoice, success)
+    return success
+
+
+# Private orchestration helpers
 
 
 def _validate_before_send(sales_invoice) -> bool:
@@ -66,6 +49,13 @@ def _validate_before_send(sales_invoice) -> bool:
         return False
 
 
+def _encode_invoice_xml(invoice: ZatcaInvoiceData) -> str:
+    """Serializes invoice XML to base64-encoded UTF-8 string."""
+    return base64.b64encode(
+        etree.tostring(invoice.xml.root, encoding="utf-8")
+    ).decode("utf-8")
+
+
 def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
     """Fires the ZATCA API request. Returns the raw response object."""
     zi = invoice.zatca_invoice
@@ -78,6 +68,19 @@ def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
         invoice.company_settings,
         zi.get("EndPoint"),
     )
+
+
+def _is_successful_response(response) -> bool:
+    """Returns whether ZATCA accepted the response."""
+    return response.status_code in [200, 202]
+
+
+def _get_response_qrcode(response, invoice, success: bool) -> str:
+    """Returns the response QR code once for this orchestration flow."""
+    if not success:
+        return ""
+
+    return get_qr_code_from_zatca(response, invoice.xml.qr_code)
 
 
 def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, success: bool) -> None:
@@ -143,35 +146,40 @@ def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
         frappe.db.commit()
 
 
-def _is_successful_response(response) -> bool:
-    """Returns whether ZATCA accepted the response."""
-    return response.status_code in [200, 202]
+# Supporting utilities
 
 
-def _get_response_qrcode(response, invoice, success: bool) -> str:
-    """Returns the response QR code once for this orchestration flow."""
-    if not success:
-        return ""
+def format_zatca_response(response):
+    """
+    Format ZATCA validation response into human-readable message.
 
-    return get_qr_code_from_zatca(response, invoice.xml.qr_code)
+    Args:
+        response (dict): ZATCA response dictionary
 
+    Returns:
+        str: Formatted human-readable message
+    """
+    validation_results = response.get('validationResults', {})
+    error_messages = validation_results.get('errorMessages', [])
+    warning_messages = validation_results.get('warningMessages', [])
 
-@frappe.whitelist()
-def send_to_zatca(sales_invoice_name):
-    sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
-    if not _validate_before_send(sales_invoice):
-        return False
+    # Check for error messages first
+    if error_messages:
+        result = "🔴 Failed Invoice\n"
+        for error in error_messages:
+            result += f"{error['message']}\n"
+        return result.rstrip()  # Remove trailing newline
 
-    invoice = ZatcaInvoiceData(sales_invoice)
-    invoice_encoded = _encode_invoice_xml(invoice)
-    response = _submit_to_zatca_api(invoice, invoice_encoded)
-    success = _is_successful_response(response)
-    qrcode = _get_response_qrcode(response, invoice, success)
-    _update_invoice_document(sales_invoice, invoice, response, qrcode, success)
-    _log_action(sales_invoice, invoice, response, invoice_encoded, qrcode, success)
-    _handle_post_success(sales_invoice, invoice, success)
-        
-    return success
+    # Check for warning messages
+    elif warning_messages:
+        result = "🟡 Success Invoice but there is a Warning\n"
+        for warning in warning_messages:
+            result += f"{warning['message']}\n"
+        return result.rstrip()  # Remove trailing newline
+
+    # No errors or warnings
+    else:
+        return "🟢 Success Invoice"
 
 
 def get_qr_code_from_zatca(zatca_response, generated_qrcode) :
