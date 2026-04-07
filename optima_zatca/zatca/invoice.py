@@ -14,7 +14,7 @@ from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_e
 
 
 @frappe.whitelist()
-def send_to_zatca(sales_invoice_name):
+def send_to_zatca(sales_invoice_name) -> bool:
     sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
     if not _validate_before_send(sales_invoice):
         return False
@@ -34,7 +34,7 @@ def send_to_zatca(sales_invoice_name):
 
 
 def _validate_before_send(sales_invoice) -> bool:
-    """Runs Frappe lifecycle hooks and permission checks. Returns False on failure."""
+    """Stop early if Frappe validation or submit permissions fail."""
     try:
         sales_invoice.run_method("validate")
         sales_invoice.run_method("before_submit")
@@ -50,14 +50,14 @@ def _validate_before_send(sales_invoice) -> bool:
 
 
 def _encode_invoice_xml(invoice: ZatcaInvoiceData) -> str:
-    """Serializes invoice XML to base64-encoded UTF-8 string."""
+    """Encode the invoice XML payload for the API request."""
     return base64.b64encode(
         etree.tostring(invoice.xml.root, encoding="utf-8")
     ).decode("utf-8")
 
 
 def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
-    """Fires the ZATCA API request. Returns the raw response object."""
+    """Send the prepared invoice payload to ZATCA."""
     zi = invoice.zatca_invoice
     return make_invoice_request(
         zi.get("Clearance-Status"),
@@ -71,12 +71,12 @@ def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
 
 
 def _is_successful_response(response) -> bool:
-    """Returns whether ZATCA accepted the response."""
+    """Treat accepted and warning responses as successful."""
     return response.status_code in [200, 202]
 
 
 def _get_response_qrcode(response, invoice, success: bool) -> str:
-    """Returns the response QR code once for this orchestration flow."""
+    """Resolve the final QR code once for this request."""
     if not success:
         return ""
 
@@ -84,7 +84,7 @@ def _get_response_qrcode(response, invoice, success: bool) -> str:
 
 
 def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, success: bool) -> None:
-    """Mutates and persists sales invoice fields after ZATCA response."""
+    """Persist invoice fields that depend on the ZATCA response."""
     if not success:
         frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=_("Rejected"), indicator="red", alert=True)
         return
@@ -101,7 +101,7 @@ def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, succ
 
 
 def _log_action(sales_invoice, invoice, response, invoice_encoded: str, qrcode: str, success: bool) -> None:
-    """Writes a ZATCA action log entry. No document mutations."""
+    """Write the ZATCA audit log entry for this send attempt."""
     zi = invoice.zatca_invoice
     status = "Success" if response.status_code == 200 else ("Warning" if success else "Failed")
 
@@ -133,7 +133,7 @@ def _log_action(sales_invoice, invoice, response, invoice_encoded: str, qrcode: 
 
 
 def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
-    """Triggers prepayment creation and auto-submit on successful ZATCA response."""
+    """Run success-only follow-up actions after logging."""
     if not success:
         return
 
@@ -149,16 +149,8 @@ def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
 # Supporting utilities
 
 
-def format_zatca_response(response):
-    """
-    Format ZATCA validation response into human-readable message.
-
-    Args:
-        response (dict): ZATCA response dictionary
-
-    Returns:
-        str: Formatted human-readable message
-    """
+def format_zatca_response(response: dict) -> str:
+    """Collapse validation results into a short user-facing summary."""
     validation_results = response.get('validationResults', {})
     error_messages = validation_results.get('errorMessages', [])
     warning_messages = validation_results.get('warningMessages', [])
@@ -182,7 +174,7 @@ def format_zatca_response(response):
         return "🟢 Success Invoice"
 
 
-def get_qr_code_from_zatca(zatca_response, generated_qrcode) :
+def get_qr_code_from_zatca(zatca_response, generated_qrcode) -> str:
     from optima_zatca.zatca.classes.xml import get_qrcode_from_xml
 
     qrcode = generated_qrcode
@@ -200,16 +192,7 @@ def get_qr_code_from_zatca(zatca_response, generated_qrcode) :
 
 
 def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
-    """
-    Create a Prepayment Invoice document from a Sales Invoice.
-    
-    Args:
-        sales_invoice: frappe Document containing sales invoice data
-        uuid: Unique identifier for the prepayment invoice
-        
-    Raises:
-        frappe.ValidationError: If prepayment invoice creation fails
-    """
+    """Create or update the linked prepayment document for the invoice."""
     try:
         issue_time = format_issue_time(sales_invoice.posting_time)
         has_previous_prepayment = True if sales_invoice.previous_prepayment else False
@@ -287,14 +270,7 @@ def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
 
 
 def format_issue_time(posting_time: str) -> str:
-    """Format a posting time value to HH:MM:SS string.
-    
-    Args:
-        posting_time: A time value (timedelta, string, etc.)
-        
-    Returns:
-        Formatted time string in HH:MM:SS format
-    """
+    """Normalize posting time to `HH:MM:SS`."""
     if not posting_time:
         return ""
         
@@ -314,6 +290,6 @@ def format_issue_time(posting_time: str) -> str:
 
 
 def get_tax_rate_from_items(sales_invoice: dict) -> float:
-    """Extract tax rate from the first item in the sales invoice."""
+    """Return the first item tax rate, or zero when no items exist."""
     items = sales_invoice.get("items", [])
     return items[0].get("tax_rate") if items else 0
