@@ -214,6 +214,7 @@ class SalesInvoicePrintContextBuilder:
         customer_data = self.repository.get_customer_data(doc.customer)
         company = self.repository.get_company(doc.company)
         retention_details = self._build_retention_details(doc)
+        display_amounts = self._build_display_amounts(doc, company)
 
         return frappe._dict(
             {
@@ -228,6 +229,7 @@ class SalesInvoicePrintContextBuilder:
                 "payments": self._get_payments(doc),
                 "bank_details": self.repository.get_bank_details(company),
                 "vat_rate": get_vat_rate(doc),
+                "display_amounts": display_amounts,
                 **retention_details,
             }
         )
@@ -250,6 +252,58 @@ class SalesInvoicePrintContextBuilder:
                 "amount_after_retention": doc.grand_total - retention_amount,
             }
         )
+
+    @staticmethod
+    def _build_display_amounts(doc, company):
+        conversion_rate = getattr(doc, "conversion_rate", 0) or 1
+        document_currency = getattr(doc, "currency", None) or getattr(
+            company, "default_currency", None
+        )
+        company_currency = getattr(company, "default_currency", None) or document_currency
+        amount_currency = getattr(doc, "party_account_currency", None) or document_currency
+        total_amount = getattr(doc, "grand_total", 0) or 0
+        base_total_amount = getattr(doc, "base_grand_total", None)
+        if base_total_amount is None:
+            base_total_amount = total_amount * conversion_rate
+
+        outstanding_amount = getattr(doc, "outstanding_amount", 0) or 0
+        display_outstanding_amount = SalesInvoicePrintContextBuilder._convert_amount(
+            amount=outstanding_amount,
+            from_currency=amount_currency,
+            to_currency=document_currency,
+            conversion_rate=conversion_rate,
+            company_currency=company_currency,
+        )
+        display_base_outstanding_amount = SalesInvoicePrintContextBuilder._convert_amount(
+            amount=outstanding_amount,
+            from_currency=amount_currency,
+            to_currency=company_currency,
+            conversion_rate=conversion_rate,
+            company_currency=company_currency,
+        )
+
+        return frappe._dict(
+            {
+                "paid_amount": total_amount - display_outstanding_amount,
+                "outstanding_amount": display_outstanding_amount,
+                "base_paid_amount": base_total_amount - display_base_outstanding_amount,
+                "base_outstanding_amount": display_base_outstanding_amount,
+                "base_currency": company_currency,
+            }
+        )
+
+    @staticmethod
+    def _convert_amount(amount, from_currency, to_currency, conversion_rate, company_currency):
+        if from_currency == to_currency or not conversion_rate:
+            return amount
+
+        if from_currency == company_currency:
+            return amount / conversion_rate
+
+        if to_currency == company_currency:
+            return amount * conversion_rate
+
+        return amount
 
 
 @frappe.whitelist()

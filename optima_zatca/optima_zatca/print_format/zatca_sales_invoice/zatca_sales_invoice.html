@@ -270,10 +270,10 @@ Add to your Print Format:
                                                 {{ totals_row('Amount After Retention', 'المبلغ بعد الاستقطاع', ctx.amount_after_retention) }}
                                                 {% endif %}
 
-                                                {{ totals_row('Paid Amount', 'المبلغ المدفوع', doc.grand_total -
-                                                doc.outstanding_amount) }}
+                                                {{ totals_row('Paid Amount', 'المبلغ المدفوع',
+                                                ctx.display_amounts.paid_amount) }}
                                                 {{ totals_row('Outstanding Amount', 'الصافي المستحق',
-                                                doc.outstanding_amount) }}
+                                                ctx.display_amounts.outstanding_amount) }}
 
                                                 {# SAR Equivalent (if foreign currency) #}
                                                 {% if doc.currency != 'SAR' and doc.conversion_rate %}
@@ -296,9 +296,12 @@ Add to your Print Format:
                                                 {{ totals_row('Amount After Retention', 'المبلغ بعد الاستقطاع', ctx.amount_after_retention * doc.conversion_rate, 'SAR') }}
                                                 {% endif %}
 
-                                                {{ totals_row('Paid Amount', 'المبلغ المدفوع', (doc.grand_total - doc.outstanding_amount) * doc.conversion_rate, 'SAR') }}
+                                                {{ totals_row('Paid Amount', 'المبلغ المدفوع',
+                                                ctx.display_amounts.base_paid_amount,
+                                                ctx.display_amounts.base_currency) }}
                                                 {{ totals_row('Outstanding Amount', 'الصافي المستحق',
-                                                doc.outstanding_amount * doc.conversion_rate, 'SAR') }}
+                                                ctx.display_amounts.base_outstanding_amount,
+                                                ctx.display_amounts.base_currency) }}
                                                 {% endif %}
                                             </tbody>
                                         </table>

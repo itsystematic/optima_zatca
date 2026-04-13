@@ -84,6 +84,7 @@ class TestSalesInvoicePrintContextBuilder(unittest.TestCase):
             retention_percentage=10,
             retention_amount=50,
             grand_total=500,
+            outstanding_amount=500,
         )
 
         context = builder.build(doc)
@@ -99,6 +100,10 @@ class TestSalesInvoicePrintContextBuilder(unittest.TestCase):
         self.assertEqual(context.vat_rate, 15)
         self.assertEqual(context.retention_amount, 50)
         self.assertEqual(context.amount_after_retention, 450)
+        self.assertEqual(context.display_amounts.paid_amount, 0)
+        self.assertEqual(context.display_amounts.outstanding_amount, 500)
+        self.assertEqual(context.display_amounts.base_paid_amount, 0)
+        self.assertEqual(context.display_amounts.base_outstanding_amount, 500)
         payment_collector.collect.assert_called_once_with("Sales Invoice", "SINV-0001")
 
     def test_skips_payment_lookup_for_unpaid_documents(self):
@@ -126,6 +131,7 @@ class TestSalesInvoicePrintContextBuilder(unittest.TestCase):
             retention_percentage=0,
             retention_amount=0,
             grand_total=350,
+            outstanding_amount=350,
         )
 
         context = builder.build(doc)
@@ -133,7 +139,48 @@ class TestSalesInvoicePrintContextBuilder(unittest.TestCase):
         self.assertEqual(context.payments, [])
         self.assertEqual(context.invoice_type.en, "Simplified Credit Note")
         self.assertEqual(context.amount_after_retention, 350)
+        self.assertEqual(context.display_amounts.outstanding_amount, 350)
         payment_collector.collect.assert_not_called()
+
+    def test_converts_outstanding_amount_from_party_account_currency(self):
+        repository = MagicMock()
+        repository.get_customer_data.return_value = FrappeDict()
+        repository.get_company.return_value = FrappeDict(
+            company_name="Optima",
+            default_currency="SAR",
+        )
+        repository.get_address.side_effect = [FrappeDict(), FrappeDict()]
+        repository.get_bank_details.return_value = FrappeDict()
+
+        builder = self.module.SalesInvoicePrintContextBuilder(repository=repository)
+        doc = SimpleNamespace(
+            customer="CUST-001",
+            is_return=0,
+            company="Optima",
+            company_address=None,
+            customer_address=None,
+            status="Unpaid",
+            doctype="Sales Invoice",
+            name="SINV-0003",
+            currency="USD",
+            party_account_currency="SAR",
+            conversion_rate=3.75,
+            taxes=[],
+            retention_percentage=0,
+            retention_amount=0,
+            grand_total=2109.10,
+            base_grand_total=7909.12,
+            outstanding_amount=7909.12,
+        )
+
+        context = builder.build(doc)
+
+        self.assertAlmostEqual(context.display_amounts.paid_amount, 0, places=2)
+        self.assertAlmostEqual(context.display_amounts.outstanding_amount, 2109.10, places=2)
+        self.assertAlmostEqual(context.display_amounts.base_paid_amount, 0, places=2)
+        self.assertAlmostEqual(
+            context.display_amounts.base_outstanding_amount, 7909.12, places=2
+        )
 
 
 class TestPaymentDetailsCollector(unittest.TestCase):
