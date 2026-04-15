@@ -145,7 +145,7 @@ class TestZatcaIntegration(FrappeTestCase):
     @patch('optima_zatca.zatca.invoice.get_qr_code_from_zatca')
     @patch('optima_zatca.zatca.utils.create_qr_code_for_invoice')
     @patch('optima_zatca.zatca.logs.make_action_log')
-    @patch('optima_zatca.zatca.invoice.create_prepayment_invoice')
+    @patch('optima_zatca.zatca.prepayment_invoice.create_prepayment_invoice')
     def test_successful_zatca_integration_with_auto_submit(self, mock_prepayment, mock_action_log, 
                                                             mock_qr_create, mock_qr_get, 
                                                             mock_zatca_data, mock_invoice_request):

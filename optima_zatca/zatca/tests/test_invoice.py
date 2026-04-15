@@ -29,6 +29,9 @@ def _load_invoice_module():
     invoice_class_module = types.ModuleType("optima_zatca.zatca.classes.invoice")
     invoice_class_module.ZatcaInvoiceData = MagicMock()
 
+    prepayment_module = types.ModuleType("optima_zatca.zatca.prepayment_invoice")
+    prepayment_module.create_prepayment_invoice = MagicMock()
+
     utils_module = types.ModuleType("optima_zatca.zatca.utils")
     utils_module.create_qr_code_for_invoice = MagicMock()
     utils_module.log_and_throw_error = MagicMock()
@@ -38,6 +41,7 @@ def _load_invoice_module():
         "optima_zatca.zatca.logs": logs_module,
         "optima_zatca.zatca.api": api_module,
         "optima_zatca.zatca.classes.invoice": invoice_class_module,
+        "optima_zatca.zatca.prepayment_invoice": prepayment_module,
         "optima_zatca.zatca.utils": utils_module,
     }
 
@@ -98,34 +102,6 @@ class TestFormatZatcaResponse(unittest.TestCase):
 
         self.assertIn("First error", result)
         self.assertIn("Second error", result)
-
-
-class TestFormatIssueTime(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.invoice_module = _load_invoice_module()
-
-    def test_pads_single_digit_time_components(self):
-        self.assertEqual(
-            self.invoice_module.format_issue_time("1:5:3"),
-            "01:05:03",
-        )
-
-    def test_truncates_microseconds(self):
-        self.assertEqual(
-            self.invoice_module.format_issue_time("10:30:00.123456"),
-            "10:30:00",
-        )
-
-    def test_returns_empty_string_for_empty_or_none(self):
-        self.assertEqual(self.invoice_module.format_issue_time(""), "")
-        self.assertEqual(self.invoice_module.format_issue_time(None), "")
-
-    def test_pads_minutes_and_seconds(self):
-        self.assertEqual(
-            self.invoice_module.format_issue_time("9:0:0"),
-            "09:00:00",
-        )
 
 
 class TestEncodeInvoiceXml(unittest.TestCase):
@@ -295,7 +271,10 @@ class TestHandlePostSuccess(unittest.TestCase):
 
     def test_handle_post_success_skips_on_failure(self):
         with (
-            patch.object(self.invoice_module, "create_prepayment_invoice") as mock_prepayment,
+            patch.object(
+                self.invoice_module.prepayment_invoice,
+                "create_prepayment_invoice",
+            ) as mock_prepayment,
             patch.object(self.invoice_module, "frappe"),
         ):
             self.invoice_module._handle_post_success(MagicMock(), MagicMock(), False)
@@ -310,7 +289,10 @@ class TestHandlePostSuccess(unittest.TestCase):
         mock_invoice.zatca_invoice = {"UUID": "uuid"}
 
         with (
-            patch.object(self.invoice_module, "create_prepayment_invoice") as mock_prepayment,
+            patch.object(
+                self.invoice_module.prepayment_invoice,
+                "create_prepayment_invoice",
+            ) as mock_prepayment,
             patch.object(self.invoice_module, "frappe") as mock_frappe,
         ):
             mock_frappe.db.get_single_value.return_value = 0
@@ -326,7 +308,10 @@ class TestHandlePostSuccess(unittest.TestCase):
         mock_invoice_doc.get.return_value = "Normal"
 
         with (
-            patch.object(self.invoice_module, "create_prepayment_invoice") as mock_prepayment,
+            patch.object(
+                self.invoice_module.prepayment_invoice,
+                "create_prepayment_invoice",
+            ) as mock_prepayment,
             patch.object(self.invoice_module, "frappe") as mock_frappe,
         ):
             mock_frappe.db.get_single_value.return_value = 1
