@@ -4,6 +4,7 @@ from frappe import _
 import base64
 from lxml import etree
 
+import optima_zatca.zatca.prepayment_invoice as prepayment_invoice
 from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
@@ -138,7 +139,10 @@ def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
         return
 
     if sales_invoice.get("sales_invoice_type") != "Normal":
-        create_prepayment_invoice(sales_invoice, invoice.zatca_invoice.get("UUID", ""))
+        prepayment_invoice.create_prepayment_invoice(
+            sales_invoice,
+            invoice.zatca_invoice.get("UUID", ""),
+        )
 
     manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
     if not manual_submit:
@@ -189,107 +193,3 @@ def get_qr_code_from_zatca(zatca_response, generated_qrcode) -> str:
                 qrcode = xml_qrcode
 
     return qrcode
-
-
-def create_prepayment_invoice(sales_invoice, uuid: str) -> None:
-    """Create or update the linked prepayment document for the invoice."""
-    try:
-        issue_time = format_issue_time(sales_invoice.posting_time)
-        has_previous_prepayment = True if sales_invoice.previous_prepayment else False
-        previous_prepayment_invoice = sales_invoice.previous_prepayment
-        percent = (sales_invoice.items or [{}])[0].get("tax_rate", 0)
-        prepayment_type = sales_invoice.sales_invoice_type
-        adjustment_percentage = sales_invoice.adjustment_percentage * -1 if sales_invoice.is_return else sales_invoice.adjustment_percentage
-
-        # Get sales_order value based on priority
-        sales_order = None
-        # Priority 1: Check prepayment_sales_order field
-        if sales_invoice.get("prepayment_sales_order"):
-            sales_order = sales_invoice.get("prepayment_sales_order")
-        # Priority 2: Check first item's sales_order field
-        elif sales_invoice.items and sales_invoice.items[0].get("sales_order"):
-            sales_order = sales_invoice.items[0].get("sales_order")
-
-        # mark the previous invoice as "Is Linked"
-        if sales_invoice.previous_prepayment:
-            frappe.db.set_value("Prepayment Invoice", sales_invoice.previous_prepayment, "is_linked", 1)
-
-        # mark the invoice which was acctually returned against The returned invoice as "Been Returned"
-        if sales_invoice.return_against:
-            frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "been_return", 1)
-            frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "is_linked", 1)
-            
-            # revert back the final to adjustment and set the adjustment percentage to zero to continue the pepayment chain later
-            if sales_invoice.sales_invoice_type == "Final Adjustment":
-                prepayment_type = "Adjustment"
-                frappe.db.set_value("Prepayment Invoice", sales_invoice.return_against, "prepayment_type", "Adjustment")
-
-        # To keep the linked chain ensure the reutuned invoice always has a previous, even initial prepayment
-        if sales_invoice.is_return:
-            has_previous_prepayment = True
-            previous_prepayment_invoice = sales_invoice.return_against
-
-        # Store company currency amounts (base_ fields if available, fallback to regular fields)
-        # This ensures we always store amounts in company currency
-        grand_total = sales_invoice.get("base_grand_total") or sales_invoice.get("grand_total")
-        tax_amount = sales_invoice.get("base_total_taxes_and_charges") or sales_invoice.get("total_taxes_and_charges")
-        taxable_amount = sales_invoice.get("base_net_total") or sales_invoice.get("net_total")
-
-        # Create and insert the document
-        new_prepayment = frappe.get_doc({
-            "doctype": "Prepayment Invoice",
-            "uuid": uuid,
-            "percent": percent,
-            "issue_time": issue_time,
-            "prepayment_type_code": "386",
-            "id": sales_invoice.get("name"),
-            "customer": sales_invoice.get("customer"),
-            "currency": sales_invoice.get("currency"),
-            "sales_invoice": sales_invoice.get("name"),
-            "sales_order": sales_order,
-            "is_return": sales_invoice.get("is_return"),
-            "adjustment_percentage": adjustment_percentage,
-            "issue_date": sales_invoice.get("posting_date"),
-            "grand_total": grand_total,
-            "tax_category": sales_invoice.get("tax_category"),
-            "has_previous_prepayment": has_previous_prepayment,
-            "is_debit_note": sales_invoice.get("is_debit_note"),
-            "prepayment_type": prepayment_type,
-            "previous_prepayment_invoice": previous_prepayment_invoice,
-            "tax_amount": tax_amount,
-            "remaining_percentage": sales_invoice.get("remaining_percentage"),
-            "taxable_amount": taxable_amount,
-        })
-        new_prepayment.insert(ignore_permissions=True)
-    except Exception as e:
-        log_and_throw_error(
-            operation = "create prepayment invoice",
-            document_name = sales_invoice.name,
-            exception = e
-        )
-
-
-def format_issue_time(posting_time: str) -> str:
-    """Normalize posting time to `HH:MM:SS`."""
-    if not posting_time:
-        return ""
-        
-    time_str = str(posting_time)
-    
-    # If there's a decimal point (microseconds), truncate it
-    if "." in time_str:
-        time_str = time_str.split(".")[0]
-    
-    # Zero-pad all time components if needed
-    parts = time_str.split(":")
-    if len(parts) >= 1:
-        parts = [part.zfill(2) for part in parts]
-        time_str = ":".join(parts)
-        
-    return time_str
-
-
-def get_tax_rate_from_items(sales_invoice: dict) -> float:
-    """Return the first item tax rate, or zero when no items exist."""
-    items = sales_invoice.get("items", [])
-    return items[0].get("tax_rate") if items else 0
