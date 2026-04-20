@@ -1,14 +1,16 @@
-import frappe 
+import frappe
 from frappe import _
-
-import base64
-from lxml import etree
 
 import optima_zatca.zatca.prepayment_invoice as prepayment_invoice
 from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
 from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
+from optima_zatca.zatca.xml_transport import (
+    encode_invoice_xml_for_api,
+    get_qr_code_from_cleared_invoice,
+    serialize_invoice_xml,
+)
 
 
 # Public API
@@ -21,7 +23,7 @@ def send_to_zatca(sales_invoice_name) -> bool:
         return False
 
     invoice = ZatcaInvoiceData(sales_invoice)
-    invoice_encoded = _encode_invoice_xml(invoice)
+    invoice_encoded = encode_invoice_xml_for_api(invoice.xml)
     response = _submit_to_zatca_api(invoice, invoice_encoded)
     success = _is_successful_response(response)
     qrcode = _get_response_qrcode(response, invoice, success)
@@ -49,14 +51,6 @@ def _validate_before_send(sales_invoice) -> bool:
         )
         return False
 
-
-def _encode_invoice_xml(invoice: ZatcaInvoiceData) -> str:
-    """Encode the invoice XML payload for the API request."""
-    return base64.b64encode(
-        etree.tostring(invoice.xml.root, encoding="utf-8")
-    ).decode("utf-8")
-
-
 def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
     """Send the prepared invoice payload to ZATCA."""
     zi = invoice.zatca_invoice
@@ -81,7 +75,7 @@ def _get_response_qrcode(response, invoice, success: bool) -> str:
     if not success:
         return ""
 
-    return get_qr_code_from_zatca(response, invoice.xml.qr_code)
+    return get_qr_code_from_cleared_invoice(response, invoice.xml.qr_code)
 
 
 def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, success: bool) -> None:
@@ -128,7 +122,7 @@ def _log_action(sales_invoice, invoice, response, invoice_encoded: str, qrcode: 
         environment=zi.get("Environment"),
         pih=zi.get("PIH"),
         icv=zi.get("InvoiceCounter"),
-        xml_content=etree.tostring(invoice.xml.root, encoding="utf-8"),
+        xml_content=serialize_invoice_xml(invoice.xml),
         conclusion=conclusion,
     )
 
@@ -176,20 +170,3 @@ def format_zatca_response(response: dict) -> str:
     # No errors or warnings
     else:
         return "🟢 Success Invoice"
-
-
-def get_qr_code_from_zatca(zatca_response, generated_qrcode) -> str:
-    from optima_zatca.zatca.classes.xml import get_qrcode_from_xml
-
-    qrcode = generated_qrcode
-
-    if zatca_response.status_code in [200 , 202] :
-        response = zatca_response.json()
-        cleared_invoice = response.get("clearedInvoice") if isinstance(response, dict) else None
-        if cleared_invoice :
-            invoice_xml = base64.b64decode(cleared_invoice).decode("utf-8")
-            xml_qrcode = get_qrcode_from_xml(invoice_xml)
-            if xml_qrcode :
-                qrcode = xml_qrcode
-
-    return qrcode

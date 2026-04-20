@@ -36,6 +36,11 @@ def _load_invoice_module():
     utils_module.create_qr_code_for_invoice = MagicMock()
     utils_module.log_and_throw_error = MagicMock()
 
+    transport_module = types.ModuleType("optima_zatca.zatca.xml_transport")
+    transport_module.encode_invoice_xml_for_api = MagicMock()
+    transport_module.get_qr_code_from_cleared_invoice = MagicMock()
+    transport_module.serialize_invoice_xml = MagicMock()
+
     patched_modules = {
         "frappe": frappe_module,
         "optima_zatca.zatca.logs": logs_module,
@@ -43,6 +48,7 @@ def _load_invoice_module():
         "optima_zatca.zatca.classes.invoice": invoice_class_module,
         "optima_zatca.zatca.prepayment_invoice": prepayment_module,
         "optima_zatca.zatca.utils": utils_module,
+        "optima_zatca.zatca.xml_transport": transport_module,
     }
 
     sys.modules.pop("optima_zatca.zatca.invoice", None)
@@ -102,28 +108,6 @@ class TestFormatZatcaResponse(unittest.TestCase):
 
         self.assertIn("First error", result)
         self.assertIn("Second error", result)
-
-
-class TestEncodeInvoiceXml(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.invoice_module = _load_invoice_module()
-
-    def test_encode_invoice_xml_returns_valid_base64(self):
-        from lxml import etree
-        import base64
-
-        root = etree.Element("Invoice")
-        root.text = "test"
-        mock_invoice = MagicMock()
-        mock_invoice.xml.root = root
-
-        result = self.invoice_module._encode_invoice_xml(mock_invoice)
-
-        decoded = base64.b64decode(result).decode("utf-8")
-
-        self.assertIn("<Invoice>", decoded)
-        self.assertIn("test", decoded)
 
 
 class TestValidateBeforeSend(unittest.TestCase):
@@ -244,13 +228,12 @@ class TestLogAction(unittest.TestCase):
         }
         mock_zatca_invoice.xml.hash = "hash"
         mock_zatca_invoice.xml.qr_code = "qr"
-        mock_zatca_invoice.xml.root = MagicMock()
 
         with (
-            patch.object(self.invoice_module, "etree") as mock_etree,
             patch.object(self.invoice_module, "make_action_log") as mock_log,
+            patch.object(self.invoice_module, "serialize_invoice_xml") as mock_serialize,
         ):
-            mock_etree.tostring.return_value = b"<xml/>"
+            mock_serialize.return_value = b"<xml/>"
 
             self.invoice_module._log_action(
                 mock_invoice_doc,
@@ -338,7 +321,7 @@ class TestSendToZatcaOrchestrator(unittest.TestCase):
             patch.object(self.invoice_module, "frappe") as mock_frappe,
             patch.object(self.invoice_module, "ZatcaInvoiceData") as mock_zatca_cls,
             patch.object(self.invoice_module, "_validate_before_send") as mock_validate,
-            patch.object(self.invoice_module, "_encode_invoice_xml") as mock_encode,
+            patch.object(self.invoice_module, "encode_invoice_xml_for_api") as mock_encode,
             patch.object(self.invoice_module, "_submit_to_zatca_api") as mock_submit,
             patch.object(self.invoice_module, "_update_invoice_document") as mock_update,
             patch.object(self.invoice_module, "_log_action") as mock_log,
@@ -365,7 +348,7 @@ class TestSendToZatcaOrchestrator(unittest.TestCase):
             patch.object(self.invoice_module, "frappe") as mock_frappe,
             patch.object(self.invoice_module, "ZatcaInvoiceData") as mock_zatca_cls,
             patch.object(self.invoice_module, "_validate_before_send") as mock_validate,
-            patch.object(self.invoice_module, "_encode_invoice_xml") as mock_encode,
+            patch.object(self.invoice_module, "encode_invoice_xml_for_api") as mock_encode,
         ):
             mock_frappe.get_doc.return_value = MagicMock()
             mock_validate.return_value = False

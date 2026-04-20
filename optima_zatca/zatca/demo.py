@@ -1,14 +1,13 @@
 import uuid
 import time
 import json
-import base64
 import frappe 
 from frappe import _ , _dict
-from lxml import etree
 from frappe import get_app_path
 from optima_zatca.zatca.classes.xml import ZatcaXml
 from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
+from optima_zatca.zatca.xml_transport import encode_invoice_xml_for_api, serialize_invoice_xml
 
 DEMO_INVOICE  = {
     "0" : "invoice_one" ,
@@ -43,7 +42,7 @@ def send_sample_sales_invoices(settings ,company_details) :
             
             zatca_xml = ZatcaXml(sales_invoice)
 
-            invoice_encoded = base64.b64encode(etree.tostring(zatca_xml.root, encoding="utf-8")).decode("utf-8")
+            invoice_encoded = encode_invoice_xml_for_api(zatca_xml)
 
             response = make_invoice_request(
                 sales_invoice.get("Clearance-Status") , 
@@ -94,7 +93,7 @@ def send_sample_sales_invoices(settings ,company_details) :
                 environment = settings.get("api_endpoints"),
                 pih = zatca_xml.hash,
                 icv = sales_invoice.get("InvoiceCounter"),
-                xml_content = etree.tostring(zatca_xml.root, encoding="utf-8") ,
+                xml_content = serialize_invoice_xml(zatca_xml) ,
             )
 
             time.sleep(5)

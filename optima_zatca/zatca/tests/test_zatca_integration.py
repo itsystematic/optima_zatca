@@ -142,7 +142,7 @@ class TestZatcaIntegration(FrappeTestCase):
     
     @patch('optima_zatca.zatca.api.make_invoice_request')
     @patch('optima_zatca.zatca.classes.invoice.ZatcaInvoiceData')
-    @patch('optima_zatca.zatca.invoice.get_qr_code_from_zatca')
+    @patch('optima_zatca.zatca.invoice.get_qr_code_from_cleared_invoice')
     @patch('optima_zatca.zatca.utils.create_qr_code_for_invoice')
     @patch('optima_zatca.zatca.logs.make_action_log')
     @patch('optima_zatca.zatca.prepayment_invoice.create_prepayment_invoice')
