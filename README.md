@@ -86,6 +86,42 @@ Follow these steps to install Optima ZATCA on your ERPNext setup:
 
 ---
 
+## ✅ Testing
+
+Run Frappe-dependent tests through Bench so they execute inside a real site context:
+
+```bash
+bench --site [your.site.name] run-tests --app optima_zatca
+```
+
+Run a specific module:
+
+```bash
+bench --site [your.site.name] run-tests --app optima_zatca --module optima_zatca.zatca.tests.test_invoice
+```
+
+Generate coverage data with Bench:
+
+```bash
+bench --site [your.site.name] run-tests --app optima_zatca --module optima_zatca.zatca.tests.test_invoice --coverage
+```
+
+Bench stores coverage files under the `sites/` directory. Generate a terminal report or HTML report from there:
+
+```bash
+cd ../sites
+python -m coverage report -m
+python -m coverage html
+```
+
+The HTML report will be written to:
+
+```text
+sites/htmlcov/index.html
+```
+
+---
+
 ## 🛠️ How to Use
 
 Optima ZATCA is designed to be user-friendly and intuitive. 
@@ -136,4 +172,3 @@ Explore other powerful apps developed by the IT Systematic team:
 - **[Optima Payment](https://github.com/itsystematic/optima_payment):**  Streamline ERPNext payments with integrated PDC (post-dated Cheque), Company expenses, and LC (bank guarantee) management.  
 - **[Optima HR](https://github.com/itsystematic/optima-hr):** Transform HR in Saudi Arabia with our innovative ERPNext-powered solution.
 - **[ERPNext Themes](https://github.com/itsystematic/themes):** beautifully designed ERPNext with stunning color themes, Arabic Almarai font, and Arabic human translations.
-
