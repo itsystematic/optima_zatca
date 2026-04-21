@@ -93,19 +93,20 @@ class TestValidateBeforeSend(InvoiceTestCase):
 
 class TestSubmitToZatcaApi(InvoiceTestCase):
     def test_submit_to_zatca_api_calls_make_invoice_request_with_expected_payload(self):
-        invoice = MagicMock()
-        invoice.zatca_invoice = {
-            "Clearance-Status": "1",
-            "UUID": "test-uuid",
-            "EndPoint": "https://example.com",
+        submission = {
+            "clearance_status": "1",
+            "authorization": "Bearer token",
+            "invoice_hash": "abc123",
+            "uuid": "test-uuid",
+            "encoded_invoice": "encoded_xml",
+            "company_settings": {"authorization": "Bearer token"},
+            "endpoint": "https://example.com",
         }
-        invoice.company_settings = {"authorization": "Bearer token"}
-        invoice.xml.hash = "abc123"
 
         with patch.object(invoice_module, "make_invoice_request") as mock_request:
             mock_request.return_value = MagicMock(status_code=200)
 
-            result = _submit_to_zatca_api(invoice, "encoded_xml")
+            result = _submit_to_zatca_api(submission)
 
         self.assertEqual(result.status_code, 200)
         mock_request.assert_called_once_with(
@@ -114,7 +115,7 @@ class TestSubmitToZatcaApi(InvoiceTestCase):
             "abc123",
             "test-uuid",
             "encoded_xml",
-            invoice.company_settings,
+            submission["company_settings"],
             "https://example.com",
         )
 
@@ -128,13 +129,11 @@ class TestSuccessfulResponseHelpers(InvoiceTestCase):
         self.assertFalse(_is_successful_response(MagicMock(status_code=400)))
 
     def test_get_response_qrcode_returns_empty_string_when_response_failed(self):
-        result = _get_response_qrcode(MagicMock(status_code=400), MagicMock(), False)
+        result = _get_response_qrcode(MagicMock(status_code=400), "generated_qr", False)
 
         self.assertEqual(result, "")
 
     def test_get_response_qrcode_reads_qr_from_cleared_invoice_when_successful(self):
-        invoice = MagicMock()
-        invoice.xml.qr_code = "generated_qr"
         response = MagicMock(status_code=200)
 
         with patch.object(
@@ -142,7 +141,7 @@ class TestSuccessfulResponseHelpers(InvoiceTestCase):
             "get_qr_code_from_cleared_invoice",
             return_value="response_qr",
         ) as mock_get_qr:
-            result = _get_response_qrcode(response, invoice, True)
+            result = _get_response_qrcode(response, "generated_qr", True)
 
         self.assertEqual(result, "response_qr")
         mock_get_qr.assert_called_once_with(response, "generated_qr")
@@ -165,7 +164,6 @@ class TestUpdateInvoiceDocument(InvoiceTestCase):
         ):
             _update_invoice_document(
                 sales_invoice,
-                MagicMock(),
                 response,
                 "qrcode_value",
                 True,
@@ -187,7 +185,6 @@ class TestUpdateInvoiceDocument(InvoiceTestCase):
             _update_invoice_document(
                 sales_invoice,
                 MagicMock(),
-                MagicMock(),
                 "",
                 False,
             )
@@ -207,28 +204,27 @@ class TestLogAction(InvoiceTestCase):
         self.sales_invoice.name = "SINV-0001"
         self.sales_invoice.get.return_value = ""
 
-        self.invoice = MagicMock()
-        self.invoice.zatca_invoice = {
-            "UUID": "uuid",
-            "EndPoint": "ep",
-            "Environment": "sim",
-            "PIH": "pih",
-            "InvoiceCounter": 1,
+        self.log_context = {
+            "uuid": "uuid",
+            "api_endpoint": "ep",
+            "environment": "sim",
+            "pih": "pih",
+            "invoice_counter": 1,
+            "invoice_hash": "hash",
+            "generated_qr_code": "qr",
+            "xml_content": b"<xml/>",
         }
-        self.invoice.xml.hash = "hash"
-        self.invoice.xml.qr_code = "qr"
 
     def test_log_action_uses_formatted_response_when_json_is_available(self):
         self.response.json.return_value = {}
 
         with (
             patch.object(invoice_module, "make_action_log") as mock_log,
-            patch.object(invoice_module, "serialize_invoice_xml", return_value=b"<xml/>"),
             patch.object(invoice_module, "format_zatca_response", return_value="formatted"),
         ):
             _log_action(
                 self.sales_invoice,
-                self.invoice,
+                self.log_context,
                 self.response,
                 "encoded",
                 "qrcode",
@@ -244,11 +240,10 @@ class TestLogAction(InvoiceTestCase):
 
         with (
             patch.object(invoice_module, "make_action_log") as mock_log,
-            patch.object(invoice_module, "serialize_invoice_xml", return_value=b"<xml/>"),
         ):
             _log_action(
                 self.sales_invoice,
-                self.invoice,
+                self.log_context,
                 self.response,
                 "encoded",
                 "qrcode",
@@ -265,16 +260,13 @@ class TestHandlePostSuccess(InvoiceTestCase):
             invoice_module.prepayment_invoice,
             "create_prepayment_invoice",
         ) as mock_prepayment:
-            _handle_post_success(MagicMock(), MagicMock(), False)
+            _handle_post_success(MagicMock(), "uuid", False)
 
         mock_prepayment.assert_not_called()
 
     def test_handle_post_success_creates_prepayment_for_non_normal_invoice(self):
         sales_invoice = MagicMock()
         sales_invoice.get.return_value = "Adjustment"
-
-        invoice = MagicMock()
-        invoice.zatca_invoice = {"UUID": "uuid-123"}
 
         with (
             patch.object(
@@ -283,7 +275,7 @@ class TestHandlePostSuccess(InvoiceTestCase):
             ) as mock_prepayment,
             patch.object(invoice_module.frappe.db, "get_single_value", return_value=1),
         ):
-            _handle_post_success(sales_invoice, invoice, True)
+            _handle_post_success(sales_invoice, "uuid-123", True)
 
         mock_prepayment.assert_called_once_with(sales_invoice, "uuid-123")
         sales_invoice.submit.assert_not_called()
@@ -291,9 +283,6 @@ class TestHandlePostSuccess(InvoiceTestCase):
     def test_handle_post_success_auto_submits_when_flag_is_false(self):
         sales_invoice = MagicMock()
         sales_invoice.get.return_value = "Normal"
-
-        invoice = MagicMock()
-        invoice.zatca_invoice = {"UUID": "uuid"}
 
         with (
             patch.object(
@@ -303,7 +292,7 @@ class TestHandlePostSuccess(InvoiceTestCase):
             patch.object(invoice_module.frappe.db, "get_single_value", return_value=0),
             patch.object(invoice_module.frappe.db, "commit") as mock_commit,
         ):
-            _handle_post_success(sales_invoice, invoice, True)
+            _handle_post_success(sales_invoice, "uuid", True)
 
         mock_prepayment.assert_not_called()
         sales_invoice.submit.assert_called_once_with()
@@ -320,7 +309,7 @@ class TestHandlePostSuccess(InvoiceTestCase):
             ) as mock_prepayment,
             patch.object(invoice_module.frappe.db, "get_single_value", return_value=1),
         ):
-            _handle_post_success(sales_invoice, MagicMock(), True)
+            _handle_post_success(sales_invoice, "uuid", True)
 
         mock_prepayment.assert_not_called()
         sales_invoice.submit.assert_not_called()
@@ -331,15 +320,19 @@ class TestSendToZatcaOrchestrator(InvoiceTestCase):
         response = MagicMock()
         response.status_code = 200
 
-        invoice = MagicMock()
-        invoice.xml = MagicMock()
+        zatca_invoice_data = MagicMock()
+        zatca_invoice_data.get_submission_request_data.return_value = {
+            "encoded_invoice": "encoded",
+        }
+        zatca_invoice_data.get_log_context.return_value = {"uuid": "uuid"}
+        zatca_invoice_data.get_generated_qr_code.return_value = "generated_qr"
+        zatca_invoice_data.get_uuid.return_value = "uuid"
         sales_invoice = MagicMock()
 
         with (
             patch.object(invoice_module.frappe, "get_doc", return_value=sales_invoice) as mock_get_doc,
-            patch.object(invoice_module, "ZatcaInvoiceData", return_value=invoice) as mock_zatca_cls,
+            patch.object(invoice_module, "ZatcaInvoiceData", return_value=zatca_invoice_data) as mock_zatca_cls,
             patch.object(invoice_module, "_validate_before_send", return_value=True) as mock_validate,
-            patch.object(invoice_module, "encode_invoice_xml_for_api", return_value="encoded") as mock_encode,
             patch.object(invoice_module, "_submit_to_zatca_api", return_value=response) as mock_submit,
             patch.object(invoice_module, "_is_successful_response", return_value=True) as mock_success,
             patch.object(invoice_module, "_get_response_qrcode", return_value="qrcode") as mock_qr,
@@ -353,26 +346,28 @@ class TestSendToZatcaOrchestrator(InvoiceTestCase):
         mock_get_doc.assert_called_once_with("Sales Invoice", "SINV-0001")
         mock_validate.assert_called_once_with(sales_invoice)
         mock_zatca_cls.assert_called_once_with(sales_invoice)
-        mock_encode.assert_called_once_with(invoice.xml)
-        mock_submit.assert_called_once_with(invoice, "encoded")
+        zatca_invoice_data.get_submission_request_data.assert_called_once_with()
+        mock_submit.assert_called_once_with({"encoded_invoice": "encoded"})
         mock_success.assert_called_once_with(response)
-        mock_qr.assert_called_once_with(response, invoice, True)
+        zatca_invoice_data.get_generated_qr_code.assert_called_once_with()
+        mock_qr.assert_called_once_with(response, "generated_qr", True)
         mock_update.assert_called_once_with(
             sales_invoice,
-            invoice,
             response,
             "qrcode",
             True,
         )
+        zatca_invoice_data.get_log_context.assert_called_once_with()
         mock_log.assert_called_once_with(
             sales_invoice,
-            invoice,
+            {"uuid": "uuid"},
             response,
             "encoded",
             "qrcode",
             True,
         )
-        mock_post.assert_called_once_with(sales_invoice, invoice, True)
+        zatca_invoice_data.get_uuid.assert_called_once_with()
+        mock_post.assert_called_once_with(sales_invoice, "uuid", True)
 
     def test_send_to_zatca_returns_false_when_validation_fails(self):
         sales_invoice = MagicMock()
@@ -381,11 +376,9 @@ class TestSendToZatcaOrchestrator(InvoiceTestCase):
             patch.object(invoice_module.frappe, "get_doc", return_value=sales_invoice),
             patch.object(invoice_module, "_validate_before_send", return_value=False) as mock_validate,
             patch.object(invoice_module, "ZatcaInvoiceData") as mock_zatca_cls,
-            patch.object(invoice_module, "encode_invoice_xml_for_api") as mock_encode,
         ):
             result = send_to_zatca("SINV-0001")
 
         self.assertFalse(result)
         mock_validate.assert_called_once_with(sales_invoice)
         mock_zatca_cls.assert_not_called()
-        mock_encode.assert_not_called()
