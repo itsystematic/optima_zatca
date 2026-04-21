@@ -6,11 +6,7 @@ from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
 from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
-from optima_zatca.zatca.xml_transport import (
-    encode_invoice_xml_for_api,
-    get_qr_code_from_cleared_invoice,
-    serialize_invoice_xml,
-)
+from optima_zatca.zatca.xml_transport import get_qr_code_from_cleared_invoice
 
 
 # Public API
@@ -22,14 +18,21 @@ def send_to_zatca(sales_invoice_name) -> bool:
     if not _validate_before_send(sales_invoice):
         return False
 
-    invoice = ZatcaInvoiceData(sales_invoice)
-    invoice_encoded = encode_invoice_xml_for_api(invoice.xml)
-    response = _submit_to_zatca_api(invoice, invoice_encoded)
+    zatca_invoice_data = ZatcaInvoiceData(sales_invoice)
+    submission_request = zatca_invoice_data.get_submission_request_data()
+    response = _submit_to_zatca_api(submission_request)
     success = _is_successful_response(response)
-    qrcode = _get_response_qrcode(response, invoice, success)
-    _update_invoice_document(sales_invoice, invoice, response, qrcode, success)
-    _log_action(sales_invoice, invoice, response, invoice_encoded, qrcode, success)
-    _handle_post_success(sales_invoice, invoice, success)
+    qrcode = _get_response_qrcode(response, zatca_invoice_data.get_generated_qr_code(), success)
+    _update_invoice_document(sales_invoice, response, qrcode, success)
+    _log_action(
+        sales_invoice,
+        zatca_invoice_data.get_log_context(),
+        response,
+        submission_request["encoded_invoice"],
+        qrcode,
+        success,
+    )
+    _handle_post_success(sales_invoice, zatca_invoice_data.get_uuid(), success)
     return success
 
 
@@ -51,17 +54,16 @@ def _validate_before_send(sales_invoice) -> bool:
         )
         return False
 
-def _submit_to_zatca_api(invoice: ZatcaInvoiceData, invoice_encoded: str):
+def _submit_to_zatca_api(submission: dict):
     """Send the prepared invoice payload to ZATCA."""
-    zi = invoice.zatca_invoice
     return make_invoice_request(
-        zi.get("Clearance-Status"),
-        invoice.company_settings.get("authorization"),
-        invoice.xml.hash,
-        zi.get("UUID"),
-        invoice_encoded,
-        invoice.company_settings,
-        zi.get("EndPoint"),
+        submission.get("clearance_status"),
+        submission.get("authorization"),
+        submission.get("invoice_hash"),
+        submission.get("uuid"),
+        submission.get("encoded_invoice"),
+        submission.get("company_settings"),
+        submission.get("endpoint"),
     )
 
 
@@ -70,15 +72,15 @@ def _is_successful_response(response) -> bool:
     return response.status_code in [200, 202]
 
 
-def _get_response_qrcode(response, invoice, success: bool) -> str:
+def _get_response_qrcode(response, generated_qr_code: str, success: bool) -> str:
     """Resolve the final QR code once for this request."""
     if not success:
         return ""
 
-    return get_qr_code_from_cleared_invoice(response, invoice.xml.qr_code)
+    return get_qr_code_from_cleared_invoice(response, generated_qr_code)
 
 
-def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, success: bool) -> None:
+def _update_invoice_document(sales_invoice, response, qrcode: str, success: bool) -> None:
     """Persist invoice fields that depend on the ZATCA response."""
     if not success:
         frappe.msgprint(_("Your Invoice Was Rejected in Zatca"), title=_("Rejected"), indicator="red", alert=True)
@@ -95,9 +97,8 @@ def _update_invoice_document(sales_invoice, invoice, response, qrcode: str, succ
     frappe.msgprint(_("Your Invoice Was Accepted in Zatca"), title=_("Accepted"), indicator="green", alert=True)
 
 
-def _log_action(sales_invoice, invoice, response, invoice_encoded: str, qrcode: str, success: bool) -> None:
+def _log_action(sales_invoice, log_context: dict, response, invoice_encoded: str, qrcode: str, success: bool) -> None:
     """Write the ZATCA audit log entry for this send attempt."""
-    zi = invoice.zatca_invoice
     status = "Success" if response.status_code == 200 else ("Warning" if success else "Failed")
 
     try:
@@ -113,21 +114,21 @@ def _log_action(sales_invoice, invoice, response, invoice_encoded: str, qrcode: 
         reference_name=sales_invoice.name,
         company=sales_invoice.get("company"),
         commercial_register=sales_invoice.get("commercial_register"),
-        uuid=zi.get("UUID"),
+        uuid=log_context.get("uuid"),
         invoice=invoice_encoded,
-        hash=invoice.xml.hash,
+        hash=log_context.get("invoice_hash"),
         qr_code=qrcode,
-        qr_code_generated=invoice.xml.qr_code,
-        api_endpoint=zi.get("EndPoint"),
-        environment=zi.get("Environment"),
-        pih=zi.get("PIH"),
-        icv=zi.get("InvoiceCounter"),
-        xml_content=serialize_invoice_xml(invoice.xml),
+        qr_code_generated=log_context.get("generated_qr_code"),
+        api_endpoint=log_context.get("api_endpoint"),
+        environment=log_context.get("environment"),
+        pih=log_context.get("pih"),
+        icv=log_context.get("invoice_counter"),
+        xml_content=log_context.get("xml_content"),
         conclusion=conclusion,
     )
 
 
-def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
+def _handle_post_success(sales_invoice, invoice_uuid: str, success: bool) -> None:
     """Run success-only follow-up actions after logging."""
     if not success:
         return
@@ -135,7 +136,7 @@ def _handle_post_success(sales_invoice, invoice, success: bool) -> None:
     if sales_invoice.get("sales_invoice_type") != "Normal":
         prepayment_invoice.create_prepayment_invoice(
             sales_invoice,
-            invoice.zatca_invoice.get("UUID", ""),
+            invoice_uuid,
         )
 
     manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
