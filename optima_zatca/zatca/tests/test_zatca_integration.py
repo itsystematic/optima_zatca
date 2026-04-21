@@ -140,11 +140,11 @@ class TestZatcaIntegration(FrappeTestCase):
         invoice.insert()
         return invoice
     
-    @patch('optima_zatca.zatca.api.make_invoice_request')
+    @patch('optima_zatca.zatca.invoice.make_invoice_request')
     @patch('optima_zatca.zatca.classes.invoice.ZatcaInvoiceData')
     @patch('optima_zatca.zatca.invoice.get_qr_code_from_cleared_invoice')
-    @patch('optima_zatca.zatca.utils.create_qr_code_for_invoice')
-    @patch('optima_zatca.zatca.logs.make_action_log')
+    @patch('optima_zatca.zatca.invoice.create_qr_code_for_invoice')
+    @patch('optima_zatca.zatca.invoice.make_action_log')
     @patch('optima_zatca.zatca.prepayment_invoice.create_prepayment_invoice')
     def test_successful_zatca_integration_with_auto_submit(self, mock_prepayment, mock_action_log, 
                                                             mock_qr_create, mock_qr_get, 
@@ -154,15 +154,18 @@ class TestZatcaIntegration(FrappeTestCase):
         
         # Setup mocks
         mock_zatca_instance = MagicMock()
-        mock_zatca_instance.xml.root = etree.Element("Invoice")
-        mock_zatca_instance.xml.hash = "test_hash"
-        mock_zatca_instance.xml.qr_code = "test_qr"
-        mock_zatca_instance.zatca_invoice = {
-            "Clearance-Status": "CLEARED",
-            "UUID": "test-uuid",
-            "EndPoint": "test-endpoint"
+        mock_zatca_instance.get_submission_request_data.return_value = {
+            "clearance_status": "CLEARED",
+            "authorization": "test-auth",
+            "invoice_hash": "test_hash",
+            "uuid": "test-uuid",
+            "encoded_invoice": "encoded_invoice",
+            "company_settings": {"authorization": "test-auth"},
+            "endpoint": "test-endpoint",
         }
-        mock_zatca_instance.company_settings = {"authorization": "test-auth"}
+        mock_zatca_instance.get_generated_qr_code.return_value = "test_qr"
+        mock_zatca_instance.get_log_context.return_value = {"uuid": "test-uuid"}
+        mock_zatca_instance.get_uuid.return_value = "test-uuid"
         mock_zatca_data.return_value = mock_zatca_instance
         
         # Mock successful ZATCA response
@@ -187,7 +190,7 @@ class TestZatcaIntegration(FrappeTestCase):
         # Reload invoice to check updates
         self.valid_invoice.reload()
         self.assertEqual(self.valid_invoice.sent_to_zatca, 1)
-        self.assertEqual(self.valid_invoice.clearance_or_reporting, "REPORTED")
+        self.assertEqual(self.valid_invoice.clearance_or_reporting, "CLEARED")
         self.assertEqual(self.valid_invoice.docstatus, 1)  # Should be submitted
     
     def test_validation_failure_before_zatca(self):
@@ -208,7 +211,7 @@ class TestZatcaIntegration(FrappeTestCase):
         self.assertEqual(invoice.get("sent_to_zatca"), 0)
         self.assertEqual(invoice.docstatus, 0)  # Should remain draft
     
-    @patch('optima_zatca.zatca.api.make_invoice_request')
+    @patch('optima_zatca.zatca.invoice.make_invoice_request')
     @patch('optima_zatca.zatca.classes.invoice.ZatcaInvoiceData')
     def test_zatca_rejection(self, mock_zatca_data, mock_invoice_request):
         """Test ZATCA rejection scenario"""
@@ -216,14 +219,18 @@ class TestZatcaIntegration(FrappeTestCase):
         
         # Setup mocks
         mock_zatca_instance = MagicMock()
-        mock_zatca_instance.xml.root = etree.Element("Invoice")
-        mock_zatca_instance.xml.hash = "test_hash"
-        mock_zatca_instance.zatca_invoice = {
-            "Clearance-Status": "CLEARED",
-            "UUID": "test-uuid",
-            "EndPoint": "test-endpoint"
+        mock_zatca_instance.get_submission_request_data.return_value = {
+            "clearance_status": "CLEARED",
+            "authorization": "test-auth",
+            "invoice_hash": "test_hash",
+            "uuid": "test-uuid",
+            "encoded_invoice": "encoded_invoice",
+            "company_settings": {"authorization": "test-auth"},
+            "endpoint": "test-endpoint",
         }
-        mock_zatca_instance.company_settings = {"authorization": "test-auth"}
+        mock_zatca_instance.get_generated_qr_code.return_value = "test_qr"
+        mock_zatca_instance.get_log_context.return_value = {"uuid": "test-uuid"}
+        mock_zatca_instance.get_uuid.return_value = "test-uuid"
         mock_zatca_data.return_value = mock_zatca_instance
         
         # Mock ZATCA rejection
@@ -245,7 +252,7 @@ class TestZatcaIntegration(FrappeTestCase):
         invoice.reload()
         self.assertEqual(invoice.docstatus, 0)
     
-    @patch('optima_zatca.zatca.api.make_invoice_request')
+    @patch('optima_zatca.zatca.invoice.make_invoice_request')
     @patch('optima_zatca.zatca.classes.invoice.ZatcaInvoiceData')
     def test_submit_failure_after_zatca_success(self, mock_zatca_data, mock_invoice_request):
         """Test submit failure after successful ZATCA response"""
@@ -253,14 +260,18 @@ class TestZatcaIntegration(FrappeTestCase):
         
         # Setup mocks for successful ZATCA
         mock_zatca_instance = MagicMock()
-        mock_zatca_instance.xml.root = etree.Element("Invoice")
-        mock_zatca_instance.xml.hash = "test_hash"
-        mock_zatca_instance.zatca_invoice = {
-            "Clearance-Status": "CLEARED",
-            "UUID": "test-uuid",
-            "EndPoint": "test-endpoint"
+        mock_zatca_instance.get_submission_request_data.return_value = {
+            "clearance_status": "CLEARED",
+            "authorization": "test-auth",
+            "invoice_hash": "test_hash",
+            "uuid": "test-uuid",
+            "encoded_invoice": "encoded_invoice",
+            "company_settings": {"authorization": "test-auth"},
+            "endpoint": "test-endpoint",
         }
-        mock_zatca_instance.company_settings = {"authorization": "test-auth"}
+        mock_zatca_instance.get_generated_qr_code.return_value = "test_qr"
+        mock_zatca_instance.get_log_context.return_value = {"uuid": "test-uuid"}
+        mock_zatca_instance.get_uuid.return_value = "test-uuid"
         mock_zatca_data.return_value = mock_zatca_instance
         
         mock_response = MagicMock()
@@ -273,7 +284,6 @@ class TestZatcaIntegration(FrappeTestCase):
         invoice = self.create_test_sales_invoice()
         
         # Mock submit to fail
-        original_submit = invoice.submit
         def failing_submit():
             raise frappe.ValidationError("Submit validation failed")
         invoice.submit = failing_submit
