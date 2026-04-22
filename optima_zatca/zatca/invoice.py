@@ -1,12 +1,12 @@
 import frappe
 from frappe import _
 
-import optima_zatca.zatca.prepayment_invoice as prepayment_invoice
 from optima_zatca.zatca.logs import make_action_log
 from optima_zatca.zatca.api import make_invoice_request
 from optima_zatca.zatca.classes.invoice import ZatcaInvoiceData
-from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
+import optima_zatca.zatca.prepayment_invoice as prepayment_invoice
 from optima_zatca.zatca.xml_transport import get_qr_code_from_cleared_invoice
+from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_error
 
 
 # Public API
@@ -36,7 +36,9 @@ def send_to_zatca(sales_invoice_name) -> bool:
     return success
 
 
+################################################################################
 # Private orchestration helpers
+################################################################################
 
 
 def _validate_before_send(sales_invoice) -> bool:
@@ -145,7 +147,9 @@ def _handle_post_success(sales_invoice, invoice_uuid: str, success: bool) -> Non
         frappe.db.commit()
 
 
+#################################################################################
 # Supporting utilities
+#################################################################################
 
 
 def format_zatca_response(response: dict) -> str:
