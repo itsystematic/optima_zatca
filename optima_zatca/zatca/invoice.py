@@ -14,6 +14,7 @@ from optima_zatca.zatca.utils import create_qr_code_for_invoice, log_and_throw_e
 
 @frappe.whitelist()
 def send_to_zatca(sales_invoice_name) -> bool:
+    """Main entry point for sending a Sales Invoice to ZATCA. Orchestrates the full process from validation to logging."""
     sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
     if not _validate_before_send(sales_invoice):
         return False
@@ -135,16 +136,29 @@ def _handle_post_success(sales_invoice, invoice_uuid: str, success: bool) -> Non
     if not success:
         return
 
-    if sales_invoice.get("sales_invoice_type") != "Normal":
-        prepayment_invoice.create_prepayment_invoice(
-            sales_invoice,
-            invoice_uuid,
-        )
+    _create_prepayment_invoice_if_needed(sales_invoice, invoice_uuid)
+    _submit_invoice_if_auto_submit_enabled(sales_invoice)
 
+
+def _create_prepayment_invoice_if_needed(sales_invoice, invoice_uuid: str) -> None:
+    """Create a prepayment invoice record for non-normal sales invoices."""
+    if sales_invoice.get("sales_invoice_type") == "Normal":
+        return
+
+    prepayment_invoice.create_prepayment_invoice(
+        sales_invoice,
+        invoice_uuid,
+    )
+
+
+def _submit_invoice_if_auto_submit_enabled(sales_invoice) -> None:
+    """Submit and commit the invoice when manual submit is disabled."""
     manual_submit = frappe.db.get_single_value("Zatca Main Settings", "manual_submit")
-    if not manual_submit:
-        sales_invoice.submit()
-        frappe.db.commit()
+    if manual_submit:
+        return
+
+    sales_invoice.submit()
+    frappe.db.commit()
 
 
 #################################################################################
