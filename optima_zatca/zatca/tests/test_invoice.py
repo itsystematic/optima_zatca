@@ -1,15 +1,16 @@
-import unittest
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from frappe.tests.utils import FrappeTestCase
 
 import optima_zatca.zatca.invoice as invoice_module
 from optima_zatca.zatca.invoice import (
+    _create_prepayment_invoice_if_needed,
     _get_response_qrcode,
     _handle_post_success,
     _is_successful_response,
     _log_action,
     _submit_to_zatca_api,
+    _submit_invoice_if_auto_submit_enabled,
     _update_invoice_document,
     _validate_before_send,
     format_zatca_response,
@@ -256,62 +257,85 @@ class TestLogAction(InvoiceTestCase):
 
 class TestHandlePostSuccess(InvoiceTestCase):
     def test_handle_post_success_skips_on_failure(self):
+        with (
+            patch.object(
+                invoice_module,
+                "_create_prepayment_invoice_if_needed",
+            ) as mock_prepayment,
+            patch.object(
+                invoice_module,
+                "_submit_invoice_if_auto_submit_enabled",
+            ) as mock_submit,
+        ):
+            _handle_post_success(MagicMock(), "uuid", False)
+
+        mock_prepayment.assert_not_called()
+        mock_submit.assert_not_called()
+
+    def test_handle_post_success_runs_both_follow_up_policies_on_success(self):
+        sales_invoice = MagicMock()
+
+        with (
+            patch.object(
+                invoice_module,
+                "_create_prepayment_invoice_if_needed",
+            ) as mock_prepayment,
+            patch.object(
+                invoice_module,
+                "_submit_invoice_if_auto_submit_enabled",
+            ) as mock_submit,
+        ):
+            _handle_post_success(sales_invoice, "uuid", True)
+
+        mock_prepayment.assert_called_once_with(sales_invoice, "uuid")
+        mock_submit.assert_called_once_with(sales_invoice)
+
+
+class TestCreatePrepaymentInvoiceIfNeeded(InvoiceTestCase):
+    def test_creates_prepayment_for_non_normal_invoice(self):
+        sales_invoice = MagicMock()
+        sales_invoice.get.return_value = "Adjustment"
+
         with patch.object(
             invoice_module.prepayment_invoice,
             "create_prepayment_invoice",
         ) as mock_prepayment:
-            _handle_post_success(MagicMock(), "uuid", False)
-
-        mock_prepayment.assert_not_called()
-
-    def test_handle_post_success_creates_prepayment_for_non_normal_invoice(self):
-        sales_invoice = MagicMock()
-        sales_invoice.get.return_value = "Adjustment"
-
-        with (
-            patch.object(
-                invoice_module.prepayment_invoice,
-                "create_prepayment_invoice",
-            ) as mock_prepayment,
-            patch.object(invoice_module.frappe.db, "get_single_value", return_value=1),
-        ):
-            _handle_post_success(sales_invoice, "uuid-123", True)
+            _create_prepayment_invoice_if_needed(sales_invoice, "uuid-123")
 
         mock_prepayment.assert_called_once_with(sales_invoice, "uuid-123")
-        sales_invoice.submit.assert_not_called()
 
-    def test_handle_post_success_auto_submits_when_flag_is_false(self):
+    def test_skips_prepayment_for_normal_invoice(self):
         sales_invoice = MagicMock()
         sales_invoice.get.return_value = "Normal"
 
+        with patch.object(
+            invoice_module.prepayment_invoice,
+            "create_prepayment_invoice",
+        ) as mock_prepayment:
+            _create_prepayment_invoice_if_needed(sales_invoice, "uuid-123")
+
+        mock_prepayment.assert_not_called()
+
+
+class TestSubmitInvoiceIfAutoSubmitEnabled(InvoiceTestCase):
+    def test_auto_submits_when_flag_is_false(self):
+        sales_invoice = MagicMock()
+
         with (
-            patch.object(
-                invoice_module.prepayment_invoice,
-                "create_prepayment_invoice",
-            ) as mock_prepayment,
             patch.object(invoice_module.frappe.db, "get_single_value", return_value=0),
             patch.object(invoice_module.frappe.db, "commit") as mock_commit,
         ):
-            _handle_post_success(sales_invoice, "uuid", True)
+            _submit_invoice_if_auto_submit_enabled(sales_invoice)
 
-        mock_prepayment.assert_not_called()
         sales_invoice.submit.assert_called_once_with()
         mock_commit.assert_called_once_with()
 
-    def test_handle_post_success_skips_submit_when_manual_flag_is_true(self):
+    def test_skips_submit_when_manual_flag_is_true(self):
         sales_invoice = MagicMock()
-        sales_invoice.get.return_value = "Normal"
 
-        with (
-            patch.object(
-                invoice_module.prepayment_invoice,
-                "create_prepayment_invoice",
-            ) as mock_prepayment,
-            patch.object(invoice_module.frappe.db, "get_single_value", return_value=1),
-        ):
-            _handle_post_success(sales_invoice, "uuid", True)
+        with patch.object(invoice_module.frappe.db, "get_single_value", return_value=1):
+            _submit_invoice_if_auto_submit_enabled(sales_invoice)
 
-        mock_prepayment.assert_not_called()
         sales_invoice.submit.assert_not_called()
 
 
