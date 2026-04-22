@@ -140,11 +140,11 @@ class TestZatcaIntegration(FrappeTestCase):
         invoice.insert()
         return invoice
     
-    @patch('optima_zatca.zatca.invoice.make_invoice_request')
-    @patch('optima_zatca.zatca.classes.invoice.ZatcaInvoiceData')
-    @patch('optima_zatca.zatca.invoice.get_qr_code_from_cleared_invoice')
-    @patch('optima_zatca.zatca.invoice.create_qr_code_for_invoice')
-    @patch('optima_zatca.zatca.invoice.make_action_log')
+    @patch('optima_zatca.zatca.submission_workflow.make_invoice_request')
+    @patch('optima_zatca.zatca.submission_workflow.ZatcaInvoiceData')
+    @patch('optima_zatca.zatca.submission_workflow.get_qr_code_from_cleared_invoice')
+    @patch('optima_zatca.zatca.submission_workflow.create_qr_code_for_invoice')
+    @patch('optima_zatca.zatca.submission_workflow.make_action_log')
     @patch('optima_zatca.zatca.prepayment_invoice.create_prepayment_invoice')
     def test_successful_zatca_integration_with_auto_submit(self, mock_prepayment, mock_action_log, 
                                                             mock_qr_create, mock_qr_get, 
@@ -211,8 +211,8 @@ class TestZatcaIntegration(FrappeTestCase):
         self.assertEqual(invoice.get("sent_to_zatca"), 0)
         self.assertEqual(invoice.docstatus, 0)  # Should remain draft
     
-    @patch('optima_zatca.zatca.invoice.make_invoice_request')
-    @patch('optima_zatca.zatca.classes.invoice.ZatcaInvoiceData')
+    @patch('optima_zatca.zatca.submission_workflow.make_invoice_request')
+    @patch('optima_zatca.zatca.submission_workflow.ZatcaInvoiceData')
     def test_zatca_rejection(self, mock_zatca_data, mock_invoice_request):
         """Test ZATCA rejection scenario"""
         from optima_zatca.zatca.invoice import send_to_zatca
@@ -252,8 +252,8 @@ class TestZatcaIntegration(FrappeTestCase):
         invoice.reload()
         self.assertEqual(invoice.docstatus, 0)
     
-    @patch('optima_zatca.zatca.invoice.make_invoice_request')
-    @patch('optima_zatca.zatca.classes.invoice.ZatcaInvoiceData')
+    @patch('optima_zatca.zatca.submission_workflow.make_invoice_request')
+    @patch('optima_zatca.zatca.submission_workflow.ZatcaInvoiceData')
     def test_submit_failure_after_zatca_success(self, mock_zatca_data, mock_invoice_request):
         """Test submit failure after successful ZATCA response"""
         from optima_zatca.zatca.invoice import send_to_zatca

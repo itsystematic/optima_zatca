@@ -88,7 +88,7 @@ Follow these steps to install Optima ZATCA on your ERPNext setup:
 
 ## ✅ Testing
 
-Run Frappe-dependent tests through Bench so they execute inside a real site context:
+Run Frappe-dependent tests through Bench so they execute inside a real site context. Replace `[your.site.name]` with your own local or CI site name:
 
 ```bash
 bench --site [your.site.name] run-tests --app optima_zatca
@@ -100,7 +100,7 @@ Run a specific module:
 bench --site [your.site.name] run-tests --app optima_zatca --module optima_zatca.zatca.tests.test_invoice
 ```
 
-Generate coverage data with Bench:
+Generate coverage data with Bench. Keep `--app optima_zatca` in the command so coverage is collected for the app correctly:
 
 ```bash
 bench --site [your.site.name] run-tests --app optima_zatca --module optima_zatca.zatca.tests.test_invoice --coverage
@@ -110,7 +110,7 @@ Bench stores coverage files under the `sites/` directory. Generate a terminal re
 
 ```bash
 cd ../sites
-python -m coverage report -m
+python -m coverage report -m --include="*/apps/optima_zatca/*"
 python -m coverage html
 ```
 
