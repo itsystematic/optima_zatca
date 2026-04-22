@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Optional, Any
 from optima_zatca.zatca.classes.validate import ZatcaInvoiceValidate
 from optima_zatca.zatca.classes.xml import ZatcaXml
 from optima_zatca.zatca.utils import log_and_throw_error
+from optima_zatca.zatca.xml_transport import encode_invoice_xml_for_api, serialize_invoice_xml
 from frappe.model.document import Document
 
 
@@ -658,6 +659,39 @@ Formula: {net_total} + {adjusted_tax} = {grand_total}
     def _generate_xml(self) -> None:
         """Generate XML from ZATCA invoice data."""
         self.xml = ZatcaXml(self.zatca_invoice)
+
+    def get_submission_request_data(self) -> Dict[str, Any]:
+        """Return the request data needed to submit this invoice to ZATCA."""
+        return {
+            "clearance_status": self.zatca_invoice.get("Clearance-Status"),
+            "authorization": self.company_settings.get("authorization"),
+            "invoice_hash": self.xml.hash,
+            "uuid": self.zatca_invoice.get("UUID"),
+            "encoded_invoice": encode_invoice_xml_for_api(self.xml),
+            "company_settings": self.company_settings,
+            "endpoint": self.zatca_invoice.get("EndPoint"),
+        }
+
+    def get_generated_qr_code(self) -> str:
+        """Return the QR code generated before the ZATCA response is applied."""
+        return self.xml.qr_code
+
+    def get_log_context(self) -> Dict[str, Any]:
+        """Return audit-log data without exposing internal storage layout."""
+        return {
+            "uuid": self.zatca_invoice.get("UUID"),
+            "invoice_hash": self.xml.hash,
+            "generated_qr_code": self.xml.qr_code,
+            "api_endpoint": self.zatca_invoice.get("EndPoint"),
+            "environment": self.zatca_invoice.get("Environment"),
+            "pih": self.zatca_invoice.get("PIH"),
+            "invoice_counter": self.zatca_invoice.get("InvoiceCounter"),
+            "xml_content": serialize_invoice_xml(self.xml),
+        }
+
+    def get_uuid(self) -> str:
+        """Return the invoice UUID used across submission and follow-up flows."""
+        return self.zatca_invoice.get("UUID", "")
 
     def _get_invoice_counter_and_pih(self, endpoint: str) -> Tuple[str, int]:
         """Get invoice counter and PIH from database."""
