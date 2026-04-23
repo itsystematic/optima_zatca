@@ -66,6 +66,8 @@ def _load_invoice_module():
     }
 
     sys.modules.pop("optima_zatca.zatca.classes.invoice", None)
+    sys.modules.pop("optima_zatca.zatca.classes.invoice_context", None)
+    sys.modules.pop("optima_zatca.zatca.classes.invoice_payload_builder", None)
     with patch.dict(sys.modules, patched_modules):
         return importlib.import_module("optima_zatca.zatca.classes.invoice")
 
