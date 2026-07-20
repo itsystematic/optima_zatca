@@ -182,8 +182,7 @@ class ZatcaXmlGenerator:
     
     def _add_purchase_order_reference(self):
         """Add purchase order reference if exists."""
-        if not (self.sales_invoice.get("PurchaseOrderID") and 
-                self.sales_invoice.get("PurchaseOrderIssueDate")):
+        if not self.sales_invoice.get("PurchaseOrderID"):
             return
             
         tax_currency = self.root.find(
@@ -201,11 +200,7 @@ class ZatcaXmlGenerator:
             "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}ID",
             self.sales_invoice.get("PurchaseOrderID")
         )
-        self._create_element(
-            order_ref,
-            "{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}IssueDate",
-            self.sales_invoice.get("PurchaseOrderIssueDate")
-        )
+
         
         order_ref.tail = "\n    "
         etree.indent(order_ref, space="    ", level=1)
