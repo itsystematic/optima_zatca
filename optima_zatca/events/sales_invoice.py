@@ -140,7 +140,12 @@ NORMAL_INVOICE_TYPE = "Normal"
 ADJUSTMENT_TYPES = ["Adjustment", "Final Adjustment"]
 MIN_ADJUSTMENT_PERCENTAGE = 0
 MAX_ADJUSTMENT_PERCENTAGE = 100
+# Currency amounts compare at 2 dp; percentages at 9 dp so adjustment maths on
+# repeating decimals isn't truncated (e.g. a max limit of 66.666666667%).
+# Keep PERCENTAGE_PRECISION in sync with setup.customizations.PERCENTAGE_PRECISION
+# and the field precision, and with toFixed() in public/js/sales_invoice.js.
 PRECISION = 2
+PERCENTAGE_PRECISION = 9
 
 def validate_prepayments(doc, event):
     """Validate prepayment-related business rules for Sales Invoice"""
@@ -276,7 +281,7 @@ def _validate_required_fields(doc):
 
 def _validate_adjustment_percentage_range(doc):
     """Validate adjustment percentage is within valid range"""
-    adjustment_percentage = flt(doc.adjustment_percentage, PRECISION)
+    adjustment_percentage = flt(doc.adjustment_percentage, PERCENTAGE_PRECISION)
     
     if adjustment_percentage < MIN_ADJUSTMENT_PERCENTAGE or adjustment_percentage > MAX_ADJUSTMENT_PERCENTAGE:
         frappe.throw(
@@ -310,8 +315,8 @@ def _validate_adjustment_percentage_limit(doc):
     total_grands = flt(doc.get("total_grands"), PRECISION)
     # Use base_grand_total for multi-currency, fallback to grand_total for single currency
     grand_total = flt(doc.get("base_grand_total") or doc.get("grand_total"), PRECISION)
-    adjustment_percentage = flt(doc.get("adjustment_percentage"), PRECISION)
-    
+    adjustment_percentage = flt(doc.get("adjustment_percentage"), PERCENTAGE_PRECISION)
+
     # Validate total_grands is not zero
     if total_grands == 0:
         frappe.throw(_("Total Grands cannot be zero for adjustment percentage calculation"))
@@ -337,7 +342,7 @@ def _calculate_max_adjustment_limit(grand_total, total_grands):
         return 0
     
     max_limit = (abs_grand_total * 100) / abs_total_grands
-    return flt(max_limit, PRECISION)
+    return flt(max_limit, PERCENTAGE_PRECISION)
 
 
 def _validate_pos_payment_for_adjustment(doc):

@@ -101,10 +101,13 @@ frappe.ui.form.on("Sales Invoice", {
             frappe.throw(__("Total grands cannot be zero for adjustment percentage calculation"));
         }
 
-        const maxAdjustmentLimit = (absGrandTotal * 100) / absTotalGrands;
+        // Round to 9 dp to match the server-side check (PERCENTAGE_PRECISION),
+        // so the client never rejects a value the server would accept.
+        const PERCENTAGE_PRECISION = 9;
+        const maxAdjustmentLimit = flt((absGrandTotal * 100) / absTotalGrands, PERCENTAGE_PRECISION);
 
-        if (Math.abs(adjustment_percentage || 0) > maxAdjustmentLimit) {
-            frappe.throw(__(`Adjustment percentage cannot be greater than ${maxAdjustmentLimit.toFixed(2)}%`));
+        if (flt(Math.abs(adjustment_percentage || 0), PERCENTAGE_PRECISION) > maxAdjustmentLimit) {
+            frappe.throw(__(`Adjustment percentage cannot be greater than ${maxAdjustmentLimit.toFixed(PERCENTAGE_PRECISION)}%`));
         }
         
         // Validate for POS payments in adjustment types

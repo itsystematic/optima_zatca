@@ -27,6 +27,11 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 ZATCA_ROLES = ["Zatca Role", "Zatca Manager"]
 
+# Percentage fields keep 9 decimal places so adjustment maths on repeating
+# decimals (e.g. a max limit of 66.666666667%) is neither truncated nor rejected.
+# Keep in sync with PERCENTAGE_PRECISION in optima_zatca/events/sales_invoice.py.
+PERCENTAGE_PRECISION = 9
+
 ADDRESS_DOCTYPE_FIELDS = [
     "address_title", "address_type", "section_break_123", "short_address", "address_line1", "city", "pincode",
     "column_break_tshas", "building_no", "address_line2", "district", "address_details", "address_name_in_arabic",
@@ -162,13 +167,13 @@ def _prepayment_sales_invoice_fields():
          "depends_on": "eval:['Adjustment', 'Final Adjustment'].includes(doc.sales_invoice_type) && doc.previous_prepayment",
          "read_only_depends_on": "eval:doc.sales_invoice_type == 'Final Adjustment'"},
         {"fieldname": "remaining_percentage", "fieldtype": "Percent", "label": "Remaining Percentage",
-         "insert_after": "prepayment_percentages", "precision": 5, "default": 100, "read_only": 1},
+         "insert_after": "prepayment_percentages", "precision": PERCENTAGE_PRECISION, "default": 100, "read_only": 1},
         {"fieldname": "column_break_eikd", "fieldtype": "Column Break", "insert_after": "remaining_percentage"},
         {"fieldname": "max_adjustment_limit", "fieldtype": "Percent", "label": "Max Limit Percentage",
-         "insert_after": "column_break_eikd", "read_only": 1, "default": 0, "precision": 5},
+         "insert_after": "column_break_eikd", "read_only": 1, "default": 0, "precision": PERCENTAGE_PRECISION},
         {"fieldname": "column_break_eikder", "fieldtype": "Column Break", "insert_after": "max_adjustment_limit"},
         {"fieldname": "adjustment_percentage", "fieldtype": "Percent", "label": "Adjustment Percentage",
-         "insert_after": "column_break_eikder", "precision": 5,
+         "insert_after": "column_break_eikder", "precision": PERCENTAGE_PRECISION,
          "depends_on": "eval:doc.previous_prepayment",
          "mandatory_depends_on": "eval:doc.sales_invoice_type == 'Adjustment'",
          "read_only_depends_on": "eval:doc.sales_invoice_type == 'Final Adjustment'  || doc.is_return"},
