@@ -105,7 +105,7 @@ after_install = "optima_zatca.install.after_install"
 # Uninstallation
 # ------------
 
-# before_uninstall = "optima_zatca.uninstall.before_uninstall"
+before_uninstall = "optima_zatca.uninstall.before_uninstall"
 # after_uninstall = "optima_zatca.uninstall.after_uninstall"
 
 # Integration Setup
@@ -114,7 +114,9 @@ after_install = "optima_zatca.install.after_install"
 # Name of the app being installed is passed as an argument
 
 # before_app_install = "optima_zatca.utils.before_app_install"
-after_app_install = "optima_zatca.utils.after_app_install"
+# after_app_install: reserved for reacting to OTHER apps being installed
+# (cross-app integration). Self-setup runs from after_install, not here.
+# after_app_install = "optima_zatca.integrations.after_app_install"
 
 # Integration Cleanup
 # -------------------
