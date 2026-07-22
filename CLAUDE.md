@@ -93,6 +93,30 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 - **Initial Prepayment / Prepayment** — advance payment, code `386`.
 - **Adjustment / Final Adjustment** — references a prepayment via `deducted_taxable_amount` / `deducted_grand_total`. Client-side math is in `public/js/sales_invoice/prepayment.js`; server-side GL handling is in `CustomSalesInvoice`.
 
+### How the Final Adjustment percentage is derived (and the precision trap)
+
+A **Final Adjustment** settles whatever is left of a prepayment chain. Its `adjustment_percentage` is **auto-filled and locked** to the remaining share:
+
+```
+remaining_percentage   = 100 − Σ(adjustment_percentage of every earlier prepayment in the chain)
+adjustment_percentage  = remaining_percentage      # for Final Adjustment
+```
+
+`Σ` is computed in `calculateRemainingFromUsedPercentages` (`public/js/sales_invoice/prepayment.js`), summing the rows loaded from `get_prepayment_details` — i.e. the **persisted `Prepayment Invoice` records**, not the live Sales Invoice values.
+
+**Precision invariant (one number, four places — keep them all at 9 dp):**
+
+| Layer | Where |
+|---|---|
+| Sales Invoice custom fields | `setup/customizations.py` → `PERCENTAGE_PRECISION = 9` |
+| Server validation | `events/sales_invoice.py` → `PERCENTAGE_PRECISION = 9` |
+| Client limit check | `public/js/sales_invoice.js` → `toFixed(9)` |
+| **Persisted mirrors** | `Prepayment Invoice` **and** `Prepayment Details` — `adjustment_percentage` / `remaining_percentage` **precision `"9"`** |
+
+The mirrors are the subtle one. They were historically `precision "0"` (stored as `decimal(21,0)`), so each stored adjustment truncated to a whole number; the Final Adjustment then summed integers and landed on e.g. **36** instead of **35.646222780**. The Sales Invoice fields were already 9 dp — the loss was purely at the `Prepayment Invoice` write in `_build_prepayment_payload` (`zatca/prepayment_invoice.py`). Raising the mirror precision fixes it **going forward only**: percentages already truncated in existing rows cannot be recovered.
+
+- **`max_adjustment_limit`** ("Max Limit Percentage") is a *different* number — `grand_total × 100 / total_grands`, computed from currency totals, not from the percentages. It is accurate at 9 dp and is not affected by the mirror-precision issue.
+
 ## Crypto & PDF dependencies
 
 Declared in `pyproject.toml`, installed via `bench setup requirements`: `cryptography` (signing), `asn1` (certificate/CSR encoding), `qrcode` (Phase-1 TLV QR), `pikepdf` (embedding invoice XML into a PDF/A-3 file — see `zatca/pdfa3.py`). CSR/key generation lives in `zatca/keys.py` (`GenerateCSR`) and `zatca/setup.py` (onboarding: CSR → compliance CSID → sample invoices → production CSID).

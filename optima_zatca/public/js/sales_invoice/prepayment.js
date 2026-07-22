@@ -366,17 +366,26 @@ optima_zatca.sales_invoice.prepayment.isNoPrepaymentScenario = (frm) => {
            frm.doc.prepayments_invcoies.length === 0;
 };
 
+// Remaining % = 100 − Σ(adjustment % already consumed by earlier prepayments in
+// the chain). The rows come from get_prepayment_details (the persisted Prepayment
+// Invoice records), so this sum is only as precise as the stored percentages —
+// keep Prepayment Invoice.adjustment_percentage at 9 dp or the result quantizes
+// (see _build_prepayment_payload in zatca/prepayment_invoice.py).
 optima_zatca.sales_invoice.prepayment.calculateRemainingFromUsedPercentages = (frm) => {
     const totalUsedPercentage = frm.doc.prepayments_invcoies.reduce((total, row) => {
         return total + (row.adjustment_percentage || 0);
     }, 0);
-    
+
     const remainingPercentage = 100 - totalUsedPercentage;
     return Math.max(0, remainingPercentage);
 };
 
 /**
- * Calculate adjustment percentage
+ * Calculate adjustment percentage.
+ *
+ * A Final Adjustment settles whatever is left of the prepayment chain, so its
+ * percentage is auto-filled to the remaining % (100 − Σ previous adjustments)
+ * and locked. A return copies the percentage from the invoice it reverses.
  */
 optima_zatca.sales_invoice.prepayment.calculateAdjustmentPercentage = (frm) => {
     if (frm.doc.sales_invoice_type === "Final Adjustment") {

@@ -160,7 +160,8 @@
   {
    "fieldname": "adjustment_percentage",
    "fieldtype": "Percent",
-   "label": "Adjustment Percentage"
+   "label": "Adjustment Percentage",
+   "precision": "9"
   },
   {
    "fieldname": "column_break_xojk",
@@ -169,7 +170,8 @@
   {
    "fieldname": "remaining_percentage",
    "fieldtype": "Percent",
-   "label": "Remaining Percentage"
+   "label": "Remaining Percentage",
+   "precision": "9"
   },
   {
    "fieldname": "percent",

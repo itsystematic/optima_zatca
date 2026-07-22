@@ -55,7 +55,18 @@ def _build_prepayment_payload(
     uuid: str,
     chain_state: PrepaymentChainState,
 ) -> dict[str, Any]:
-    """Assemble the prepayment document fields from the source invoice."""
+    """Assemble the prepayment document fields from the source invoice.
+
+    Precision invariant: ``adjustment_percentage`` and ``remaining_percentage``
+    are the mirror copies that a later Final Adjustment reads back and sums to
+    derive its own percentage (``remaining = 100 - Σ previous adjustments``, see
+    ``calculateRemainingFromUsedPercentages`` in ``public/js/sales_invoice/prepayment.js``).
+    Their field precision on ``Prepayment Invoice``/``Prepayment Details`` must
+    stay at 9 dp — matching the Sales Invoice fields and ``PERCENTAGE_PRECISION``
+    in ``events/sales_invoice.py``. If these get quantized (they were ``precision:
+    "0"`` historically), the sum truncates and the Final Adjustment lands on a
+    whole number (e.g. 36 instead of 35.646222780).
+    """
     amounts = _get_company_currency_amounts(sales_invoice)
 
     return {

@@ -175,7 +175,7 @@
    "fieldname": "adjustment_percentage",
    "fieldtype": "Percent",
    "label": "Adjustment Percentage",
-   "precision": "0",
+   "precision": "9",
    "read_only": 1
   },
   {
@@ -186,7 +186,7 @@
    "fieldname": "remaining_percentage",
    "fieldtype": "Percent",
    "label": "Remaining Percentage",
-   "precision": "0",
+   "precision": "9",
    "read_only": 1
   },
   {
