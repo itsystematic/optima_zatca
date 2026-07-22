@@ -101,9 +101,6 @@ Object.assign(optima_zatca.sales_invoice.prepayment, {
         row.deducted_grand_total = prepayment.grand_total;
     },
 
-    /**
-     * Calculate all prepayment-related totals
-     */
     calculateAllPrepaymentTotals: (frm) => {
         [
             optima_zatca.sales_invoice.prepayment.calculatePrepaymentTotals,
@@ -196,9 +193,6 @@ Object.assign(optima_zatca.sales_invoice.prepayment, {
         });
     },
 
-    /**
-     * Clear child tables and reset totals
-     */
     clearChildTables: (frm) => {
         frm.clear_table("items");
         frm.clear_table("taxes");
@@ -210,18 +204,12 @@ Object.assign(optima_zatca.sales_invoice.prepayment, {
         frm.set_value("total_taxes_and_charges", 0);
     },
 
-    /**
-     * Refresh form fields
-     */
     refreshFormFields: (frm) => {
         ["items", "taxes", "total", "grand_total"].forEach(field => {
             frm.refresh_field(field);
         });
     },
 
-    /**
-     * Trigger tax refresh
-     */
     triggerTaxRefresh: (frm, item_row) => {
         frm.script_manager.trigger("item_code", item_row.doctype, item_row.name);
     }
@@ -246,9 +234,7 @@ optima_zatca.sales_invoice.prepayment.createTotalsCalculator = (filterTypes, fie
     frm.set_value(fieldMapping(totals));
 };
 
-/**
- * Calculate prepayment totals
- */
+
 optima_zatca.sales_invoice.prepayment.calculatePrepaymentTotals = 
     optima_zatca.sales_invoice.prepayment.createTotalsCalculator(
         optima_zatca.sales_invoice.prepayment.PREPAYMENT_TYPES,
@@ -259,9 +245,7 @@ optima_zatca.sales_invoice.prepayment.calculatePrepaymentTotals =
         })
     );
 
-/**
- * Calculate adjustment totals
- */
+
 optima_zatca.sales_invoice.prepayment.calculateAdjustmentTotals = 
     optima_zatca.sales_invoice.prepayment.createTotalsCalculator(
         optima_zatca.sales_invoice.prepayment.ADJUSTMENT_TYPES,
@@ -272,9 +256,7 @@ optima_zatca.sales_invoice.prepayment.calculateAdjustmentTotals =
         })
     );
 
-/**
- * Calculate deducted values
- */
+
 optima_zatca.sales_invoice.prepayment.calculateDeductedValues = 
     optima_zatca.sales_invoice.prepayment.createTotalsCalculator(
         optima_zatca.sales_invoice.prepayment.PREPAYMENT_TYPES,
@@ -289,9 +271,6 @@ optima_zatca.sales_invoice.prepayment.calculateDeductedValues =
 // ADJUSTMENT CALCULATION
 // ============================================================================
 
-/**
- * Validate adjustment percentage
- */
 optima_zatca.sales_invoice.prepayment.validateAdjustmentPercentage = (frm) => {
     const adjustmentPercentage = frm.doc.adjustment_percentage || 0;
     
@@ -308,9 +287,7 @@ optima_zatca.sales_invoice.prepayment.validateAdjustmentPercentage = (frm) => {
     return true;
 };
 
-/**
- * Adjustment calculator object
- */
+
 optima_zatca.sales_invoice.prepayment.AdjustmentCalculator = {
     calculateFactor(adjustmentPercentage) {
         return (adjustmentPercentage / 100) || 1;
@@ -334,9 +311,6 @@ optima_zatca.sales_invoice.prepayment.AdjustmentCalculator = {
 // PERCENTAGE CALCULATIONS
 // ============================================================================
 
-/**
- * Calculate remaining percentage
- */
 optima_zatca.sales_invoice.prepayment.calculateRemainingPercentage = (frm) => {
     let remainingPercentage;
 
@@ -354,12 +328,14 @@ optima_zatca.sales_invoice.prepayment.calculateRemainingPercentage = (frm) => {
     return remainingPercentage;
 };
 
+
 optima_zatca.sales_invoice.prepayment.getReturnRemainingPercentage = (frm) => {
     if (frm.doc.prepayments_invcoies && frm.doc.prepayments_invcoies.length > 0) {
         return frm.doc.prepayments_invcoies[0].remaining_percentage || 0;
     }
     return 0;
 };
+
 
 optima_zatca.sales_invoice.prepayment.isNoPrepaymentScenario = (frm) => {
     return !frm.doc.previous_prepayment || 
@@ -390,8 +366,6 @@ optima_zatca.sales_invoice.prepayment.calculateRemainingFromUsedPercentages = (f
  */
 optima_zatca.sales_invoice.prepayment.calculateAdjustmentPercentage = (frm) => {
     if (frm.doc.sales_invoice_type === "Final Adjustment") {
-        // remaining_percentage was set by calculateRemainingPercentage earlier in
-        // the calculateAllPrepaymentTotals pipeline; reuse it rather than recompute.
         optima_zatca.sales_invoice.prepayment.updateAndLockAdjustmentPercentage(frm, frm.doc.remaining_percentage || 0);
     }
 
@@ -409,9 +383,7 @@ optima_zatca.sales_invoice.prepayment.updateAndLockAdjustmentPercentage = (frm, 
     frm.set_df_property("adjustment_percentage", "read_only", true);
 };
 
-/**
- * Calculate maximum adjustment limit
- */
+
 optima_zatca.sales_invoice.prepayment.calculateMaxAdjustmentLimit = (frm) => {
     const grandTotal = Math.abs(frm.doc.base_grand_total || frm.doc.grand_total) || 0;
     const totalGrands = Math.abs(frm.doc.total_grands) || 0;
@@ -420,5 +392,4 @@ optima_zatca.sales_invoice.prepayment.calculateMaxAdjustmentLimit = (frm) => {
     const maxAdjustmentLimit = Math.max(0, Math.min(100, calculatedLimit));
     
     frm.set_value("max_adjustment_limit", maxAdjustmentLimit);
-    frm.refresh_field("max_adjustment_limit");
 };
