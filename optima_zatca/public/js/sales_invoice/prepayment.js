@@ -112,9 +112,10 @@ Object.assign(optima_zatca.sales_invoice.prepayment, {
             optima_zatca.sales_invoice.prepayment.calculateAdjustmentPercentage,
             optima_zatca.sales_invoice.prepayment.calculateDeductedValues
         ].forEach(fn => fn(frm));
-        
-        // Run last since it depends on previous calculations like total_grands
-        setTimeout(() => optima_zatca.sales_invoice.prepayment.calculateMaxAdjustmentLimit(frm), 10);
+
+        // Runs last because it reads total_grands, which is set synchronously by
+        // calculatePrepaymentTotals above — no deferral needed.
+        optima_zatca.sales_invoice.prepayment.calculateMaxAdjustmentLimit(frm);
     },
 
     /**
@@ -389,8 +390,9 @@ optima_zatca.sales_invoice.prepayment.calculateRemainingFromUsedPercentages = (f
  */
 optima_zatca.sales_invoice.prepayment.calculateAdjustmentPercentage = (frm) => {
     if (frm.doc.sales_invoice_type === "Final Adjustment") {
-        const remainingPercentage = optima_zatca.sales_invoice.prepayment.calculateRemainingPercentage(frm);
-        optima_zatca.sales_invoice.prepayment.updateAndLockAdjustmentPercentage(frm, remainingPercentage);
+        // remaining_percentage was set by calculateRemainingPercentage earlier in
+        // the calculateAllPrepaymentTotals pipeline; reuse it rather than recompute.
+        optima_zatca.sales_invoice.prepayment.updateAndLockAdjustmentPercentage(frm, frm.doc.remaining_percentage || 0);
     }
 
     if (frm.doc.is_return) {
