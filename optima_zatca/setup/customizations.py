@@ -29,7 +29,7 @@ ZATCA_ROLES = ["Zatca Role", "Zatca Manager"]
 
 # Percentage fields keep 9 decimal places so adjustment maths on repeating
 # decimals (e.g. a max limit of 66.666666667%) is neither truncated nor rejected.
-# Keep in sync with PERCENTAGE_PRECISION in optima_zatca/events/sales_invoice.py.
+# Keep in sync with PERCENTAGE_PRECISION in optima_zatca/events/prepayment.py.
 PERCENTAGE_PRECISION = 9
 
 ADDRESS_DOCTYPE_FIELDS = [
