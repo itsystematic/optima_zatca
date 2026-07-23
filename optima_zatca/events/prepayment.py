@@ -5,6 +5,7 @@ from optima_zatca.zatca.utils import log_and_throw_error
 
 
 NORMAL_INVOICE_TYPE = "Normal"
+INITIAL_PREPAYMENT_TYPE = "Initial Prepayment"
 ADJUSTMENT_TYPES = ["Adjustment", "Final Adjustment"]
 MIN_ADJUSTMENT_PERCENTAGE = 0
 MAX_ADJUSTMENT_PERCENTAGE = 100
@@ -20,13 +21,13 @@ PERCENTAGE_PRECISION = 9
 def validate_prepayments(doc, event):
     """Validate prepayment-related business rules for Sales Invoice"""
     try:
-        # Validate Sales Order doesn't have duplicate Initial Prepayment
-        _validate_unique_initial_prepayment(doc)
-        
         # Early return for normal invoices
         if doc.sales_invoice_type == NORMAL_INVOICE_TYPE:
             return
-            
+        
+        # Validate Sales Order doesn't have duplicate Initial Prepayment
+        _validate_unique_initial_prepayment(doc)
+        
         # Validate return requirements for all non-normal invoices
         _validate_return_requirements(doc)
         
@@ -45,7 +46,7 @@ def validate_prepayments(doc, event):
 def _validate_unique_initial_prepayment(doc):
     """Validate that a Sales Order can only have one Initial Prepayment Sales Invoice"""
     # Only check for Initial Prepayment invoices
-    if doc.sales_invoice_type != "Initial Prepayment":
+    if doc.sales_invoice_type != INITIAL_PREPAYMENT_TYPE:
         return
     
     # Only check if prepayment_sales_order is set
@@ -55,7 +56,7 @@ def _validate_unique_initial_prepayment(doc):
     # Check if another Initial Prepayment already exists for this Sales Order
     filters = {
         "prepayment_sales_order": doc.prepayment_sales_order,
-        "sales_invoice_type": "Initial Prepayment",
+        "sales_invoice_type": INITIAL_PREPAYMENT_TYPE,
         "docstatus": ["!=", 2]  # Not cancelled
     }
     
@@ -63,13 +64,7 @@ def _validate_unique_initial_prepayment(doc):
     if not doc.is_new():
         filters["name"] = ["!=", doc.name]
     
-    existing_initial_prepayment = frappe.db.get_value(
-        "Sales Invoice",
-        filters,
-        "name"
-    )
-    
-    if existing_initial_prepayment:
+    if existing_initial_prepayment := _get_existing_initial_prepayment(filters):
         frappe.throw(
             _("Sales Order {0} already has an Initial Prepayment Sales Invoice ({1}). Each Sales Order can only have one Initial Prepayment invoice.").format(
                 frappe.bold(doc.prepayment_sales_order),
@@ -79,6 +74,12 @@ def _validate_unique_initial_prepayment(doc):
         )
 
 
+def _get_existing_initial_prepayment(filters: dict) -> str:
+    return frappe.db.get_value(
+        "Sales Invoice",
+        filters,
+        "name"
+    )
 
 
 def _validate_return_requirements(doc):
@@ -96,34 +97,27 @@ def _validate_return_requirements(doc):
 
 def _validate_prepayment_linkage(doc):
     """Validate prepayment invoice linkage status"""
-    try:
-        prepayment_data = frappe.db.get_value(
-            "Prepayment Invoice", 
-            doc.return_against, 
-            ["is_linked", "name"],
-            as_dict=True
-        )
-        
-        if not prepayment_data:
-            frappe.throw(
-                _("Prepayment Invoice {0} does not exist").format(
-                    frappe.bold(doc.return_against)
-                )
-            )
-        
-        if prepayment_data.is_linked:
-            frappe.throw(
-                _("Prepayment Invoice {0} is already linked with another Sales Invoice").format(
-                    frappe.bold(doc.return_against)
-                )
-            )
-            
-    except frappe.DoesNotExistError:
+    prepayment_data = frappe.db.get_value(
+        "Prepayment Invoice", 
+        doc.return_against, 
+        ["is_linked", "name"],
+        as_dict=True
+    )
+
+    if not prepayment_data:
         frappe.throw(
             _("Prepayment Invoice {0} does not exist").format(
                 frappe.bold(doc.return_against)
             )
         )
+
+    if prepayment_data.is_linked:
+        frappe.throw(
+            _("Prepayment Invoice {0} is already linked with another Sales Invoice").format(
+                frappe.bold(doc.return_against)
+            )
+        )
+        
 
 
 def _validate_adjustment_requirements(doc):
