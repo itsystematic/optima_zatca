@@ -17,18 +17,21 @@ PRECISION = 2
 PERCENTAGE_PRECISION = 9
 
 
+# ================================================================================================
+# ENTRY POINT
+# ================================================================================================
+# Sales Invoice `validate` doc_event. Dispatches to the checks that apply to the invoice type;
+# normal invoices short-circuit, adjustments run the full adjustment suite.
+
 
 def validate_prepayments(doc, event):
     """Validate prepayment-related business rules for Sales Invoice"""
     try:
-        # Early return for normal invoices
         if doc.sales_invoice_type == NORMAL_INVOICE_TYPE:
             return
         
-        # Validate Sales Order doesn't have duplicate Initial Prepayment
-        _validate_unique_initial_prepayment(doc)
+        _validate_unique_initial_prepayment(doc) # No duplicate
         
-        # Validate return requirements for all non-normal invoices
         _validate_return_requirements(doc)
         
         # Additional validations only for adjustment invoices
@@ -43,17 +46,21 @@ def validate_prepayments(doc, event):
         )
 
 
+# ================================================================================================
+# INITIAL PREPAYMENT UNIQUENESS
+# ================================================================================================
+# A Sales Order may carry at most one Initial Prepayment invoice.
+
+
 def _validate_unique_initial_prepayment(doc):
     """Validate that a Sales Order can only have one Initial Prepayment Sales Invoice"""
-    # Only check for Initial Prepayment invoices
+
     if doc.sales_invoice_type != INITIAL_PREPAYMENT_TYPE:
         return
     
-    # Only check if prepayment_sales_order is set
     if not doc.get("prepayment_sales_order"):
         return
     
-    # Check if another Initial Prepayment already exists for this Sales Order
     filters = {
         "prepayment_sales_order": doc.prepayment_sales_order,
         "sales_invoice_type": INITIAL_PREPAYMENT_TYPE,
@@ -82,21 +89,25 @@ def _get_existing_initial_prepayment(filters: dict) -> str:
     )
 
 
+# ================================================================================================
+# RETURN & PREPAYMENT LINKAGE
+# ================================================================================================
+# Return invoices must reference an existing, not-yet-linked Prepayment Invoice.
+
+
 def _validate_return_requirements(doc):
     """Validate return invoice requirements"""
     if not doc.is_return:
         return
     
-    # Check return_against is provided
     if not doc.return_against:
         frappe.throw(_("Return Against is required for return invoices"))
     
-    # Validate the referenced prepayment exists and is not linked
     _validate_prepayment_linkage(doc)
 
 
 def _validate_prepayment_linkage(doc):
-    """Validate prepayment invoice linkage status"""
+    """Validate the referenced prepayment exists and is not linked to another Sales Invoice"""
     prepayment_data = frappe.db.get_value(
         "Prepayment Invoice", 
         doc.return_against, 
@@ -120,13 +131,21 @@ def _validate_prepayment_linkage(doc):
         
 
 
+# ================================================================================================
+# ADJUSTMENT VALIDATION
+# ================================================================================================
+# Adjustment / Final Adjustment invoices: required fields, deducted-total ceilings, the
+# adjustment-percentage range and its computed max limit, and POS vs non-POS payment ceilings.
+# Currency compares at 2 dp; percentages at 9 dp (see PERCENTAGE_PRECISION note above).
+
+
 def _validate_adjustment_requirements(doc):
     """Validate all adjustment-specific requirements"""
-    _validate_adjustment_percentage_range(doc)
     _validate_required_fields(doc)
     _validate_deducted_totals(doc)
-    _validate_adjustment_percentage_limit(doc)
     _validate_pos_payment_for_adjustment(doc)
+    _validate_adjustment_percentage_range(doc)
+    _validate_adjustment_percentage_limit(doc)
     _validate_non_pos_payment_for_adjustment(doc)
 
 
@@ -176,16 +195,15 @@ def _validate_deducted_totals(doc):
 
 def _validate_adjustment_percentage_limit(doc):
     """Validate adjustment percentage against calculated maximum limit"""
+
     total_grands = flt(doc.get("total_grands"), PRECISION)
     # Use base_grand_total for multi-currency, fallback to grand_total for single currency
     grand_total = flt(doc.get("base_grand_total") or doc.get("grand_total"), PRECISION)
     adjustment_percentage = flt(doc.get("adjustment_percentage"), PERCENTAGE_PRECISION)
 
-    # Validate total_grands is not zero
     if total_grands == 0:
         frappe.throw(_("Total Grands cannot be zero for adjustment percentage calculation"))
     
-    # Calculate maximum adjustment limit
     max_adjustment_limit = _calculate_max_adjustment_limit(grand_total, total_grands)
     
     if adjustment_percentage > max_adjustment_limit:
