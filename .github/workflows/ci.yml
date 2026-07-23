@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [version-15]
+  pull_request:
+    branches: [version-15]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-22.04
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=15
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout optima_zatca
+        uses: actions/checkout@v4
+        with:
+          path: optima_zatca
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      # wkhtmltopdf + mariadb client are needed by bench/frappe at setup time.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mariadb-client libmariadb-dev wkhtmltopdf
+          npm install -g yarn
+
+      - name: Install frappe-bench
+        run: pip install frappe-bench
+
+      # required_apps = ["erpnext"], so erpnext must be pulled alongside the app.
+      - name: Initialize bench with frappe + erpnext
+        run: |
+          bench init --skip-redis-config-generation --frappe-branch version-15 frappe-bench
+          cd frappe-bench
+          bench get-app --branch version-15 erpnext
+          bench get-app optima_zatca "${GITHUB_WORKSPACE}/optima_zatca"
+
+      - name: Create test site and install apps
+        working-directory: frappe-bench
+        run: |
+          bench set-config -g root_password root
+          bench new-site test_site \
+            --db-root-password root \
+            --admin-password admin \
+            --no-mariadb-socket
+          bench --site test_site install-app erpnext optima_zatca
+          bench --site test_site set-config allow_tests true
+
+      # Phase 1: the in-memory matrix layer needs no business data, so it is
+      # green on a fresh site. The integration module (test_prepayment_integration)
+      # reuses existing records and is intentionally excluded until helpers.py
+      # is hardened to provision the full chain — then switch to `--app optima_zatca`.
+      - name: Run prepayment matrix tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_prepayment
