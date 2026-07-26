@@ -70,10 +70,17 @@ jobs:
         working-directory: frappe-bench
         run: |
           bench set-config -g root_password root
+          # bench init ran with --skip-redis-config-generation, so Frappe still
+          # points at the default redis://127.0.0.1:11000 (nothing listens there).
+          # Point cache/queue/socketio at the CI redis service on 6379, or the
+          # after_install hooks that enqueue jobs fail with "Connection refused".
+          bench set-config -g redis_cache "redis://127.0.0.1:6379"
+          bench set-config -g redis_queue "redis://127.0.0.1:6379"
+          bench set-config -g redis_socketio "redis://127.0.0.1:6379"
           bench new-site test_site \
             --db-root-password root \
             --admin-password admin \
-            --no-mariadb-socket
+            --mariadb-user-host-login-scope='%'
           bench --site test_site install-app erpnext optima_zatca
           bench --site test_site set-config allow_tests true
 
