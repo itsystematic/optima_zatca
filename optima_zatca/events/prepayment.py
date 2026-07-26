@@ -37,11 +37,16 @@ def validate_prepayments(doc, event):
         # Additional validations only for adjustment invoices
         if doc.sales_invoice_type in ADJUSTMENT_TYPES:
             _validate_adjustment_requirements(doc)
-        
+
+    except frappe.ValidationError:
+        # Expected business-rule rejection — surface the helper's specific
+        # message as-is and keep it out of the Error Log.
+        raise
     except Exception as e:
+        # Only genuine, unexpected failures get logged + a friendly message.
         log_and_throw_error(
-            operation="Validate Prepayment", 
-            document_name=doc.name or "New Document", 
+            operation="Validate Prepayment",
+            document_name=doc.name or "New Document",
             exception=e
         )
 

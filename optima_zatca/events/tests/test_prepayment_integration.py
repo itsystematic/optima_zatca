@@ -5,9 +5,9 @@ fire end-to-end, proving the wiring the in-memory matrix layer cannot: that the
 hook is registered, the custom fields carry values by validate time, and a
 blocked invoice actually fails ``insert()``.
 
-Because ``validate_prepayments`` funnels every failure through
-``log_and_throw_error`` (which re-throws a generic message), these assert only
-that a ``ValidationError`` is raised on save -- the specific messages are the
+``validate_prepayments`` now re-raises ``ValidationError`` untouched, so the
+real business-rule message reaches the caller. These still assert only that a
+``ValidationError`` is raised on save -- exhaustive message coverage is the
 matrix layer's job. Nothing is submitted, so the ZATCA ``on_submit`` path is
 never touched, and ``tearDown`` rolls the transaction back.
 """

@@ -5,11 +5,12 @@ These exercise the private ``_validate_*`` helpers in
 ``frappe.new_doc("Sales Invoice")``. Nothing is inserted, so there is no DB
 write and no teardown.
 
-Why the helpers and not ``validate_prepayments``: the public entry point wraps
-its whole body in ``try/except`` -> ``log_and_throw_error``, which swallows the
-specific message (re-throwing a generic "check the Error Log" text) and writes
-an Error Log row. The helpers raise the real messages and touch no DB, except
-the two lookup helpers, whose ``frappe.db.get_value`` calls are mocked here.
+Why the helpers and not ``validate_prepayments``: the public entry point re-raises
+``ValidationError`` untouched but still funnels *unexpected* exceptions through
+``log_and_throw_error`` (generic message + Error Log row). Calling the helpers
+directly keeps every assertion on the real business-rule message and touches no
+DB, except the two lookup helpers, whose ``frappe.db.get_value`` calls are mocked
+here.
 """
 
 from unittest.mock import patch
@@ -218,8 +219,8 @@ class TestReturnRequirements(FrappeTestCase):
 
 
 class TestValidatePrepaymentsDispatch(FrappeTestCase):
-    """The public entry point's routing only. Specific messages are swallowed by
-    log_and_throw_error, so assert *which* checks run, not their text."""
+    """The public entry point's routing only: assert *which* checks run, not
+    their text (message content is the individual helpers' concern above)."""
 
     def test_normal_invoice_returns_before_any_check(self):
         doc = _si(sales_invoice_type=prepayment.NORMAL_INVOICE_TYPE)
