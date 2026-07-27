@@ -84,12 +84,17 @@ jobs:
           bench --site test_site install-app erpnext optima_zatca
           bench --site test_site set-config allow_tests true
 
-      # Phase 1: the in-memory matrix layer needs no business data, so it is
-      # green on a fresh site. The integration module (test_prepayment_integration)
-      # reuses existing records and is intentionally excluded until helpers.py
-      # is hardened to provision the full chain — then switch to `--app optima_zatca`.
+      # helpers.py now provisions its own dedicated party/item/commercial-register
+      # records, so both the in-memory matrix layer and the real-save integration
+      # layer run on a fresh CI site.
       - name: Run prepayment matrix tests
         working-directory: frappe-bench
         run: |
           bench --site test_site run-tests \
             --module optima_zatca.events.tests.test_prepayment
+
+      - name: Run prepayment integration tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_prepayment_integration
