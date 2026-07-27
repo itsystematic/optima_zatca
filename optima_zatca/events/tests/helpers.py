@@ -13,9 +13,6 @@ Accounts and cost centers still come from company defaults (every ERPNext
 company has them); the two mandatory Sales Invoice custom fields
 (``commercial_register``, ``sales_invoice_type``) are provisioned here.
 
-The prepayment numeric fields (``total_grands`` / ``deducted_grand_total`` /
-``adjustment_percentage``) are normally computed client-side in
-``public/js/sales_invoice/prepayment.js``; here they're set directly on the doc.
 """
 
 import frappe
