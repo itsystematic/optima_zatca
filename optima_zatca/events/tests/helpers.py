@@ -157,19 +157,21 @@ def get_or_create_customer():
     return TEST_CUSTOMER
 
 
-def get_or_create_item():
+def get_or_create_item(company=None):
     """Dedicated non-stock service item.
 
     Explicitly ``is_stock_item=0`` and ``is_fixed_asset=0``: a fixed-asset item
     makes ERPNext's ``validate_fixed_asset`` demand an Asset on every line, which
     is the exact failure that borrowing an arbitrary existing item produced.
-    This site's KSA customization makes the Item ``taxes`` table mandatory, so an
-    Item Tax Template row is attached — which in turn is why the SO/SI factories
-    pre-seed their own ``taxes`` row with a ``cost_center`` (see ``_tax_row``).
+    This site's KSA customization makes the Item ``taxes`` table mandatory
+    (a property setter installed by ``setup_item_table_property_setter``), so an
+    Item Tax Template row is always attached — which in turn is why the SO/SI
+    factories pre-seed their own ``taxes`` row with a ``cost_center`` (see
+    ``_tax_row``).
     """
+    company = company or get_company()
     if not frappe.db.exists("Item", TEST_ITEM):
         item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-        item_tax_template = frappe.db.get_value("Item Tax Template", {}, "name")
         frappe.get_doc(
             {
                 "doctype": "Item",
@@ -179,26 +181,80 @@ def get_or_create_item():
                 "stock_uom": "Nos",
                 "is_stock_item": 0,
                 "is_fixed_asset": 0,
-                "taxes": [{"item_tax_template": item_tax_template}] if item_tax_template else [],
+                "taxes": [{"item_tax_template": get_or_create_item_tax_template(company)}],
             }
         ).insert(ignore_permissions=True)
     return TEST_ITEM
 
 
-def _tax_row(cost_center):
+TEST_ITEM_TAX_TEMPLATE = "Optima Zatca Test VAT 15%"
+
+
+def get_or_create_item_tax_template(company=None):
+    """An Item Tax Template for ``company``.
+
+    A real KSA site already has the ``KSA VAT …`` templates that
+    ``setup_item_tax_templates`` installs in ``after_install`` — reuse one.
+    Only a scratch site (where that installer found no VAT accounts, so created
+    no template) reaches the fabricate branch, which builds a minimal 15%
+    template backed by a get-or-created Tax account.
+    """
+    company = company or get_company()
+    existing = frappe.db.get_value(
+        "Item Tax Template", {"company": company}, "name"
+    ) or frappe.db.get_value("Item Tax Template", {}, "name")
+    if existing:
+        return existing
+
+    template = frappe.get_doc(
+        {
+            "doctype": "Item Tax Template",
+            "title": TEST_ITEM_TAX_TEMPLATE,
+            "company": company,
+            "taxes": [{"tax_type": _get_or_create_tax_account(company), "tax_rate": 15.0}],
+        }
+    )
+    template.insert(ignore_permissions=True)
+    return template.name
+
+
+def _get_or_create_tax_account(company):
+    """A leaf Tax account under the company's Liability tree (VAT output)."""
+    existing = frappe.db.get_value(
+        "Account", {"company": company, "account_type": "Tax", "is_group": 0}, "name"
+    )
+    if existing:
+        return existing
+
+    parent = frappe.db.get_value(
+        "Account", {"company": company, "root_type": "Liability", "is_group": 1}, "name"
+    )
+    account = frappe.get_doc(
+        {
+            "doctype": "Account",
+            "account_name": "Optima Zatca Test Output VAT",
+            "parent_account": parent,
+            "company": company,
+            "is_group": 0,
+            "account_type": "Tax",
+        }
+    )
+    account.insert(ignore_permissions=True)
+    return account.name
+
+
+def _tax_row(company, cost_center):
     """A Sales Taxes and Charges row (with ``cost_center``) mirroring the item's
     tax template, pre-seeded on orders/invoices.
 
     Attaching an Item Tax Template makes ERPNext's "add taxes from item tax
     template" auto-append a Sales Taxes row; on this site tax rows require a
     ``cost_center``, so seed the row explicitly rather than let the auto-append
-    inject one without it. Returns ``None`` when the site has no tax template.
+    inject one without it.
     """
-    item_tax_template = frappe.db.get_value("Item Tax Template", {}, "name")
-    if not item_tax_template:
-        return None
+    template = get_or_create_item_tax_template(company)
     account_head, tax_rate = frappe.db.get_value(
-        "Item Tax Template Detail", {"parent": item_tax_template}, ["tax_type", "tax_rate"]
+        "Item Tax Template Detail", {"parent": template}, ["tax_type", "tax_rate"]
     )
     return {
         "charge_type": "On Net Total",
@@ -258,7 +314,7 @@ def make_sales_order(*, company=None, customer=None, do_not_submit=False, **over
             }
         ],
     }
-    if tax_row := _tax_row(cost_center):
+    if tax_row := _tax_row(company, cost_center):
         fields["taxes"] = [tax_row]
     fields.update(overrides)
     so = frappe.get_doc(fields)
@@ -309,7 +365,7 @@ def make_sales_invoice(
         ],
     }
 
-    if tax_row := _tax_row(cost_center):
+    if tax_row := _tax_row(company, cost_center):
         fields["taxes"] = [tax_row]
 
     if sales_invoice_type in ("Prepayment", "Adjustment", "Final Adjustment"):
