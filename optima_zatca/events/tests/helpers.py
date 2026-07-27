@@ -119,9 +119,13 @@ def _get_or_create_test_address(company):
 
 
 def get_or_create_sales_invoice_type(name):
-    """The five types ship as fixtures; create defensively for a scratch site."""
+    """The five types ship as fixtures; create defensively for a scratch site.
+
+    The doctype's sole field is ``type`` (``autoname: field:type``), so the
+    record name is the type string itself.
+    """
     if not frappe.db.exists("Sales Invoice Type", name):
-        frappe.get_doc({"doctype": "Sales Invoice Type", "sales_invoice_type": name}).insert(
+        frappe.get_doc({"doctype": "Sales Invoice Type", "type": name}).insert(
             ignore_permissions=True
         )
     return name
