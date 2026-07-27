@@ -21,6 +21,11 @@ bench --site <site> run-tests --app optima_zatca --module optima_zatca.zatca.tes
 # so they also run under plain pytest from the bench root or app root:
 python -m pytest apps/optima_zatca/optima_zatca/zatca/tests/ -v
 
+# The events/tests/ prepayment suite needs real doctype meta, so it runs under
+# bench (not bare pytest). Matrix = in-memory logic; integration = real save:
+bench --site <site> run-tests --module optima_zatca.events.tests.test_prepayment
+bench --site <site> run-tests --module optima_zatca.events.tests.test_prepayment_integration
+
 # After Python changes
 bench restart
 # After hooks.py / fixture / custom-field changes
@@ -123,8 +128,23 @@ Declared in `pyproject.toml`, installed via `bench setup requirements`: `cryptog
 
 ## Testing rules
 
-- All ZATCA tests live in `optima_zatca/zatca/tests/` and use **`unittest.mock` only** — no live Frappe context, no real HTTP, no DB. This is why they run under bare `pytest`.
+There are **two test suites with deliberately different rules** — match the one you're adding to.
+
+### `zatca/tests/` — submission logic (mock-only)
+
+- Tests for the submission pipeline live in `optima_zatca/zatca/tests/` and use **`unittest.mock` only** — no live Frappe context, no real HTTP, no DB. This is why they run under bare `pytest` (`python -m pytest apps/optima_zatca/optima_zatca/zatca/tests/`).
 - When adding submission logic, add or extend a `_decide_*` pure function and unit-test it directly rather than testing the whole orchestrator with a live doc.
+
+### `events/tests/` — the `validate`/lifecycle doc_events (two layers)
+
+The prepayment `validate` rules (`events/prepayment.py`) are covered by a **two-layer** suite that runs under `bench` (they need the real doctype meta), not bare pytest:
+
+- **Matrix layer** (`test_prepayment.py`) — exhaustive branch coverage. Builds an unsaved `frappe.new_doc("Sales Invoice")`, sets fields in memory, and calls the private `_validate_*` helpers directly (mocking `frappe.db.get_value` for the two lookup helpers). No `insert()`, no teardown. Assert the **real business-rule message** here, because `validate_prepayments` re-raises `ValidationError` untouched but funnels *unexpected* exceptions through `log_and_throw_error` (generic message + Error Log row) — so the wrapper is the wrong seam for message assertions.
+- **Integration layer** (`test_prepayment_integration.py`) — `FrappeTestCase` with `frappe.db.rollback()` in `tearDown`. Saves a real Sales Invoice so the `validate` hook fires end-to-end, proving wiring the matrix layer can't (hook registered, custom fields carry values by validate time, a blocked invoice actually fails `insert()`). Asserts only *that* a `ValidationError` is raised — message coverage is the matrix layer's job. Never `submit()` (that triggers the ZATCA `on_submit` path).
+
+**`events/tests/helpers.py` is site-agnostic — keep it that way.** It provisions its own dedicated `Optima Zatca Test …` records (party, item, item-tax-template, commercial register + address) rather than borrowing whatever the site contains; borrowing broke it on a fresh site (the first "non-stock" item found was a fixed asset). Each `get_or_create_*` reuses a real site's record where one fits and fabricates a minimal one otherwise, so a scratch CI site and a real KSA site behave identically. When you add a new fixture, watch for the KSA landmines already handled there: `customer_type="Individual"` (dodges mandatory registration/`tax_id`), the mandatory Item `taxes` table, and pre-seeding order/invoice `taxes` rows **with `cost_center`**. Because existing sites already have the records, the *fabricate* branches only run on a fresh CI site — a wrong field name there stays invisible locally (as the `Sales Invoice Type` `type` field and the fixed-asset item both did), so a green CI run is the real proof.
+
+**CI** (`.github/workflows/ci.yml`) runs both `events/tests/` layers on a throwaway `test_site`; ERPNext's `before_tests` hook supplies the company + chart of accounts. The `zatca/tests/` mock suite is not yet wired into CI.
 
 ## Onboarding frontend (`zatca-onboarding/`)
 
