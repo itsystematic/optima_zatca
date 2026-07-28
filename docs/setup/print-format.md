@@ -1,4 +1,8 @@
-# Print Format and Letterhead Setup
+# Print Format & Letterhead — Setup Guide
+
+A guide for implementers to the **Zatca Sales Invoice** print format — logo/letterhead specs,
+customization, and troubleshooting. For how the print format is installed, see
+[install.md](install.md).
 
 ## Overview
 
@@ -660,10 +664,10 @@ optima_zatca/
 ## Additional Resources
 
 ### Related Documentation
-- [ZATCA Compliance Overview](../overview/zatca-compliacne.md)
-- [Company Registration](company-registration.md)
-- [Certificate Management](certificate-managemnet.md)
-- [Setup New Company](../setup-new-company.md)
+- [ZATCA Concepts & Glossary](../concepts.md)
+- [Onboarding — User Guide](../onboarding/user-guide.md)
+- [Certificate Management (Onboarding reference)](../onboarding/reference.md)
+- [Configuration](configuration.md)
 
 ### ERPNext Official Docs
 - [Print Format Guide](https://docs.erpnext.com/docs/user/manual/en/setting-up/print/custom-print-format)

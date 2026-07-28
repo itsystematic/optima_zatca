@@ -127,7 +127,11 @@ sites/htmlcov/index.html
 Optima ZATCA is designed to be user-friendly and intuitive. 
 
 ### Documentation
-For comprehensive setup guides and detailed instructions, visit our **[Documentation](optima_zatca/documentation/)**.
+Full documentation lives in **[`docs/`](docs/README.md)**, organized by domain:
+
+- **New to ZATCA?** [Concepts & glossary](docs/concepts.md)
+- **Implementers / accountants:** [Onboarding](docs/onboarding/user-guide.md) · [Submission](docs/submission/user-guide.md) · [Prepayment](docs/prepayment/user-guide.md) · [Configuration](docs/setup/configuration.md)
+- **Developers:** [Architecture](docs/reference/architecture.md) · [DocTypes](docs/reference/doctypes.md) · [Submission pipeline](docs/submission/reference.md)
 
 ### Video Tutorials
 Watch our step-by-step tutorials on our **[Youtube channel](https://www.youtube.com/@itsystematic)**.
