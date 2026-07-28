@@ -98,3 +98,18 @@ jobs:
         run: |
           bench --site test_site run-tests \
             --module optima_zatca.events.tests.test_prepayment_integration
+
+      - name: Run sales invoice lifecycle matrix tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_sales_invoice
+
+      # The QR generate-path is region-gated; the CI company (Wind Power LLC) is
+      # not Saudi Arabia, so this proves the hook wiring + region short-circuit.
+      # Full Phase-1 QR generation is proven locally on a KSA site.
+      - name: Run sales invoice lifecycle integration tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_sales_invoice_integration

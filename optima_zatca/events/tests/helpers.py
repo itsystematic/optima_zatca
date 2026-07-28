@@ -331,14 +331,15 @@ def make_sales_invoice(
     company=None,
     customer=None,
     do_not_insert=False,
+    submit=False,
     **overrides,
 ):
     """Build a draft Sales Invoice that reaches the ``validate`` hook.
 
-    Inserts (running validation) unless ``do_not_insert=True``; never submits,
-    so the ZATCA ``on_submit`` path is not triggered. Adjustment types get the
-    mandatory ``previous_prepayment`` and default prepayment totals unless the
-    caller overrides them.
+    Inserts (running validation) unless ``do_not_insert=True``. Submits when
+    ``submit=True`` (which fires the ZATCA ``on_submit`` hook) — otherwise leaves
+    it a draft. Adjustment types get the mandatory ``previous_prepayment`` and
+    default prepayment totals unless the caller overrides them.
     """
     company = company or get_company()
     customer = customer or get_or_create_customer()
@@ -380,4 +381,29 @@ def make_sales_invoice(
     si = frappe.get_doc(fields)
     if not do_not_insert:
         si.insert(ignore_permissions=True)
+        if submit:
+            si.submit()
     return si
+
+
+# ====================================================================================================
+# ZATCA SETTINGS / COMPANY FIXTURES (for the lifecycle-hook tests)
+# ====================================================================================================
+# The on_submit / before_cancel / on_trash hooks branch on Zatca Main Settings and Company fields.
+# These setters mutate that global state in-transaction; the integration tearDown's rollback
+# (plus clear_cache for the cached Company reads) restores it.
+
+
+def set_zatca_main_settings(**values):
+    """Set fields on the Zatca Main Settings single doctype (e.g. ``phase``,
+    ``enable_cancel_invoice``, ``enable_delete_invoice``)."""
+    for field, value in values.items():
+        frappe.db.set_single_value("Zatca Main Settings", field, value)
+
+
+def set_company_zatca_fields(company=None, **values):
+    """Set Company fields the Phase-1 QR reads (``company_name_in_arabic``,
+    ``tax_id``). ``get_region`` reads ``country`` through the document cache, so
+    callers that change region-affecting fields must ``clear_cache`` afterwards."""
+    company = company or get_company()
+    frappe.db.set_value("Company", company, values)
