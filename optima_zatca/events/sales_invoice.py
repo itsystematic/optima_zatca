@@ -21,9 +21,8 @@ SUBMIT_ACTION_SKIP = "skip"          # already sent to ZATCA — nothing to do
 SUBMIT_ACTION_BLOCK = "block"        # Phase Two, not yet reported — disallow submit
 
 
-# ================================================================================================
+# ====================================================================================================
 # ENTRY POINTS (Sales Invoice doc_events)
-# ================================================================================================
 
 
 def sales_invoice_before_cancel(doc, event):
@@ -58,9 +57,8 @@ def sales_invoice_on_submit(doc, event):
     _write_qr_file(doc, base64_string)
 
 
-# ================================================================================================
+# ====================================================================================================
 # CANCEL / DELETE GUARDS
-# ================================================================================================
 # A finalized ZATCA invoice may not be cancelled or deleted unless the matching global override
 # is enabled — otherwise the local document would drift from what ZATCA holds.
 
@@ -78,9 +76,8 @@ def _decide_delete_blocked(doc, enable_delete_invoice):
     return _is_sent_and_finalized(doc) and not enable_delete_invoice
 
 
-# ================================================================================================
+# ====================================================================================================
 # SUBMIT PHASE GUARD
-# ================================================================================================
 # Phase One generates a QR at submit for every invoice. Phase Two forbids submitting an invoice
 # that hasn't been cleared/reported first (that happens via the "Send to ZATCA" flow, not here),
 # and skips QR generation entirely once the invoice has been sent.
@@ -96,9 +93,8 @@ def _decide_submit_action(doc, phase):
     return SUBMIT_ACTION_GENERATE
 
 
-# ================================================================================================
+# ====================================================================================================
 # PHASE-ONE TLV QR
-# ================================================================================================
 # Builds the ZATCA Phase-1 (simplified invoice) QR: a base64-encoded TLV buffer of five tags —
 # seller name, VAT number, timestamp, invoice total, VAT total — rendered to an attached PNG.
 

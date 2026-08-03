@@ -22,7 +22,6 @@ from frappe.utils import nowdate, add_days
 
 # ====================================================================================================
 # COMPANY / ACCOUNT LOOKUPS
-# ====================================================================================================
 
 
 def get_company():
@@ -52,7 +51,6 @@ def get_cost_center(company=None):
 
 # ====================================================================================================
 # MANDATORY-FIELD FIXTURES (KSA/ZATCA)
-# ====================================================================================================
 
 
 TEST_COMMERCIAL_REGISTER = "Optima Zatca Test CR"
@@ -130,7 +128,6 @@ def get_or_create_sales_invoice_type(name):
 
 # ====================================================================================================
 # PARTY / ITEM FIXTURES
-# ====================================================================================================
 
 
 TEST_CUSTOMER = "Optima Zatca Test Customer"
@@ -268,7 +265,6 @@ def _tax_row(company, cost_center):
 
 # ====================================================================================================
 # PREPAYMENT INVOICE FIXTURE
-# ====================================================================================================
 
 
 def make_prepayment_invoice(*, is_linked=0, **overrides):
@@ -291,7 +287,6 @@ def make_prepayment_invoice(*, is_linked=0, **overrides):
 
 # ====================================================================================================
 # SALES ORDER / SALES INVOICE FACTORIES
-# ====================================================================================================
 
 
 def make_sales_order(*, company=None, customer=None, do_not_submit=False, **overrides):
@@ -388,7 +383,6 @@ def make_sales_invoice(
 
 # ====================================================================================================
 # ZATCA SETTINGS / COMPANY FIXTURES (for the lifecycle-hook tests)
-# ====================================================================================================
 # The on_submit / before_cancel / on_trash hooks branch on Zatca Main Settings and Company fields.
 # These setters mutate that global state in-transaction; the integration tearDown's rollback
 # (plus clear_cache for the cached Company reads) restores it.

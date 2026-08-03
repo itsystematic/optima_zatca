@@ -17,9 +17,8 @@ PRECISION = 2
 PERCENTAGE_PRECISION = 9
 
 
-# ================================================================================================
+# ====================================================================================================
 # ENTRY POINT
-# ================================================================================================
 # Sales Invoice `validate` doc_event. Dispatches to the checks that apply to the invoice type;
 # normal invoices short-circuit, adjustments run the full adjustment suite.
 
@@ -51,9 +50,8 @@ def validate_prepayments(doc, event):
         )
 
 
-# ================================================================================================
+# ====================================================================================================
 # INITIAL PREPAYMENT UNIQUENESS
-# ================================================================================================
 # A Sales Order may carry at most one Initial Prepayment invoice.
 
 
@@ -94,9 +92,8 @@ def _get_existing_initial_prepayment(filters: dict) -> str:
     )
 
 
-# ================================================================================================
+# ====================================================================================================
 # RETURN & PREPAYMENT LINKAGE
-# ================================================================================================
 # Return invoices must reference an existing, not-yet-linked Prepayment Invoice.
 
 
@@ -136,9 +133,8 @@ def _validate_prepayment_linkage(doc):
         
 
 
-# ================================================================================================
+# ====================================================================================================
 # ADJUSTMENT VALIDATION
-# ================================================================================================
 # Adjustment / Final Adjustment invoices: required fields, deducted-total ceilings, the
 # adjustment-percentage range and its computed max limit, and POS vs non-POS payment ceilings.
 # Currency compares at 2 dp; percentages at 9 dp (see PERCENTAGE_PRECISION note above).
