@@ -8,7 +8,11 @@ import frappe
 import json
 from frappe import _
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
-from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+# The dict-taking variant. `frappe.custom...property_setter.make_property_setter`
+# is a different function with a positional signature — passing it the setter
+# dicts below raises `unexpected keyword argument 'ignore_validate'`, which is
+# what silently cost this patch every property setter it tried to create.
+from frappe import make_property_setter
 
 
 ADDRESS_DOCTYPE_FIELDS = [
@@ -617,7 +621,7 @@ def create_property_setters_with_validation():
                 continue
             
             # Create the property setter
-            make_property_setter(setter, ignore_validate=True, validate=False)
+            make_property_setter(setter, ignore_validate=True, validate_fields_for_doctype=False)
             created_count += 1
             fieldname_display = setter.get("fieldname") or "DocType"
             print(f"  ✓ Created property setter: {setter['doctype']}.{fieldname_display}.{setter['property']}")

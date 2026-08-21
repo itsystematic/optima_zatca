@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-08-21 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "setting",
+  "company",
+  "commercial_register",
+  "column_break_ref",
+  "status",
+  "attempt",
+  "progress_section",
+  "stage",
+  "stage_progress",
+  "document_index",
+  "column_break_progress",
+  "started_at",
+  "settled_at",
+  "error_section",
+  "error_code",
+  "error_stage",
+  "error_http_status",
+  "column_break_error",
+  "error_endpoint",
+  "error_detail"
+ ],
+ "fields": [
+  {
+   "fieldname": "setting",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Optima Zatca Setting",
+   "options": "Optima Zatca Setting",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "commercial_register",
+   "fieldtype": "Link",
+   "label": "Commercial Register",
+   "options": "Commercial Register"
+  },
+  {
+   "fieldname": "column_break_ref",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "draft\nqueued\nrunning\nlive\nfailed"
+  },
+  {
+   "default": "1",
+   "description": "Attempt number, incremented by a retry.",
+   "fieldname": "attempt",
+   "fieldtype": "Int",
+   "label": "Attempt"
+  },
+  {
+   "fieldname": "progress_section",
+   "fieldtype": "Section Break",
+   "label": "Progress"
+  },
+  {
+   "default": "keys",
+   "description": "The link of the certificate chain this run is on.",
+   "fieldname": "stage",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Stage",
+   "options": "keys\ncsr\ncompliance\ntests\nproduction"
+  },
+  {
+   "description": "0-100 through the stage that is currently moving.",
+   "fieldname": "stage_progress",
+   "fieldtype": "Int",
+   "label": "Stage Progress"
+  },
+  {
+   "description": "Which of the six compliance documents is in flight, during the tests stage only.",
+   "fieldname": "document_index",
+   "fieldtype": "Int",
+   "label": "Document Index"
+  },
+  {
+   "fieldname": "column_break_progress",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At"
+  },
+  {
+   "fieldname": "settled_at",
+   "fieldtype": "Datetime",
+   "label": "Settled At"
+  },
+  {
+   "depends_on": "error_code",
+   "fieldname": "error_section",
+   "fieldtype": "Section Break",
+   "label": "Failure"
+  },
+  {
+   "fieldname": "error_code",
+   "fieldtype": "Data",
+   "label": "Error Code"
+  },
+  {
+   "fieldname": "error_stage",
+   "fieldtype": "Data",
+   "label": "Error Stage"
+  },
+  {
+   "fieldname": "error_http_status",
+   "fieldtype": "Int",
+   "label": "Error HTTP Status"
+  },
+  {
+   "fieldname": "column_break_error",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "error_endpoint",
+   "fieldtype": "Data",
+   "label": "Error Endpoint"
+  },
+  {
+   "fieldname": "error_detail",
+   "fieldtype": "Long Text",
+   "label": "Error Detail"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-21 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Zatca Onboarding Run",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

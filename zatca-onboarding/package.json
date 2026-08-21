@@ -1,46 +1,37 @@
 {
-  "name": "zatca-onboarding",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "//": "Security fixes: axios@^1.12.2 (CVE-2024-39338 SSRF + CVE-2024-55565 DoS), form-data@^4.0.4 (CVE-2025-7783 unsafe random)",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build --base=/assets/optima_zatca/zatca-onboarding/",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "copy-html-entry": "cp ../optima_zatca/public/zatca-onboarding/index.html ../optima_zatca/www/zatca-onboarding.html"
-  },
-  "dependencies": {
-    "@ant-design/icons": "^5.5.2",
-    "@reduxjs/toolkit": "^2.4.0",
-    "antd": "^5.23.2",
-    "axios": "^1.16.0",
-    "form-data": "^4.0.4",
-    "framer-motion": "^11.14.4",
-    "frappe-react-sdk": "^1.9.0",
-    "motion": "^11.13.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-redux": "^9.1.2",
-    "socket.io-client": "^4.8.1"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.15.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "eslint": "^9.15.0",
-    "eslint-plugin-react-hooks": "^5.0.0",
-    "eslint-plugin-react-refresh": "^0.4.14",
-    "globals": "^15.12.0",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.15",
-    "typescript": "~5.6.2",
-    "typescript-eslint": "^8.15.0",
-    "vite": "^6.4.3"
-  },
-  "main": "index.js",
-  "license": "MIT"
+	"name": "optima-zatca-onboarding",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build && cp src/assets/it-logo.webp ../optima_zatca/public/images/it-logo.webp && cp ../optima_zatca/public/zatca-onboarding/index.html ../optima_zatca/www/zatca-onboarding.html",
+		"preview": "vite preview",
+		"typecheck": "tsc -b --noEmit",
+		"test": "VITE_OZ_API=mock vitest run",
+		"test:watch": "VITE_OZ_API=mock vitest",
+		"e2e": "VITE_OZ_API=mock playwright test",
+		"e2e:ui": "VITE_OZ_API=mock playwright test --ui",
+		"dev:mock": "VITE_OZ_API=mock vite",
+		"publish-page": "cp src/assets/it-logo.webp ../optima_zatca/public/images/it-logo.webp && cp ../optima_zatca/public/zatca-onboarding/index.html ../optima_zatca/www/zatca-onboarding.html",
+		"e2e:live": "playwright test --config playwright.live.config.ts"
+	},
+	"dependencies": {
+		"@tanstack/react-query": "^5.101.4",
+		"react": "^19.1.1",
+		"react-dom": "^19.1.1",
+		"react-router-dom": "^7.9.1",
+		"socket.io-client": "^4.8.3"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.62.1",
+		"@types/node": "^26.2.0",
+		"@types/react": "^19.1.13",
+		"@types/react-dom": "^19.1.9",
+		"@vitejs/plugin-react": "^5.0.2",
+		"jsdom": "^30.0.1",
+		"typescript": "~5.9.2",
+		"vite": "^7.1.5",
+		"vitest": "^3.2.7"
+	}
 }

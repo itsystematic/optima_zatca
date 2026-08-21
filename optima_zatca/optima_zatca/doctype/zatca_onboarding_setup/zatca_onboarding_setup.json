@@ -1,0 +1,160 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:company",
+ "creation": "2026-08-21 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "status",
+  "step",
+  "column_break_state",
+  "reference",
+  "started_at",
+  "completed_at",
+  "decisions_section",
+  "phase",
+  "scope",
+  "expected_registers",
+  "column_break_decisions",
+  "acknowledged",
+  "entity_section",
+  "legal_name_ar",
+  "tin",
+  "entity_verified_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "not_started",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "not_started\ndraft\nrunning\npartial\nlive"
+  },
+  {
+   "description": "Derived on every save from what has actually been filled in; never set by hand.",
+   "fieldname": "step",
+   "fieldtype": "Select",
+   "label": "Step",
+   "options": "mode\nscope\nentity\nregisters\nreview\notp\nprogress\ndone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_state",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Support reference, minted when the run starts.",
+   "fieldname": "reference",
+   "fieldtype": "Data",
+   "label": "Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "decisions_section",
+   "fieldtype": "Section Break",
+   "label": "Decisions"
+  },
+  {
+   "fieldname": "phase",
+   "fieldtype": "Select",
+   "label": "Phase",
+   "options": "\nphase_1\nphase_2"
+  },
+  {
+   "fieldname": "scope",
+   "fieldtype": "Select",
+   "label": "Scope",
+   "options": "\nsingle\nmultiple"
+  },
+  {
+   "description": "How many registers the operator said to expect.",
+   "fieldname": "expected_registers",
+   "fieldtype": "Int",
+   "label": "Expected Registers"
+  },
+  {
+   "fieldname": "column_break_decisions",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Cleared whenever the register list changes underneath it.",
+   "fieldname": "acknowledged",
+   "fieldtype": "Check",
+   "label": "Acknowledged"
+  },
+  {
+   "fieldname": "entity_section",
+   "fieldtype": "Section Break",
+   "label": "Legal Entity"
+  },
+  {
+   "fieldname": "legal_name_ar",
+   "fieldtype": "Data",
+   "label": "Legal Name (Arabic)"
+  },
+  {
+   "fieldname": "tin",
+   "fieldtype": "Data",
+   "label": "Tax Identification Number"
+  },
+  {
+   "fieldname": "entity_verified_on",
+   "fieldtype": "Datetime",
+   "label": "Entity Verified On",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-21 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Optima Zatca",
+ "name": "Zatca Onboarding Setup",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "company"
+}
