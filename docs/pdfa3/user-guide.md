@@ -75,17 +75,16 @@ the letterhead.
 
 Two things have to be true:
 
-1. **The font has to be loaded.** The generator makes the bundled Arabic and riyal fonts
-   available to your print format through three placeholders. Declare them in the CSS field:
+1. **The font has to be loaded.** The best way is to have your administrator install the font
+   on the server, where **both** the ordinary print and the PDF/A-3 pick it up by name. Nothing
+   goes in the CSS field for this — you just name the family in step 2.
 
-   ```css
-   @font-face { font-family: 'Almarai'; src: url('__FONT_REG_MARAI_PATH__'); }
-   @font-face { font-family: 'Almarai'; src: url('__FONT_BOLD_MARAI_PATH__'); font-weight: bold; }
-   @font-face { font-family: 'Claudion'; src: url('__FONT_REG_CLAUDION_PATH__'); }
-   ```
-
-   In the ordinary print preview these placeholders are left alone, the rules are ignored, and
-   nothing breaks — so the same print format serves both.
+   > **Do not add `@font-face` rules that point at `__FONT_..._PATH__` placeholders.** They work
+   > in the PDF/A-3 but **break the ordinary Print button**: nothing fills the placeholder in
+   > that path, so the PDF fails outright with *"PDF generation failed because of broken image
+   > links"*. The same warning covers a `__ZATCA_QR_SRC__` image. A print format that uses any
+   > of these placeholders can only be printed through **Generate PDF/A-3** — never the normal
+   > Print button.
 
 2. **The font has to actually reach the text.** Elements inside a print format usually carry
    their own font, so setting a font on the outer container alone quietly does nothing. Target
@@ -104,8 +103,9 @@ Two things have to be true:
 > font that happens to have the letter. Put the Arabic font first.
 
 > **This also changes your ordinary printed invoice**, since the CSS field is shared by both.
-> That is usually what you want — the two outputs then match — but preview a normal print
-> before rolling it out.
+> That is usually what you want — the two outputs then match — but always download a normal PDF
+> before rolling it out, not just a screen preview. The preview renders in your browser and will
+> look fine even when the server-side PDF fails.
 
 ---
 
@@ -118,7 +118,8 @@ Two things have to be true:
 | No footer at the bottom | **Show Letter Head Footer in PDF/A-3** is off, or the letterhead's Footer field is empty | Tick the box; fill in the letterhead footer |
 | Footer overlaps the invoice lines | Footer is taller than the reserved strip | Shorten it, or ask a developer to raise the reserved height |
 | Arabic in the wrong typeface | Font not declared, or listed after a font that also has Arabic | See [Fonts](#fonts-arabic-text-or-the-riyal-sign-looks-wrong) above |
-| Riyal sign is an empty box | Claudion never loaded | Add its `@font-face` rule |
+| Riyal sign is an empty box | The riyal font is not installed on the server | Have an administrator install it system-wide |
+| *PDF generation failed because of broken image links* on the **normal Print button** | The print format contains an unsubstituted `__…__` placeholder, which only the PDF/A-3 path fills in | Remove the placeholder from that print format, or print it only through **Generate PDF/A-3** |
 | Logo missing | The letterhead stores its logo as HTML rather than in the **Image** field | Set the letterhead's Image field, or embed the logo via the print format |
 
 ---

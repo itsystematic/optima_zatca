@@ -65,10 +65,22 @@ print format that omits it renders unchanged.
 | `__FOOTER_IMG_1/2/3__` | `data:` URI | fixed filenames in the site's Files |
 
 Substitution runs over the **whole document**, `<style>` blocks included — which is what makes
-`@font-face { src: url('__FONT_REG_MARAI_PATH__') }` in a print format's CSS field work. In
-the wkhtmltopdf path the token is never replaced, the `url()` is invalid, and the browser
-discards that one rule; the rest of the stylesheet is unaffected. The same print format
-therefore serves both renderers.
+`@font-face { src: url('__FONT_REG_MARAI_PATH__') }` in a print format's CSS field work here.
+
+> **A print format carrying these tokens is valid *only* through the PDF/A-3 path.** Nothing
+> substitutes them in the ordinary desk print, and an unsubstituted token is not inert: it stays
+> in the markup as a relative URL, wkhtmltopdf requests it, gets a 404, and **aborts the whole
+> PDF**. Frappe surfaces that as `ContentNotFoundError` → *"PDF generation failed because of
+> broken image links"*. This is not configurable per call — `frappe/utils/pdf.py` leaves
+> `'load-error-handling': 'ignore'` commented out, so wkhtmltopdf runs with its default `abort`.
+>
+> It applies to every token equally — an `<img src="__ZATCA_QR_SRC__">` breaks the normal Print
+> button exactly as an `@font-face` `url()` does.
+
+Consequently the same print format does **not** transparently serve both renderers. Where a
+format must work under both, prefer resources neither renderer has to fetch: font families
+installed system-wide and resolved by name through fontconfig (no `@font-face` at all), and the
+QR taken from the invoice's own field rather than a placeholder.
 
 > **`__LETTERHEAD_LOGO_PATH__` reads the Letter Head `image` field only.** A letterhead whose
 > logo lives inside its `content` HTML resolves to an empty string here — the `content` block
