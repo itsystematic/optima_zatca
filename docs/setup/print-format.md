@@ -664,6 +664,8 @@ optima_zatca/
 ## Additional Resources
 
 ### Related Documentation
+- [PDF/A-3 Invoice — User Guide](../pdfa3/user-guide.md) — the archival PDF uses a different
+  rendering engine than the print preview; fonts and the letterhead footer behave differently there
 - [ZATCA Concepts & Glossary](../concepts.md)
 - [Onboarding — User Guide](../onboarding/user-guide.md)
 - [Certificate Management (Onboarding reference)](../onboarding/reference.md)
