@@ -11,6 +11,7 @@ with **[Concepts](concepts.md)**. For the product overview and installation, see
 | [Onboarding](onboarding/) | Implementers & developers | [onboarding/](onboarding/README.md) |
 | [Submission](submission/) | Accountants, implementers & developers | [submission/](submission/README.md) |
 | [Prepayment & Adjustment](prepayment/) | Accountants, implementers & developers | [prepayment/](prepayment/README.md) |
+| [PDF/A-3 Invoice](pdfa3/) | Accountants, implementers & developers | [pdfa3/](pdfa3/README.md) |
 | [Phase-1 QR](phase-one-qr/) | Developers | [phase-one-qr/](phase-one-qr/README.md) |
 | [Per-Item Tax & Rounding](tax/) | Developers | [tax/](tax/README.md) |
 
@@ -28,8 +29,10 @@ with **[Concepts](concepts.md)**. For the product overview and installation, see
 
 - **Accountants / implementers:** [Submission](submission/user-guide.md) ·
   [Prepayment](prepayment/user-guide.md) · [Onboarding](onboarding/user-guide.md) ·
+  [PDF/A-3](pdfa3/user-guide.md) ·
   [Configuration](setup/configuration.md) · [Print format](setup/print-format.md)
 - **Developers:** [Architecture](reference/architecture.md) · [DocTypes](reference/doctypes.md) ·
   [Submission](submission/reference.md) · [Prepayment](prepayment/reference.md) ·
-  [Onboarding](onboarding/reference.md) · [Phase-1 QR](phase-one-qr/reference.md) ·
+  [Onboarding](onboarding/reference.md) · [PDF/A-3](pdfa3/reference.md) ·
+  [Phase-1 QR](phase-one-qr/reference.md) ·
   [Per-item tax](tax/reference.md) · [Install](setup/install.md)
