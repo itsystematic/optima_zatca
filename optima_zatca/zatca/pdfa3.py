@@ -1,3 +1,14 @@
+"""
+PDF/A-3 generation for cleared ZATCA invoices.
+
+Renders the Sales Invoice print format with WeasyPrint, then embeds the signed UBL
+XML from the Optima Zatca Logs as an associated file so the PDF carries both the
+human-readable and the machine-readable invoice.
+
+See `docs/pdfa3/` for the rendering pipeline, the print-format placeholder contract,
+and the per-site Letter Head footer option.
+"""
+
 import io
 import os
 import base64
@@ -27,13 +38,21 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str):
             exception=e
         )
 
+# Opt-in switch for the Letter Head footer band, created per site by the
+# manually-run patch v15/create_pdfa3_letterhead_footer_field.
+LETTERHEAD_FOOTER_FIELD = "pdfa3_show_letterhead_footer"
+
+
 class ZatcaPDFA3Generator:
     """
     Service class to handle the end-to-end generation of ZATCA compliant PDF/A-3.
     It combines Frappe's print format (HTML), WeasyPrint (PDF generation), 
     and PikePDF (XML embedding and Metadata injection).
     """
-    
+
+    # Bottom strip reserved on every page for the Letter Head footer band.
+    FOOTER_BAND_HEIGHT_MM = 30
+
     def __init__(self, invoice_name: str):
         self.invoice_name = invoice_name
         self.invoice = frappe.get_doc("Sales Invoice", invoice_name)
@@ -132,6 +151,68 @@ class ZatcaPDFA3Generator:
         
         return f"data:image/png;base64,{img_str}"
 
+    def _get_letterhead_footer_html(self) -> str:
+        """
+        Returns the Letter Head's rendered `footer` HTML, or "" when it should
+        not be drawn.
+
+        Frappe leaves this footer out of the print HTML entirely, because
+        `_generate_visual_pdf` requests `no_letterhead=1`; wkhtmltopdf recovers it
+        through a step WeasyPrint has no equivalent of. See `docs/pdfa3/reference.md`
+        for that cascade.
+
+        Opt-in per site through the `pdfa3_show_letterhead_footer` Custom Field on
+        Zatca Main Settings, so sites without the field are unaffected.
+        """
+        if not self.zatca_settings.get(LETTERHEAD_FOOTER_FIELD):
+            return ""
+
+        letterhead_name = self.print_settings["letterhead"]
+        if not letterhead_name:
+            return ""
+
+        footer = frappe.db.get_value("Letter Head", letterhead_name, "footer")
+        if not footer:
+            return ""
+
+        return frappe.render_template(footer, {"doc": self.invoice.as_dict()})
+
+    def _inject_letterhead_footer(self, html_content: str) -> str:
+        """
+        Appends the Letter Head footer as a band repeated on every page.
+
+        WeasyPrint repeats `position: fixed` boxes on every page; the @page bottom
+        margin reserves the strip so body content cannot run underneath it.
+        """
+        footer_html = self._get_letterhead_footer_html()
+        if not footer_html:
+            return html_content
+
+        reserved_mm = self.FOOTER_BAND_HEIGHT_MM
+        block = f"""
+<style>
+    @page {{ margin-bottom: {reserved_mm}mm; }}
+    #pdfa3-letterhead-footer {{
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: 0;
+        padding: 0;
+        max-height: {reserved_mm - 5}mm;
+    }}
+    #pdfa3-letterhead-footer table {{ width: 100%; margin: 0; }}
+</style>
+<div id="pdfa3-letterhead-footer" class="print-format">
+    <div class="letter-head-footer">{footer_html}</div>
+</div>
+"""
+
+        if "</body>" in html_content:
+            return html_content.replace("</body>", f"{block}</body>", 1)
+
+        return html_content + block
+
     def _generate_visual_pdf(self) -> bytes:
         """
         Generates the visual PDF using WeasyPrint.
@@ -182,7 +263,10 @@ class ZatcaPDFA3Generator:
         html_content = html_content.replace("__FOOTER_IMG_2__", footer_img_2)
         html_content = html_content.replace("__FOOTER_IMG_3__", footer_img_3)
 
-        # 7. Generate PDF
+        # 7. Re-attach the Letter Head footer that no_letterhead=1 stripped out
+        html_content = self._inject_letterhead_footer(html_content)
+
+        # 8. Generate PDF
         pdf_bytes = HTML(string=html_content).write_pdf()
         
         return pdf_bytes
