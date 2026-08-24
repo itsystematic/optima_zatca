@@ -7,6 +7,7 @@ and a machine validator.
 | Document | For | What it covers |
 |----------|-----|----------------|
 | [user-guide.md](user-guide.md) | Accountants & implementers | Generating the PDF, where it is stored, enabling the letterhead footer band, and what to check when Arabic or the riyal sign renders wrong |
+| [print-format-authoring.md](print-format-authoring.md) | Developers | The rules and file structure for writing a print format WeasyPrint renders correctly |
 | [reference.md](reference.md) | Developers | The `ZatcaPDFA3Generator` pipeline, the print-format placeholder contract, the PikePDF embedding and XMP metadata, and why the letterhead footer needs re-attaching |
 
 Code lives in `zatca/pdfa3.py`. The XML it embeds is whatever the most recent successful
