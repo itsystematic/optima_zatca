@@ -19,8 +19,7 @@ generate_pdfa3_for_invoice(name)
 └── ZatcaPDFA3Generator(name).generate_and_save()
     ├── _generate_visual_pdf()      # print format → HTML → WeasyPrint → bytes
     │   ├── frappe.get_print(no_letterhead=1)
-    │   ├── <placeholder substitution>          # fonts, logo, QR, footer images
-    │   └── _inject_letterhead_footer()         # opt-in, see below
+    │   └── <placeholder substitution>          # fonts, logo, QR, footer images
     ├── _get_zatca_xml()            # signed XML from Optima Zatca Logs
     ├── _embed_xml_file()           # PikePDF: /EmbeddedFiles + /AF + XMP
     │   └── _inject_xmp_metadata()  # pdfaid:part 3, conformance B
@@ -108,76 +107,19 @@ codepoints, so a correct PDF looks empty by that measure.
 
 ---
 
-## The Letter Head footer band
+## The Letter Head footer
 
-### Why it has to be re-attached
+Frappe never puts the Letter Head footer in this module's HTML. `_generate_visual_pdf`
+requests `no_letterhead=1`, so `get_letter_head` returns `{}` and `standard.html` skips its
+footer block; and with **Repeat Header Footer** on it would land in a `.visible-pdf` div that
+the print stylesheet hides, which wkhtmltopdf only survives because `prepare_header_footer`
+extracts that div into `--footer-html`. WeasyPrint has no equivalent step.
 
-The footer never reaches this module's HTML, for two compounding reasons:
-
-1. `_generate_visual_pdf` calls `frappe.get_print(..., no_letterhead=1)`. In
-   `frappe/www/printview.py`, `get_letter_head` returns `{}` on that flag, so `footer` is
-   empty and `templates/print_formats/standard.html` skips its
-   `{% if not no_letterhead and footer %}` block entirely.
-2. Clearing the flag would not be enough. With Print Settings **Repeat Header Footer** on, the
-   footer is emitted inside `<div id="footer-html" class="visible-pdf">`, and
-   `templates/styles/standard.css` declares `.visible-pdf { display: none !important }`.
-   wkhtmltopdf still shows it only because `prepare_header_footer` in `frappe/utils/pdf.py`
-   *extracts* that div out of the body and passes it as `--footer-html`. WeasyPrint has no
-   equivalent step, so the div would render hidden and the footer would still be invisible.
-
-`_inject_letterhead_footer` therefore fetches the Letter Head's `footer` field directly,
-renders it through `frappe.render_template` with `{"doc": …}` (matching printview's own
-handling, so Jinja in a letterhead footer keeps working), and appends it before `</body>`.
-
-### How it repeats
-
-WeasyPrint repeats `position: fixed` boxes on every page. The injected block pairs that with
-an `@page { margin-bottom }` reserving the strip, so body content cannot flow underneath:
-
-```css
-@page { margin-bottom: 30mm; }
-#pdfa3-letterhead-footer { position: fixed; left: 0; right: 0; bottom: 0; }
-```
-
-`ZatcaPDFA3Generator.FOOTER_BAND_HEIGHT_MM` drives both numbers. Raise it if a deployment's
-footer is taller than the reserved strip.
-
-The wrapper carries `class="print-format"` so the footer inherits the same fonts and table
-styling as the body — including any `.print-format *` font rule.
-
-### Enabling the footer on a new site
-
-The feature is gated on `pdfa3_show_letterhead_footer` (`LETTERHEAD_FOOTER_FIELD`) on
-**Zatca Main Settings**. The field is *not* shipped with the app:
-`zatca_settings.get(...)` returns `None` where it is absent, so a site that has never asked
-for the footer produces byte-identical PDFs to before.
-
-Creating it is a patch that is **deliberately absent from `patches.txt`**:
-
-```
-patches/v15/create_pdfa3_letterhead_footer_field.py
-```
-
-Leaving it out of `patches.txt` is the whole design. Enabling the footer reserves a strip on
-every page and reflows the invoice body — that is not something a deployment should inherit
-from an app update, so the patch is run by hand on the sites that want it:
-
-```bash
-bench --site <site> execute optima_zatca.patches.v15.create_pdfa3_letterhead_footer_field.execute
-```
-
-It is idempotent (`create_custom_fields(..., update=True)`), so re-running is harmless. Then
-tick **Show Letter Head Footer in PDF/A-3** on Zatca Main Settings and regenerate.
-
-> **Do not "fix" the missing `patches.txt` entry.** Registering it there would create the field
-> on every site on the next `bench migrate`. That alone would not change any PDF — the field
-> still defaults to unticked — but it puts a switch in front of every operator for a layout
-> decision only some deployments have made, and turns a per-site opt-in into an app-wide one.
-
-Adding the field by hand works equally well where a patch run is awkward: **Customize Form →
-Zatca Main Settings → new field**, type **Check**, fieldname `pdfa3_show_letterhead_footer`,
-inserted after `letter_head`. Because a Custom Field is site data either way, it never
-propagates to other deployments.
+The generator does **not** compensate for this — a print format that wants a footer draws one
+itself. See [print-format-authoring.md](print-format-authoring.md#the-rules) for the working
+mechanism (`position: fixed` offset into the page's bottom margin) and the two traps around
+it: CSS running elements render on the last page only under WeasyPrint 68, and a margin box
+sizes to its content unless given an explicit width.
 
 ---
 

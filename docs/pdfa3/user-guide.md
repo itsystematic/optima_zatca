@@ -43,26 +43,24 @@ change to the app.
 
 ---
 
-## Showing the letterhead footer
+## The letterhead footer
 
-By default the PDF/A-3 carries **no letterhead footer** — the address / phone / email band
-you see at the bottom of a normal printed invoice is missing. This is deliberate on the
-framework's side, not a fault in your letterhead, and it needs to be switched on:
+The address / phone / email band at the bottom of the page does **not** come from the
+letterhead automatically the way it does on the ordinary Print button — the PDF/A-3 renderer
+has no equivalent of the mechanism Frappe uses there.
 
-1. Go to **Zatca Main Settings**.
-2. Tick **Show Letter Head Footer in PDF/A-3**.
-3. Regenerate the PDF.
+Instead, the **print format draws it**. A format built for PDF/A-3 pulls the content from the
+**Footer** field of the letterhead it names, so you still edit the text in one place: change
+the Letter Head record, regenerate, and every invoice follows.
 
-The footer is then drawn at the bottom of **every** page, and a strip of the page is reserved
-for it so invoice lines never run underneath it.
+If no footer appears, check in this order:
 
-> **If the tick box isn't there**, the field has not been added on this site yet — it is
-> opt-in precisely so existing PDFs never change shape without someone asking. See
-> [reference.md](reference.md#enabling-the-footer-on-a-new-site) for the one-time setup an
-> administrator runs.
+1. The letterhead's **Footer** field actually has content.
+2. The invoice (or Zatca Main Settings) names that letterhead.
+3. The print format in use was built to draw a footer — not every format is.
 
-Nothing else needs configuring: the content is whatever is already in the **Footer** field of
-the letterhead chosen above. Edit the letterhead, regenerate, and the PDF follows.
+Adding footer support to a format is a developer task; see
+[print-format-authoring.md](print-format-authoring.md).
 
 ---
 
@@ -115,8 +113,8 @@ Two things have to be true:
 |---------|-------|-----|
 | *ZATCA XML not found in logs* | Invoice never cleared successfully | Send it to ZATCA first |
 | *ZATCA XML content is empty* | The log row exists but carries no XML | Re-send the invoice; check the log record |
-| No footer at the bottom | **Show Letter Head Footer in PDF/A-3** is off, or the letterhead's Footer field is empty | Tick the box; fill in the letterhead footer |
-| Footer overlaps the invoice lines | Footer is taller than the reserved strip | Shorten it, or ask a developer to raise the reserved height |
+| No footer at the bottom | The letterhead's Footer field is empty, or the print format does not draw one | Fill in the letterhead footer; otherwise see the authoring guide |
+| Footer overlaps the invoice lines | The format's reserved bottom margin is smaller than the footer | Shorten the footer, or ask a developer to raise the page's bottom margin |
 | Arabic in the wrong typeface | Font not declared, or listed after a font that also has Arabic | See [Fonts](#fonts-arabic-text-or-the-riyal-sign-looks-wrong) above |
 | Riyal sign is an empty box | The riyal font is not installed on the server | Have an administrator install it system-wide |
 | *PDF generation failed because of broken image links* on the **normal Print button** | The print format contains an unsubstituted `__…__` placeholder, which only the PDF/A-3 path fills in | Remove the placeholder from that print format, or print it only through **Generate PDF/A-3** |
