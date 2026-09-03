@@ -8,7 +8,7 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -105,7 +105,7 @@ after_install = "optima_zatca.install.after_install"
 # Uninstallation
 # ------------
 
-# before_uninstall = "optima_zatca.uninstall.before_uninstall"
+before_uninstall = "optima_zatca.uninstall.before_uninstall"
 # after_uninstall = "optima_zatca.uninstall.after_uninstall"
 
 # Integration Setup
@@ -114,7 +114,9 @@ after_install = "optima_zatca.install.after_install"
 # Name of the app being installed is passed as an argument
 
 # before_app_install = "optima_zatca.utils.before_app_install"
-after_app_install = "optima_zatca.utils.after_app_install"
+# after_app_install: reserved for reacting to OTHER apps being installed
+# (cross-app integration). Self-setup runs from after_install, not here.
+# after_app_install = "optima_zatca.integrations.after_app_install"
 
 # Integration Cleanup
 # -------------------
@@ -157,7 +159,7 @@ override_doctype_class = {
 doc_events = {
 	"Sales Invoice": {
 		"before_save": "optima_zatca.money_in_words.set_custom_money_in_words",
-        "validate": "optima_zatca.events.sales_invoice.validate_prepayments",
+        "validate": "optima_zatca.events.prepayment.validate_prepayments",
 		"before_cancel": "optima_zatca.events.sales_invoice.sales_invoice_before_cancel",
 		"on_trash": "optima_zatca.events.sales_invoice.sales_invoice_on_trash",
         "on_submit" : "optima_zatca.events.sales_invoice.sales_invoice_on_submit",
@@ -301,6 +303,6 @@ regional_overrides = {
 }
 
 
-# fixtures = ["Tax Category" , "Tax Exemption" , "Registration Type"]
+# fixtures = []
 
 boot_session = "optima_zatca.startup.boot.add_optima_payment_setting"

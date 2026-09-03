@@ -559,11 +559,10 @@ Formula: {net_total} + {adjusted_tax} = {grand_total}
         """Add additional data like purchase order information."""
         additional_data = {}
 
-        if self.sales_invoice.get("po_no") and self.sales_invoice.get("po_date"):
+        if self.sales_invoice.get("po_no"):
             additional_data.update(
                 {
-                    "PurchaseOrderID": self.sales_invoice.get("po_no"),
-                    "PurchaseOrderIssueDate": self.sales_invoice.get("po_date"),
+                    "PurchaseOrderID": self.sales_invoice.get("po_no")
                 }
             )
 

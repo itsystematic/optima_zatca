@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [version-15]
+  pull_request:
+    branches: [version-15]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-22.04
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=15
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout optima_zatca
+        uses: actions/checkout@v5
+        with:
+          path: optima_zatca
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "18"
+
+      # wkhtmltopdf + mariadb client are needed by bench/frappe at setup time.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mariadb-client libmariadb-dev wkhtmltopdf
+          npm install -g yarn
+
+      - name: Install frappe-bench
+        run: pip install frappe-bench
+
+      # required_apps = ["erpnext"], so erpnext must be pulled alongside the app.
+      - name: Initialize bench with frappe + erpnext
+        run: |
+          bench init --skip-redis-config-generation --frappe-branch version-15 frappe-bench
+          cd frappe-bench
+          bench get-app --branch version-15 erpnext
+          bench get-app optima_zatca "${GITHUB_WORKSPACE}/optima_zatca"
+
+      - name: Create test site and install apps
+        working-directory: frappe-bench
+        run: |
+          bench set-config -g root_password root
+          # bench init ran with --skip-redis-config-generation, so Frappe still
+          # points at the default redis://127.0.0.1:11000 (nothing listens there).
+          # Point cache/queue/socketio at the CI redis service on 6379, or the
+          # after_install hooks that enqueue jobs fail with "Connection refused".
+          bench set-config -g redis_cache "redis://127.0.0.1:6379"
+          bench set-config -g redis_queue "redis://127.0.0.1:6379"
+          bench set-config -g redis_socketio "redis://127.0.0.1:6379"
+          bench new-site test_site \
+            --db-root-password root \
+            --admin-password admin \
+            --mariadb-user-host-login-scope='%'
+          bench --site test_site install-app erpnext optima_zatca
+          bench --site test_site set-config allow_tests true
+
+      # helpers.py now provisions its own dedicated party/item/commercial-register
+      # records, so both the in-memory matrix layer and the real-save integration
+      # layer run on a fresh CI site.
+      - name: Run prepayment matrix tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_prepayment
+
+      - name: Run prepayment integration tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_prepayment_integration
+
+      - name: Run sales invoice lifecycle matrix tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_sales_invoice
+
+      # The QR generate-path is region-gated; the CI company (Wind Power LLC) is
+      # not Saudi Arabia, so this proves the hook wiring + region short-circuit.
+      # Full Phase-1 QR generation is proven locally on a KSA site.
+      - name: Run sales invoice lifecycle integration tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.events.tests.test_sales_invoice_integration

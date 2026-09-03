@@ -109,12 +109,28 @@ class ZatcaPDFA3Generator:
 
     def _generate_qr_code(self):
         """
-        Generates a QR code image from the TLV/Base64 string stored in the invoice.
+        Returns the ZATCA QR as a `data:` URI.
+
+        The source field holds one of two different things depending on which app
+        populated it, and they need opposite treatment:
+
+        * a **TLV/Base64 payload** (`ksa_einv2_qr`, written by the legacy optima
+          app) — encode it into a QR here;
+        * a **file URL** (`ksa_einv_qr`, declared an Attach Image in
+          `setup/customizations.py` and written by `events/sales_invoice.py`) —
+          the QR image already exists on disk, so embed it.
+
+        Encoding a URL as if it were a payload yields a QR that scans cleanly and
+        carries a filename instead of the invoice TLV, which ZATCA rejects. That
+        is silent, so the discrimination below matters.
         """
         qr_data = self.invoice.get("ksa_einv2_qr") or self.invoice.get("ksa_einv_qr")
-        
+
         if not qr_data:
             return ""
+
+        if qr_data.startswith(("/", "http")):
+            return self._get_base64_image(qr_data)
 
         qr = qrcode.QRCode(
             version=1, 

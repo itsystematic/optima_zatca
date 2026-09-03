@@ -8,6 +8,7 @@ import click
 
 from optima_zatca.setup.setup_vat_system.set_tax_configuration import create_complete_vat_system
 from optima_zatca.setup.add_default_print_format import install_print_formats
+from optima_zatca.setup.customizations import ensure_customizations, add_standard_data
 
 
 # The patches that provision a site rather than migrate one.
@@ -19,29 +20,38 @@ from optima_zatca.setup.add_default_print_format import install_print_formats
 # — no Normal, no Prepayment, no Adjustment — and therefore a mandatory
 # `sales_invoice_type` link field on Sales Invoice with nothing to point at.
 #
+# Only patches doing work that `after_install` does not already do belong here.
+# The rest of `patches.txt` is covered by the calls above: roles and custom
+# fields by `ensure_customizations`, the mandatory Item taxes property setter by
+# `create_complete_vat_system`, the print format by `install_print_formats`.
+#
 # They stay in `patches.txt` for sites upgrading from an earlier version, and are
 # listed here for sites being created now. Every one of them is idempotent —
 # each checks for what it is about to create, or writes with `update=True` — so
 # running them in both paths is safe.
 PROVISIONING_PATCHES = (
-    "optima_zatca.patches.v15.create_zatca_additoinal_role",
     "optima_zatca.patches.v15.create_prepayment_related_doctypes",
-    "optima_zatca.patches.v15.create_prepayment_fields",
-    "optima_zatca.patches.v15.setup_customizations",
-    "optima_zatca.patches.v15.set_item_taxes_reqd",
 )
 
 
 def after_install():
     """
     Setup function called after app installation.
-    Creates print formats, tax configuration, and the reference data and custom
-    fields that the patches would otherwise only give to an upgrading site.
+
+    Creates the app's customizations (custom fields, property setters, roles),
+    print formats, tax configuration, and the seed and reference data that the
+    patches would otherwise only give to an upgrading site. This is the single
+    self-setup entry point — it was previously (incorrectly) split with the
+    after_app_install hook.
     """
     click.secho("🚀 Starting Optima ZATCA installation...", fg="cyan")
 
     install_print_formats()
     create_complete_vat_system()
+    ensure_customizations()
+    add_standard_data()
+    # Both of these depend on what runs above: the advance payment item needs the
+    # selling tax templates, and the grant needs the "Zatca Manager" role.
     run_provisioning_patches()
     grant_onboarding_permissions()
 
