@@ -69,7 +69,6 @@ class GenerateCSR:
         )
 
     def generate_required_fields(self):
-        """Generate fields required for CSR creation"""
         self.company_details.update({
             "egs_serial_number": generate_serial_number(),
             "common_name": frappe.generate_hash(length=15),
@@ -83,7 +82,6 @@ class GenerateCSR:
     # public key. get_generated_details reads them back for the caller to persist.
 
     def create_csr_and_private_key(self):
-        """Orchestrate the CSR creation process"""
         try:
             self.create_private_key()
             self.create_config_file()
@@ -97,20 +95,13 @@ class GenerateCSR:
         self.run_openssl_command(f"ecparam -name secp256k1 -genkey -noout -out {path}")
 
     def create_config_file(self):
-        # One `req_extensions`, naming one section, and that section carries the
-        # extensions ZATCA requires.
-        #
-        # This file used to declare `req_extensions` twice — `v3_req` and then
-        # `req_ext` — and OpenSSL takes the first value it sees for a key. So the
-        # section it actually used held nothing but basicConstraints and keyUsage,
-        # and the certificate template name and subjectAltName that carry the EGS
-        # serial, the VAT number, the invoice type, the address and the business
-        # category were never written into the request at all. Every compliance
-        # CSID call therefore came back `400 Invalid Request`, which says nothing
-        # about which field is missing.
-        #
-        # The layout below matches ZATCA's own published example: the extensions
-        # live in `v3_req`, and `create_csr` names it explicitly with `-reqexts`.
+        # `req_extensions` was declared twice here — `v3_req` then `req_ext` — and
+        # OpenSSL takes the first value it sees for a key. The section it actually
+        # used held nothing but basicConstraints and keyUsage, so the certificate
+        # template name and the subjectAltName carrying the EGS serial, VAT number,
+        # invoice type, address and business category never reached the request.
+        # Every compliance CSID call came back `400 Invalid Request`, which names
+        # no field. The layout below matches ZATCA's own published example.
         config = f"""oid_section = OIDS
 [ OIDS ]
 certificateTemplateName = 1.3.6.1.4.1.311.20.2
@@ -167,7 +158,6 @@ businessCategory = {self.company_details['industry']}"""
         )
 
     def get_generated_details(self):
-        """Return generated keys and CSR"""
         try:
             with (
                 open(self.get_file_path("PrivateKey.pem"), "r") as priv_key,
