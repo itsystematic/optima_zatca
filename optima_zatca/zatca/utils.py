@@ -293,9 +293,11 @@ def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict 
     company = frappe.get_doc("Company", settings.get("company"))
 
     company_dict.update({
-        "organization_name": settings.get("organization_name" , '') ,
+        # The certificate is issued per commercial register, and a company can
+        # hold several with different VAT numbers — so the setting wins here.
+        "organization_name": settings.get("organization_name") or company.get("company_name_in_arabic" , ''),
         "organization_unit_name": settings.get("organization_unit_name" , ''),
-        "organization_identifier": company.get("tax_id" , ''),
+        "organization_identifier": settings.get("organization_identifier") or company.get("tax_id" , ''),
         "invoice_type": settings.get("invoice_type" , ''),
         "industry": settings.get("industry" , ''),
         "address": format_registered_address(settings),

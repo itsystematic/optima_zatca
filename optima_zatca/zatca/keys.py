@@ -65,13 +65,7 @@ class GenerateCSR:
         self.company_details.update({
             "egs_serial_number": generate_serial_number(),
             "common_name": frappe.generate_hash(length=15),
-        })
-        
-        company_info = get_company_info(self.company)
-        self.company_details.update({
-            "organization_name": company_info["company_name_in_arabic"],
-            "organization_identifier": company_info["tax_id"],
-            "emailAddress": company_info.get("email_id", "test@zatca.com"),
+            "emailAddress": get_company_info(self.company).get("email_id", "test@zatca.com"),
         })
 
     def get_file_path(self, suffix):
