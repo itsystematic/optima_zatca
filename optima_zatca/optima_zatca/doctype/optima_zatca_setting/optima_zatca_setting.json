@@ -103,10 +103,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "TAX ID for the Company",
+   "description": "VAT number for this commercial register; may differ from the company's Tax ID.",
    "fieldname": "organization_identifier",
    "fieldtype": "Data",
-   "label": "Organization Identifier"
+   "label": "Organization Identifier",
+   "reqd": 1
   },
   {
    "description": "Generated when the CSR is created.",
