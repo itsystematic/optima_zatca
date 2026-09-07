@@ -144,7 +144,7 @@
   },
   {
    "default": "SA",
-   "description": "Always SA. Nothing reads this field; the CSR and the invoice payload both hardcode the country.",
+   "description": "Always SA.",
    "fieldname": "country_name",
    "fieldtype": "Data",
    "label": "Country Name",
