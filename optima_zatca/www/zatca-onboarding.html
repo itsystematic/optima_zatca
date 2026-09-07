@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- Served from the app's own assets, so the tab carries the mark once Frappe
+		     serves the page. `npm run build` refreshes that copy from src/assets. -->
+		<link rel="icon" type="image/webp" href="/assets/optima_zatca/images/it-logo.webp" />
+		<title>Optima ZATCA — E-Invoicing Onboarding</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Almarai:wght@300;400;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+			rel="stylesheet"
+		/>
+		<script type="module" crossorigin src="/assets/optima_zatca/zatca-onboarding/assets/index-DIduVK56.js"></script>
+		<link rel="stylesheet" crossorigin href="/assets/optima_zatca/zatca-onboarding/assets/index-oOkh_TDX.css">
+	</head>
+	<body>
+		<!--
+			Frappe renders this file as a Jinja template when it serves the built app,
+			which is where the session's CSRF token comes from. `csrf_token` is a bare
+			context variable — the same one Frappe's own desk page reads; it is not
+			reachable through `frappe.session`. The Vite dev server leaves the
+			expression untouched, and the transport treats an unrendered placeholder,
+			or the string Jinja prints for an absent value, as no token at all.
+		-->
+		<script>
+			window.csrf_token = "{{ csrf_token }}";
+			// Where Frappe serves socket.io. Behind a proxy it is on this origin and
+			// this is ignored; under `bench start` it is a separate port. The progress
+			// board falls back to polling when neither answers, so an unrendered
+			// placeholder here is harmless.
+			window.optima_socketio_port = "{{ socketio_port }}";
+		</script>
+		<div id="root"></div>
+	</body>
+</html>

@@ -13,7 +13,7 @@
    "label": "Optima Zatca Logs Count"
   }
  ],
- "content": "[{\"id\":\"ZNyKNnirFh\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">ZATCA</span>\",\"col\":12}},{\"id\":\"PeQOP9V4aX\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Failed Zatca Invoice\",\"col\":6}},{\"id\":\"aoinfGtb0O\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Success Zatca Invoice\",\"col\":6}},{\"id\":\"SVdzvZ8x5M\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zatca Logs End-point Count\",\"col\":6}},{\"id\":\"Wm_QtdR2zq\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Optima Zatca Logs Count\",\"col\":6}},{\"id\":\"aIBOg4c2Ys\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zatca Accepted Status\",\"col\":12}},{\"id\":\"95B1LijhF1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Zatca Onboarding\",\"col\":3}},{\"id\":\"lXd_ioqP--\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Zatca Logs\",\"col\":3}}]",
+ "content": "[{\"id\": \"ozHeader01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>ZATCA e-invoicing</b></span>\", \"col\": 12}}, {\"id\": \"ozIntro01\", \"type\": \"paragraph\", \"data\": {\"text\": \"Register your commercial registers with the authority, then watch every invoice clear. Start with <b>Set up e-invoicing</b> \\u2014 it walks through the whole registration in one sitting.\", \"col\": 12}}, {\"id\": \"ozShort01\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Set up e-invoicing\", \"col\": 4}}, {\"id\": \"ozShort02\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Authority log\", \"col\": 4}}, {\"id\": \"ozShort03\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Commercial registers\", \"col\": 4}}, {\"id\": \"ozSpace01\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ozHeader02\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>How submission is going</b></span>\", \"col\": 12}}, {\"id\": \"ozCard01\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Success Zatca Invoice\", \"col\": 6}}, {\"id\": \"ozCard02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Failed Zatca Invoice\", \"col\": 6}}, {\"id\": \"ozChart01\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Zatca Accepted Status\", \"col\": 12}}, {\"id\": \"ozChart02\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Zatca Logs End-point Count\", \"col\": 6}}, {\"id\": \"ozChart03\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Optima Zatca Logs Count\", \"col\": 6}}, {\"id\": \"ozSpace02\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ozHeader03\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Records</b></span>\", \"col\": 12}}, {\"id\": \"ozCardL01\", \"type\": \"card\", \"data\": {\"card_name\": \"Registration\", \"col\": 4}}, {\"id\": \"ozCardL02\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"ozCardL03\", \"type\": \"card\", \"data\": {\"card_name\": \"Diagnostics\", \"col\": 4}}]",
  "creation": "2025-03-20 10:13:10.284989",
  "custom_blocks": [],
  "docstatus": 0,
@@ -22,10 +22,122 @@
  "hide_custom": 0,
  "icon": "table",
  "idx": 0,
- "indicator_color": "green",
+ "indicator_color": "purple",
  "is_hidden": 0,
  "label": "ZATCA",
- "links": [],
+ "links": [
+  {
+   "type": "Card Break",
+   "label": "Registration",
+   "link_count": 4,
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "Zatca Onboarding Setup",
+   "link_type": "DocType",
+   "link_to": "Zatca Onboarding Setup",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "Where each company stands in the wizard."
+  },
+  {
+   "type": "Link",
+   "label": "Optima Zatca Setting",
+   "link_type": "DocType",
+   "link_to": "Optima Zatca Setting",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "One per commercial register: keys, certificates and environment."
+  },
+  {
+   "type": "Link",
+   "label": "Commercial Register",
+   "link_type": "DocType",
+   "link_to": "Commercial Register",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "The CRNs certificates are issued against."
+  },
+  {
+   "type": "Link",
+   "label": "Zatca Onboarding Run",
+   "link_type": "DocType",
+   "link_to": "Zatca Onboarding Run",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "Stage-by-stage record of each attempt, and why one failed."
+  },
+  {
+   "type": "Card Break",
+   "label": "Configuration",
+   "link_count": 3,
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "Zatca Main Settings",
+   "link_type": "DocType",
+   "link_to": "Zatca Main Settings",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "Phase, submission behaviour and the PDF/A-3 defaults."
+  },
+  {
+   "type": "Link",
+   "label": "Sales Invoice Type",
+   "link_type": "DocType",
+   "link_to": "Sales Invoice Type",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "Normal, prepayment and adjustment types."
+  },
+  {
+   "type": "Link",
+   "label": "Tax Exemption",
+   "link_type": "DocType",
+   "link_to": "Tax Exemption",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "Exemption reasons carried onto invoice lines."
+  },
+  {
+   "type": "Card Break",
+   "label": "Diagnostics",
+   "link_count": 2,
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "Optima Zatca Logs",
+   "link_type": "DocType",
+   "link_to": "Optima Zatca Logs",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "Every exchange with the authority, request and response."
+  },
+  {
+   "type": "Link",
+   "label": "Prepayment Invoice",
+   "link_type": "DocType",
+   "link_to": "Prepayment Invoice",
+   "hidden": 0,
+   "onboard": 0,
+   "is_query_report": 0,
+   "description": "Advance payments and the invoices that settle them."
+  }
+ ],
  "modified": "2025-07-24 10:38:46.819684",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
@@ -55,20 +167,31 @@
  "sequence_id": 28.0,
  "shortcuts": [
   {
-   "color": "Orange",
-   "doc_view": "List",
-   "format": "{}",
-   "label": "Zatca Logs",
-   "link_to": "Optima Zatca Logs",
-   "stats_filter": "[]",
-   "type": "DocType"
+   "color": "Purple",
+   "type": "URL",
+   "url": "/zatca-onboarding",
+   "label": "Set up e-invoicing",
+   "icon": "tick"
   },
   {
-   "color": "Grey",
+   "color": "Orange",
    "doc_view": "List",
-   "label": "Zatca Onboarding",
-   "link_to": "zatca-onboarding",
-   "type": "Page"
+   "format": "{} logged",
+   "label": "Authority log",
+   "link_to": "Optima Zatca Logs",
+   "stats_filter": "[]",
+   "type": "DocType",
+   "icon": "list"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} registers",
+   "label": "Commercial registers",
+   "link_to": "Commercial Register",
+   "stats_filter": "[]",
+   "type": "DocType",
+   "icon": "organization"
   }
  ],
  "title": "ZATCA"

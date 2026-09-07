@@ -1,0 +1,101 @@
+/*
+ * Design tokens, in the IT Systematic palette.
+ *
+ * The two anchors are taken from the logo itself: the near-black indigo it
+ * starts from (#02012B) and the magenta it resolves to (#A0008A). Everything
+ * brand-coloured below sits on the line between them, so a button, a focus ring
+ * and the mark in the corner are visibly the same idea rather than three
+ * neighbouring purples.
+ *
+ * `--brand` is the midpoint rather than either end. The navy is too close to the
+ * body ink to read as an action, and the magenta is too light to carry white
+ * text at the size a button uses it; #7A0A70 clears white at about 10:1 and is
+ * still recognisably the logo's colour.
+ */
+:root {
+	/* the logo's own two ends, for the mark and anything that spans them */
+	--its-navy: #01002b;
+	--its-mid: #3e014e;
+	--its-magenta: #9e0084;
+	--brand-gradient: linear-gradient(135deg, var(--its-navy) 0%, var(--its-mid) 55%, var(--its-magenta) 100%);
+
+	/* surfaces — a cool, faintly violet grey, so white cards sit on the palette */
+	--canvas: #dedce4;
+	--desk: #f4f3f6;
+	--surface: #ffffff;
+	--surface-2: #faf9fb;
+	--surface-3: #fcfbfd;
+	--surface-locked: #f7f6f9;
+
+	/* lines */
+	--line: #e4e2e9;
+	--line-strong: #c8c5d1;
+	--line-hair: #eeedf2;
+	--line-hair-2: #f3f2f6;
+	--line-field: #d9d6e0;
+	--line-control: #cacad4;
+
+	/* ink — carries a trace of the logo's navy rather than being neutral black */
+	--ink: #16142f;
+	--ink-2: #4a4760;
+	--ink-3: #5a5770;
+	--muted: #6b6880;
+	--muted-2: #8b889c;
+	--muted-3: #9a97aa;
+
+	/* brand — marks anything the authority touches */
+	--brand: #73006c;
+	--brand-hover: #520059;
+	--brand-tint: #f3e8f1;
+	--brand-tint-2: #f8f0f7;
+	--brand-tint-3: #fbf6fa;
+	--brand-line: #dcc0d7;
+	--brand-line-2: #ebdce8;
+	--brand-line-3: #be93b7;
+	--brand-soft: #7c6478;
+
+	/* status — kept clearly apart from the brand hue so "done" never reads as "brand" */
+	--ok: #1f7a44;
+	--ok-tint: #e8f3ec;
+	--ok-line: #c3dfcd;
+	--warn: #a6690c;
+	--warn-tint: #fdfaf3;
+	--warn-band: #edd9ae;
+	--warn-band-2: #e0b159;
+	--danger: #b3261e;
+	--danger-tint: #fdf6f5;
+	--danger-tint-2: #fbf1f0;
+	--danger-line: #e9d6d3;
+	--danger-ink: #8b5c57;
+
+	/* misc */
+	--disabled: #b8b6c2;
+	--swatch: #e0dce6;
+	--swatch-line: #cbc6d3;
+
+	--font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+	/* Almarai carries 300/400/700/800 only; a request for 500 or 600 resolves to
+	   the nearest available weight, which is what the headings want anyway. */
+	--font-ar: "Almarai", "Noto Sans Arabic", sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+	--r-xs: 3px;
+	--r-sm: 4px;
+	--r-md: 6px;
+	--r-lg: 8px;
+	--r-xl: 10px;
+	--r-2xl: 12px;
+	--r-pill: 99px;
+
+	/* motion — one scale, so nothing on screen moves at a speed of its own */
+	--motion-fast: 140ms;
+	--motion: 240ms;
+	--motion-slow: 460ms;
+	--ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+	--shadow-artboard: 0 24px 48px -24px rgba(1, 0, 43, 0.28);
+	--shadow-card: 0 1px 2px rgba(1, 0, 43, 0.05);
+	--shadow-brand: 0 8px 24px -12px rgba(115, 0, 108, 0.35);
+	--shadow-brand-sm: 0 6px 20px -12px rgba(115, 0, 108, 0.4);
+	--shadow-modal: 0 32px 64px -16px rgba(1, 0, 43, 0.5);
+}

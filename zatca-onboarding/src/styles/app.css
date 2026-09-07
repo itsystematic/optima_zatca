@@ -1,0 +1,138 @@
+/* The application shell and the development-only toolbar above it. */
+
+.app {
+	display: flex;
+	flex-direction: column;
+	height: 100dvh;
+	background: var(--desk);
+}
+
+.app__main {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	position: relative;
+}
+
+/* ── Loading ────────────────────────────────────────────────────────────── */
+
+.loading {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	padding: 32px 40px;
+	align-items: center;
+	justify-content: flex-start;
+	background: var(--desk);
+}
+
+.loading__bar {
+	width: min(1040px, 100%);
+	height: 74px;
+}
+
+.loading__body {
+	width: min(1040px, 100%);
+	height: 420px;
+}
+
+/* ── Placeholder pages for areas outside this build ─────────────────────── */
+
+.stub {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 64px;
+}
+
+.stub__card {
+	max-width: 560px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 40px 44px;
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: var(--r-xl);
+}
+
+.stub__title {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 600;
+	letter-spacing: -0.015em;
+}
+
+.stub__body {
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--ink-2);
+	text-wrap: pretty;
+}
+
+/* ── Dev toolbar ────────────────────────────────────────────────────────── */
+
+.devbar {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+	padding: 8px 16px;
+	background: var(--its-navy);
+	color: #e9e7f0;
+	font-family: var(--font-mono);
+	font-size: 11px;
+}
+
+.devbar__tag {
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #d98fcd;
+}
+
+.devbar__group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.devbar__label {
+	color: var(--muted-2);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.devbar select,
+.devbar button {
+	font: inherit;
+	color: #e9e7f0;
+	background: #241f3d;
+	border: 1px solid #3d3557;
+	border-radius: 4px;
+	padding: 3px 8px;
+	cursor: pointer;
+}
+
+.devbar button[aria-pressed="true"] {
+	background: var(--brand);
+	border-color: var(--brand);
+	color: #fff;
+}
+
+.devbar button:hover,
+.devbar select:hover {
+	border-color: #6b6191;
+}
+
+.devbar__spacer {
+	flex: 1;
+}
+
+.devbar__note {
+	color: var(--muted-2);
+}
