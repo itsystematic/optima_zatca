@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [version-15]
+    branches: [version-16]
   pull_request:
-    branches: [version-15]
+    branches: [version-16]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -12,11 +12,11 @@ concurrency:
 
 jobs:
   tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     services:
       mariadb:
-        image: mariadb:10.6
+        image: mariadb:11.8
         env:
           MARIADB_ROOT_PASSWORD: root
         ports:
@@ -40,12 +40,18 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
+      # Node 24 / Python 3.14 / MariaDB 11.8 are what frappe version-16 itself
+      # builds on (see frappe's _base-server-tests.yml defaults) — its
+      # engines.node is ">=24" and requires-python is ">=3.14,<3.15".
+      # Node also has to clear the onboarding SPA: the root package.json
+      # postinstall chains into zatca-onboarding, and `bench get-app` runs it
+      # unconditionally, so too low a Node fails the install before any test.
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: "18"
+          node-version: "24"
 
       # wkhtmltopdf + mariadb client are needed by bench/frappe at setup time.
       - name: Install system dependencies
@@ -61,9 +67,9 @@ jobs:
       # required_apps = ["erpnext"], so erpnext must be pulled alongside the app.
       - name: Initialize bench with frappe + erpnext
         run: |
-          bench init --skip-redis-config-generation --frappe-branch version-15 frappe-bench
+          bench init --skip-redis-config-generation --frappe-branch version-16 frappe-bench
           cd frappe-bench
-          bench get-app --branch version-15 erpnext
+          bench get-app --branch version-16 erpnext
           bench get-app optima_zatca "${GITHUB_WORKSPACE}/optima_zatca"
 
       - name: Create test site and install apps
