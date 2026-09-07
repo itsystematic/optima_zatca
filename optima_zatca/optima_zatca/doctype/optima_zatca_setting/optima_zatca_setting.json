@@ -141,10 +141,11 @@
   },
   {
    "default": "SA",
-   "description": "Name of the country , and always SA",
+   "description": "Always SA. Nothing reads this field; the CSR and the invoice payload both hardcode the country.",
    "fieldname": "country_name",
    "fieldtype": "Data",
-   "label": "Country Name"
+   "label": "Country Name",
+   "read_only": 1
   },
   {
    "description": "For B2B (1000) or B2C (0100) or Both(1100),and always 1100",
