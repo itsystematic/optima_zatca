@@ -17,8 +17,6 @@ FIELDS_DESCRIPTION = {
 }
 
 FIELDS_MANDATORY = [
-    # "certificateTemplateName",
-    # "emailAddress",
     "organization_unit_name",
     "organization_identifier",
     "invoice_type",
