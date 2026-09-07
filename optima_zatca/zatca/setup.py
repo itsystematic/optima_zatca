@@ -38,12 +38,7 @@ def add_company_to_zatca(name):
 
 
         # 4. Handle Production Certificate
-        list_of_fields = [
-            company_details.get("invoice_one" , False),company_details.get("invoice_two" , False), 
-            company_details.get("invoice_three", False) , company_details.get("invoice_four" , False) , 
-            company_details.get("invoice_five" , False) ,company_details.get("invoice_six" , False)
-        ]
-        if not settings.check_pcsid and all(list_of_fields):
+        if not settings.check_pcsid and all_invoice_fields_present(company_details):
             get_production_certificate(settings, company_details)
 
         # 5. Final Save and Notification
@@ -57,7 +52,11 @@ def add_company_to_zatca(name):
         frappe.log_error(f"ZATCA Setup Failed for {name}", str(e))
 
 def all_invoice_fields_present(company_details):
-    invoice_fields = [f"invoice_{i}" for i in range(1, 7)]
+    # The flags are named for the spelt-out ordinal, not the digit.
+    invoice_fields = [
+        "invoice_one", "invoice_two", "invoice_three",
+        "invoice_four", "invoice_five", "invoice_six"
+    ]
     return all(company_details.get(field) for field in invoice_fields)
 
 def notify_completion_status(settings, company_details):
