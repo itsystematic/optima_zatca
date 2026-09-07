@@ -1,9 +1,11 @@
-from frappe.utils import get_bench_relative_path
-import frappe
 import shlex
-import subprocess
 import base64
+import subprocess
+
+import frappe
 from frappe import _
+from frappe.utils import get_bench_relative_path
+
 from optima_zatca.zatca.utils import generate_serial_number, get_company_info
 
 FIELDS_DESCRIPTION = {
@@ -32,16 +34,24 @@ CERTIFICATE_TEMPLATES = {
     "production": "ZATCA-Code-Signing"
 }
 
+
 class GenerateCSR:
+
     def __init__(self, settings, site=None, **kwargs):
         self.site = site
         self.company = settings.get("company")
         self.settings = settings
         self.company_details = kwargs
-        
+
         self.validate()
         self.generate_required_fields()
         self.create_csr_and_private_key()
+
+    # ====================================================================================================
+    # CSR INPUT PREPARATION
+    # Splits what the caller must supply from what the run produces: check_mandatory_fields
+    # refuses a request missing any of FIELDS_MANDATORY, while generate_required_fields adds
+    # the identifiers this run mints. Validation therefore has to come first — see __init__.
 
     def validate(self):
         self.check_mandatory_fields()
@@ -66,10 +76,11 @@ class GenerateCSR:
             "emailAddress": get_company_info(self.company).get("email_id", "test@zatca.com"),
         })
 
-    def get_file_path(self, suffix):
-        site_path = get_bench_relative_path(self.site or frappe.local.site)
-        company_path = self.company.lower().replace(" ", "")
-        return f"{site_path}/private/files/{company_path}_{suffix}"
+    # ====================================================================================================
+    # KEY AND CSR GENERATION
+    # Four artefacts under the site's private files, in order: the EC private key, the OpenSSL
+    # config that carries ZATCA's required extensions, the signed request, and the compressed
+    # public key. get_generated_details reads them back for the caller to persist.
 
     def create_csr_and_private_key(self):
         """Orchestrate the CSR creation process"""
@@ -155,15 +166,6 @@ businessCategory = {self.company_details['industry']}"""
             f"ec -in {private_key_path} -pubout -conv_form compressed -out {public_key_path}"
         )
 
-    def run_openssl_command(self, command):
-        full_cmd = f"openssl {command}"
-        subprocess.run(
-            shlex.split(full_cmd),
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
     def get_generated_details(self):
         """Return generated keys and CSR"""
         try:
@@ -185,3 +187,20 @@ businessCategory = {self.company_details['industry']}"""
             frappe.throw(_("File not found: {0}").format(str(e)))
         except Exception as e:
             frappe.throw(_("Error reading generated files: {0}").format(str(e)))
+
+    # ====================================================================================================
+    # FILESYSTEM AND OPENSSL PLUMBING
+
+    def get_file_path(self, suffix):
+        site_path = get_bench_relative_path(self.site or frappe.local.site)
+        company_path = self.company.lower().replace(" ", "")
+        return f"{site_path}/private/files/{company_path}_{suffix}"
+
+    def run_openssl_command(self, command):
+        full_cmd = f"openssl {command}"
+        subprocess.run(
+            shlex.split(full_cmd),
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
