@@ -50,9 +50,11 @@ def after_install():
     create_complete_vat_system()
     ensure_customizations()
     add_standard_data()
-    # Runs last: the advance payment item it creates needs the selling tax
-    # templates put in place by `create_complete_vat_system` above.
+    # Both of these depend on what runs above: the advance payment item needs
+    # the selling tax templates from `create_complete_vat_system`, and the grant
+    # needs the "Zatca Manager" role from `ensure_customizations`.
     run_provisioning_patches()
+    grant_onboarding_permissions()
 
     frappe.db.commit()
     click.secho("✅ Optima ZATCA installation completed!", fg="green")
@@ -76,3 +78,32 @@ def run_provisioning_patches():
                 message=frappe.get_traceback(),
             )
             click.secho(f"  ⚠️  {module} did not complete; see the error log.", fg="yellow")
+
+
+#: The wizard's own records. A Zatca Manager runs the onboarding, so they need to
+#: read and write these, but the role is created by a provisioning step that runs
+#: after doctypes are synced — so the grant cannot live in the doctype JSON.
+ONBOARDING_DOCTYPES = ("Zatca Onboarding Setup", "Zatca Onboarding Run")
+
+
+def grant_onboarding_permissions():
+    """Give Zatca Manager access to the onboarding records, once the role exists."""
+    from frappe.permissions import add_permission, update_permission_property
+
+    if not frappe.db.exists("Role", "Zatca Manager"):
+        return
+
+    for doctype in ONBOARDING_DOCTYPES:
+        if not frappe.db.exists("DocType", doctype):
+            continue
+        if frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": "Zatca Manager"}):
+            continue
+        try:
+            add_permission(doctype, "Zatca Manager", 0)
+            for right in ("read", "write", "create"):
+                update_permission_property(doctype, "Zatca Manager", 0, right, 1)
+        except Exception:
+            frappe.log_error(
+                title=f"Optima ZATCA install: permissions for {doctype}",
+                message=frappe.get_traceback(),
+            )

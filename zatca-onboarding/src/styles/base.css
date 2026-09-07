@@ -1,0 +1,161 @@
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--canvas);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+a {
+	color: var(--brand);
+	text-decoration: none;
+}
+
+a:hover {
+	color: var(--brand-hover);
+	text-decoration: underline;
+}
+
+button {
+	font: inherit;
+	color: inherit;
+}
+
+label {
+	display: block;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 0.35;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+/* Reading in Arabic swaps the interface face wholesale: one token, every
+   element. Monospace stays monospace — register numbers and API traces are
+   Latin either way. */
+:root[lang="ar"] {
+	--font-sans: var(--font-ar);
+}
+
+/* And Arabic copy keeps its own face wherever it appears on an English page —
+   the legal name field, the language switch. */
+:lang(ar),
+.ar {
+	font-family: var(--font-ar);
+}
+
+/* ── Motion ─────────────────────────────────────────────────────────────── */
+
+/*
+ * The wizard is a sequence, and a screen that simply replaces the one before it
+ * reads as a page load rather than a step forward. Everything below is a short
+ * settle on arrival — nothing loops, nothing moves once it has landed, and
+ * nothing delays a control the operator could already be using.
+ */
+
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes fade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes rise-far {
+	from {
+		opacity: 0;
+		transform: translateY(24px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* the whole screen settles when a step is entered */
+.page__body {
+	animation: rise var(--motion-slow) var(--ease) both;
+}
+
+/* the chrome above it does not: it is the one thing that persists between steps */
+.page__strip {
+	animation: fade var(--motion) var(--ease) both;
+}
+
+/*
+ * A stagger for anything that arrives as a set — choice cards, register rows,
+ * the stage list. Applied by the element, so a screen opts in rather than every
+ * list on every screen jittering.
+ */
+.stagger > * {
+	animation: rise var(--motion) var(--ease) both;
+}
+
+.stagger > *:nth-child(1) { animation-delay: 40ms; }
+.stagger > *:nth-child(2) { animation-delay: 95ms; }
+.stagger > *:nth-child(3) { animation-delay: 150ms; }
+.stagger > *:nth-child(4) { animation-delay: 205ms; }
+.stagger > *:nth-child(5) { animation-delay: 260ms; }
+.stagger > *:nth-child(n + 6) { animation-delay: 310ms; }
+
+/* the horizon comes up from behind the card it sits in */
+.skyline {
+	animation: rise-far var(--motion-slow) var(--ease) both;
+	animation-delay: 120ms;
+}
+
+/*
+ * Vestibular disorders are triggered by exactly this kind of movement, and the
+ * setting exists to say so. Honour it wholesale: transitions collapse to an
+ * instant rather than being merely shortened, so nothing here is a slower
+ * version of the same motion.
+ *
+ * `0.01ms` rather than `0` because a zero-duration animation never fires its
+ * `animationend`, and anything waiting on that would hang instead of finishing
+ * immediately.
+ */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
