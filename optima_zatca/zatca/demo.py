@@ -18,7 +18,15 @@ DEMO_INVOICE  = {
     "5" : "invoice_six"
 }
 
-def send_sample_sales_invoices(settings ,company_details) :
+def send_sample_sales_invoices(settings ,company_details , on_document=None) :
+    """Submit the six compliance documents ZATCA checks before issuing production.
+
+    ``on_document`` is optional and, when given, is called as
+    ``on_document(index, total, accepted)`` once per document — ``index`` being
+    1-based. The onboarding board uses it to say which document is in flight
+    rather than leaving a bar sitting at one value for the length of six calls.
+    Existing callers that pass nothing are unaffected.
+    """
 
     PIH = "gSNPKCpoXIlSvtP2p5JwDXLOaEWfkevQ2pbtnkosqjE="
         
@@ -33,6 +41,7 @@ def send_sample_sales_invoices(settings ,company_details) :
         try :
             if settings.get(DEMO_INVOICE.get("{0}".format(idx))) == 1:
                 company_details[DEMO_INVOICE.get(f"{idx}")] = True
+                _report(on_document, idx, len(sales_invoices.get("Invoices")), True)
                 continue
 
 
@@ -67,7 +76,8 @@ def send_sample_sales_invoices(settings ,company_details) :
                 PIH = zatca_xml.hash
 
                 company_details[DEMO_INVOICE.get(f"{idx}")] = True
-                
+                _report(on_document, idx, len(sales_invoices.get("Invoices")), True)
+
             else :
                 frappe.publish_realtime("zatca" , {
                     "message" : _("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")),
@@ -77,7 +87,8 @@ def send_sample_sales_invoices(settings ,company_details) :
                 })
                 # frappe.msgprint(alert=True , indicator="red" , msg=_("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
                 
-                Status = "Failed" 
+                Status = "Failed"
+                _report(on_document, idx, len(sales_invoices.get("Invoices")), False)
                 
             make_action_log(
                 method ="send_to_zatca" ,
@@ -106,6 +117,20 @@ def send_sample_sales_invoices(settings ,company_details) :
     # time.sleep(5)
 
 
+
+
+def _report(on_document, idx, total, accepted):
+    """Tell the caller a document settled, without letting that break the run.
+
+    A progress callback is a convenience for whoever is watching; a failure in
+    one must not abandon a certificate chain that is otherwise progressing.
+    """
+    if not on_document:
+        return
+    try:
+        on_document(idx + 1, total, accepted)
+    except Exception:
+        frappe.log_error(title="ZATCA compliance progress callback", message=frappe.get_traceback())
 
 
 def get_company_info(company_settings) :
