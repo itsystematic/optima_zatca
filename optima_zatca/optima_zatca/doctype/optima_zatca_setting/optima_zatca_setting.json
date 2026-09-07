@@ -92,10 +92,11 @@
    "fieldtype": "Section Break"
   },
   {
-   "description": "Enter A Unique Name ex: TST-886431145-311111111101113",
+   "description": "Generated when the CSR is created.",
    "fieldname": "common_name",
    "fieldtype": "Data",
-   "label": "Common Name"
+   "label": "Common Name",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_ciks",
@@ -108,10 +109,11 @@
    "label": "Organization Identifier"
   },
   {
-   "description": "ex: 1-TST|2-TST|3-ed22f1d8-e6a2-1118-9b58-d9a8f11e445f",
+   "description": "Generated when the CSR is created.",
    "fieldname": "egs_serial_number",
    "fieldtype": "Data",
-   "label": "EGS Serial Number"
+   "label": "EGS Serial Number",
+   "read_only": 1
   },
   {
    "description": "The branch name for taxpayers\n",
