@@ -134,10 +134,13 @@
    "label": "Industry"
   },
   {
-   "description": "Organization/Taxpayer Name",
+   "description": "Stamped from the company's Arabic name when the CSR is created.",
+   "fetch_from": "company.company_name_in_arabic",
+   "fetch_if_empty": 1,
    "fieldname": "organization_name",
    "fieldtype": "Data",
-   "label": "Organization Name"
+   "label": "Organization Name",
+   "read_only": 1
   },
   {
    "default": "SA",
