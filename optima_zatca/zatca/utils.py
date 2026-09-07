@@ -229,6 +229,69 @@ def create_qr_code_for_invoice(invoice_id , qrcode_encode):
     invoice_qrcode.save()
     return invoice_qrcode.file_url
 
+def format_registered_address(settings) -> str:
+    """The registered address as one ASCII line, for the CSR's subjectAltName.
+
+    Two problems are solved here, both of which left the request missing fields
+    ZATCA requires.
+
+    The `address` field on the setting is a Link, so its value is the Address
+    document's *name* — something like "My Company (Demo) المدينه - شوران-Billing".
+    That was going into the request verbatim.
+
+    And a directory-name entry cannot hold Arabic. OpenSSL reads the config as
+    Latin-1 and re-encodes, so Arabic comes back as mojibake; combined with the
+    commas of a formatted address it fails to encode the entry at all, and drops
+    `businessCategory` behind it. The subject DN is unaffected — it carries the
+    Arabic organisation name correctly — so this restriction applies only here.
+
+    Everything non-ASCII is therefore transliterated away. What remains is the
+    part of an address that is ASCII anyway: building number, postal code and any
+    Latin street or city name. Falls back to the building number, so this can
+    shorten the address but never empty it — an absent `registeredAddress` is
+    refused outright.
+    """
+    address_name = settings.get("address") or ""
+    parts = []
+
+    if address_name and frappe.db.exists("Address", address_name):
+        address = frappe.db.get_value(
+            "Address",
+            address_name,
+            ["building_no", "address_line1", "district", "city", "pincode"],
+            as_dict=True,
+        ) or {}
+        parts = [
+            address.get("building_no"),
+            address.get("address_line1"),
+            address.get("district"),
+            address.get("city"),
+            address.get("pincode"),
+        ]
+
+    line = " ".join(
+        ascii_only(part) for part in parts if part and ascii_only(part)
+    ).strip()
+
+    return line or ascii_only(settings.get("location")) or "NA"
+
+
+def ascii_only(value) -> str:
+    """Drop what a directory string cannot hold, and collapse the gaps.
+
+    Commas go too: OpenSSL treats a comma in a `dirName` value as a separator and
+    the entry is lost.
+    """
+    if not value:
+        return ""
+    kept = "".join(
+        character
+        for character in str(value)
+        if character.isascii() and (character.isalnum() or character in " -_/.")
+    )
+    return " ".join(kept.split())
+
+
 def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict :
     
     company = frappe.get_doc("Company", settings.get("company"))
@@ -244,7 +307,7 @@ def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict 
         "organization_identifier": company.get("tax_id" , ''),
         "invoice_type": settings.get("invoice_type" , ''),
         "industry": settings.get("industry" , ''),
-        "address": settings.get("address" , ''),
+        "address": format_registered_address(settings),
         # "C": frappe.get_doc("Country", settings.get("country")).code.upper(),
         # "emailAddress" : settings.get("email" , 'test@zatca.com'),
         # "certificateTemplateName" : "ZATCA-Code-Signing" if settings.get("api_endpoints" , '') == "production" else "PREZATCA-Code-Signing"
