@@ -20,13 +20,9 @@ def get_company_info(company) -> frappe._dict :
     return frappe.db.get_value("Company" , company , [ "company_name_in_arabic" , "tax_id"] , as_dict=True)
 
 
-def generate_serial_number(company_name) :
+def generate_serial_number() :
     key =  str(uuid.uuid4())
     return "1-{0}uy|2-{1}nt|3-{2}pu".format(key[:12],"ERPNEXT",key[:12])
-
-
-def generate_common_name():
-    return str(uuid.uuid4())
 
 
 def make_auth_header_for_request(binary_security_token, secret) :
@@ -295,15 +291,10 @@ def ascii_only(value) -> str:
 def get_company_data_to_config(settings:dict={}, company_dict: dict={}) -> dict :
     
     company = frappe.get_doc("Company", settings.get("company"))
-    key = ( company.get("abbr") or "TNT-" ) + str(uuid.uuid4())
-    
+
     company_dict.update({
-        # "CN": company.get("common_name" , ''),
-        "common_name" :key,
         "organization_name": settings.get("organization_name" , '') ,
         "organization_unit_name": settings.get("organization_unit_name" , ''),
-        # "SN": settings.get("sn" , ''),
-        "egs_serial_number" : "1-{0}uy|2-{1}nt|3-{2}pu".format(key[:12],"ERPNEXT",key[:12]),
         "organization_identifier": company.get("tax_id" , ''),
         "invoice_type": settings.get("invoice_type" , ''),
         "industry": settings.get("industry" , ''),

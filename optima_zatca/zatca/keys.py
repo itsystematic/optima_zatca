@@ -63,7 +63,7 @@ class GenerateCSR:
     def generate_required_fields(self):
         """Generate fields required for CSR creation"""
         self.company_details.update({
-            "egs_serial_number": generate_serial_number(self.company),
+            "egs_serial_number": generate_serial_number(),
             "common_name": frappe.generate_hash(length=15),
         })
         
