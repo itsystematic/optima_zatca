@@ -22,12 +22,6 @@ from cryptography.hazmat.primitives import serialization, hashes
 
 
 def get_csr_identity(settings) -> dict:
-    """The subject and subjectAltName values for the CSR.
-
-    The certificate is issued per commercial register, and one company can hold
-    several with different VAT numbers — so the setting wins, and the Company is
-    only a fallback for registers onboarded before those fields were captured.
-    """
     company = get_company_info(settings.get("company"), ["company_name_in_arabic", "tax_id"]) or {}
 
     return {
@@ -41,7 +35,6 @@ def get_csr_identity(settings) -> dict:
 
 
 def get_company_info(company, fields=None) -> frappe._dict :
-    """ Function To Get Company Info From Company DocType """
     if fields is None:
         fields = ["company_name_in_arabic", "tax_id"]
     return frappe.db.get_value("Company", company, fields, as_dict=True)
@@ -100,11 +93,8 @@ def format_registered_address(settings) -> str:
 
 
 def ascii_only(value) -> str:
-    """Drop what a directory string cannot hold, and collapse the gaps.
-
-    Commas go too: OpenSSL treats a comma in a `dirName` value as a separator and
-    the entry is lost.
-    """
+    """Commas go too: OpenSSL treats a comma in a `dirName` value as a separator,
+    and the entry is lost."""
     if not value:
         return ""
     kept = "".join(
@@ -135,7 +125,7 @@ def extract_details_from_certificate(certificate , company_details:dict):
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     ).decode()  
 
-    isser_name = get_isser_name(cert.issuer.rfc4514_string()) # return with comma + space separated string
+    isser_name = get_isser_name(cert.issuer.rfc4514_string())
 
     certificate_hash = hashlib.sha256(certificate.encode()).hexdigest()
     certificate_encoded = base64.b64encode(certificate_hash.encode())
@@ -148,7 +138,6 @@ def extract_details_from_certificate(certificate , company_details:dict):
 
 
 def get_isser_name(certificate: str) -> str:
-    """ Function To Get Issuer Name in comma + space separated string """
     parts = certificate.split(',')
     return ', '.join(parts)
 
@@ -170,7 +159,6 @@ def sign_invoice(string_private_key,invoice_hash):
 
 
 def load_private_key(string_private_key):
-    """ Function Return private key After Serialization """
     private_key = serialization.load_pem_private_key(string_private_key.encode('utf-8'),password=None)
     return private_key
 
@@ -178,7 +166,7 @@ def load_private_key(string_private_key):
 # ====================================================================================================
 # PHASE-ONE QR
 # The TLV buffer ZATCA specifies for simplified invoices, and the PNG attached to the invoice.
-# Tag order and the timestamp without its trailing Z are both fixed by the spec.
+# Tag order is fixed by the spec.
 
 
 def generate_qr_code(
@@ -194,9 +182,9 @@ def generate_qr_code(
     signature_ecdsa
 ) :
 
-    # Remove the last character Z from invoice_timestamp
+    # The QR carries the timestamp without the trailing Z, and the raw base64 key
+    # rather than the PEM wrapper.
     invoice_timestamp = format_datetime(invoice_date , invoice_time)[:-1]
-    # Remove Words Start and End
     public_key_str = public_key_str.replace("-----BEGIN PUBLIC KEY-----\n", "")
     public_key_str = public_key_str.replace("-----END PUBLIC KEY-----", "")
     
@@ -212,7 +200,6 @@ def generate_qr_code(
         bytes([9]) + bytes([len(bytes.fromhex(signature_ecdsa))]) + bytes.fromhex(signature_ecdsa)
     )
     
-    # qr code is the base46 encoding of the concated array
     qrcode_encode = base64.b64encode(concatenated_data).decode()
 
     return qrcode_encode
@@ -228,9 +215,7 @@ def format_datetime(date, time):
     
     DateTime = date + ' ' + time
     DateTimeFormat = DateTime.split('.')[0]
-    # make the time into date time format string
     old_format_date = datetime.strptime(DateTimeFormat, '%Y-%m-%d %H:%M:%S')
-    # make it iso
     formatted_date = old_format_date.strftime('%Y-%m-%dT%H:%M:%SZ')
     
     return formatted_date
@@ -265,32 +250,18 @@ def create_qr_code_for_invoice(invoice_id , qrcode_encode):
 
 @frappe.whitelist()
 def get_prepayment_details(prepayment_invoice, filters=None):
-    """
-    Fetch prepayment details from the specified prepayment invoice.
-    
-    Args:
-        prepayment_invoice: The name of the prepayment invoice to fetch
-        filters: Optional additional filters as string or dict
-        
-    Returns:
-        List of prepayment invoice details
-    """
+    """The prepayment and every earlier one in its chain, newest first."""
     try:
         if not prepayment_invoice:
             return []
             
-        # Convert string filters to dict if needed
         if filters and isinstance(filters, str):
             filters = frappe.parse_json(filters)
         
-        # Fetch the prepayment invoice directly by name
         prepayment_data = frappe.get_doc("Prepayment Invoice", prepayment_invoice)
         
-        # Start building the result list
         result_list = [prepayment_data]
         
-        # Recursively fetch previous prepayment invoices if they exist
-        # Check both has_previous_prepayment flag and that previous_prepayment_invoice is not null/empty
         if (prepayment_data.get("has_previous_prepayment") and 
             prepayment_data.get("previous_prepayment_invoice")):
             
@@ -298,7 +269,6 @@ def get_prepayment_details(prepayment_invoice, filters=None):
                 prepayment_data.get("previous_prepayment_invoice"), 
                 filters
             )
-            # Extend the list with previous prepayment details
             result_list.extend(previous_invoices)
             
         return result_list
@@ -314,23 +284,19 @@ def get_prepayment_details(prepayment_invoice, filters=None):
 
 @frappe.whitelist()
 def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=True):
-	"""
-	Custom get_item_details for optima_zatca that adds customer group income account for prepayment sales invoices
-     to make it work with muiltiple CURRANCY invoices.
+	"""ERPNext's get_item_details, with the customer group's advance account as the
+	income account on prepayment invoices — the group account is what carries the
+	correct currency when the invoice is not in company currency.
 	"""
 	from erpnext.stock.get_item_details import get_item_details as erpnext_get_item_details
 
-	# Parse args if it's a string (when called via API)
 	if isinstance(args, str):
 		args = frappe.parse_json(args)
 
-	# Call the standard ERPNext function
 	item_details = erpnext_get_item_details(args, doc, for_validate, overwrite_warehouse)
 
-	# Custom logic for prepayment sales invoices
 	prepayment_types = ["Initial Prepayment", "Prepayment"]
 	if args.get("doctype") == "Sales Invoice" and args.get("sales_invoice_type") in prepayment_types:
-		# Get customer group income account
 		customer_group = None
 		if args.get("customer"):
 			customer_group = frappe.db.get_value("Customer", args.get("customer"), "customer_group")
@@ -344,7 +310,6 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 			
 			if customer_group_income_account:
 				item_details["income_account"] = customer_group_income_account
-				# Add flag to indicate this is a custom income account
 				item_details["__is_custom_income_account"] = True
 
 	return item_details
@@ -355,32 +320,21 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 
 
 def log_and_throw_error(operation: str, document_name: str, exception: Exception, custom_message: str = None) -> None:
-    """
-    Log an error to the error log and throw a user-friendly message.
-    
-    Args:
-        operation: The operation that failed (e.g., "create", "update", "delete")
-        document_name: The name/ID of the document being processed
-        exception: The exception that was caught
-        custom_message: Optional custom error message to display to the user
-    
-    Raises:
-        frappe.ValidationError: A user-friendly error message
+    """Log the traceback, then throw a message safe to show the user.
+
+    `operation` reads into the title as "Failed to {operation} {document_name}",
+    so pass a verb phrase.
     """
     error_message = str(exception)
     error_trace = traceback.format_exc()
     
-    # Generate the log title
     log_title = f"Failed to {operation} {document_name}"
     
-    # Log the detailed error
     frappe.log_error(
         title=log_title,
         message=f"Error: {error_message}\n{error_trace}"
     )
     
-    # Use custom message if provided, otherwise create a generic one
     user_message = custom_message or f"Failed to {operation}. Please check the Error Log."
     
-    # Throw the user-friendly message
     frappe.throw(_(user_message))
