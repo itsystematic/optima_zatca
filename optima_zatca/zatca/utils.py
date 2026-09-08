@@ -1,5 +1,4 @@
 import io
-import asn1
 import uuid
 import base64
 import frappe
@@ -12,7 +11,6 @@ from datetime import datetime
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import serialization, hashes
 
 
@@ -30,26 +28,6 @@ def generate_serial_number() :
 
 def make_auth_header_for_request(binary_security_token, secret) :
     return base64.b64encode(f"{binary_security_token}:{secret}".encode()).decode("utf-8")
-
-
-def create_private_keys(company_details) -> str :
-
-    # Generate the private key using elliptic curve cryptography (SECP256K1)
-    private_key = ec.generate_private_key(ec.SECP256K1(), backend=default_backend())
-    private_key_pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption()
-    )
-
-    return private_key_pem
-
-def encode_customoid(custom_string):
-    # Create an encoder
-    encoder = asn1.Encoder()
-    encoder.start()
-    encoder.write(custom_string, asn1.Numbers.UTF8String)
-    return encoder.output()
 
 
 def extract_details_from_certificate(certificate , company_details:dict):
@@ -117,57 +95,6 @@ def format_datetime(date, time):
     formatted_date = old_format_date.strftime('%Y-%m-%dT%H:%M:%SZ')
     
     return formatted_date
-
-
-def get_address_of_company(commercial_register):
-
-    """ Handle To Get Address of Company """
-    filters = []
-    if commercial_register.is_main_commercial_register_for_the_company :
-
-        filters.append([""])
-
-    return frappe.get_doc("Address" , filters )
-
-def create_address(commercial_register, **kwargs):
-    if not frappe.db.exists("Address", {"address_title": "{0}-Billing".format(kwargs.get("commercial_register"))}):
-        address = frappe.get_doc(
-            {
-                "doctype": "Address",
-                "address_title": kwargs.get("commercial_register"),
-                "address_type": "Billing",
-                "building_no" : kwargs.get("building_no"),
-                "address_line1": kwargs.get("address_line1"),
-                "city": kwargs.get("city"),
-                "district": kwargs.get("district"),
-                "country": "Saudi Arabia",
-                "address_line2": kwargs.get("address_line2"),
-                "short_address" : kwargs.get("short_address"),
-                "links": [{"link_doctype": "Commercial Register", "link_name": commercial_register.name }],
-            }
-        ).insert(ignore_permissions=True)
-        return address
-
-    return frappe.get_doc("Address", {"address_title": "{0}-Billing".format(kwargs.get("commercial_register"))})
-
-def create_commercial_register(**kwargs):
-    
-    if not frappe.db.exists("Commercial Register", kwargs.get("commercial_register")):
-        commercial_register = frappe.get_doc(
-            {
-                "doctype": "Commercial Register",
-                "commercial_register_name" : kwargs.get("commercial_register"),
-                "address" : kwargs.get("address"),
-                "tax_id" : kwargs.get("tax_id"),
-                "location" : kwargs.get("location"),
-            }
-        ).insert(ignore_permissions=True)
-
-        return commercial_register
-    
-    return frappe.get_doc("Commercial Register", kwargs.get("commercial_register"))
-
-
 
 
 def generate_qr_code(
