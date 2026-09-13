@@ -1,0 +1,16 @@
+/* No font Frappe ships has a glyph for the Saudi Riyal sign; unicode-range keeps Claudion
+   from touching any other character, so it is safe at the front of the desk font stack. */
+@font-face {
+	font-family: "Claudion";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/optima_zatca/fonts/Claudion.ttf") format("truetype");
+	unicode-range: U+20C0, U+FDFC;
+}
+
+:root {
+	--font-stack: "Claudion", "InterVariable", "Inter", "-apple-system", "BlinkMacSystemFont",
+		"Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+		"Helvetica Neue", sans-serif;
+}
