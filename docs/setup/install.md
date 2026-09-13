@@ -51,6 +51,7 @@ trap](../prepayment/reference.md#the-precision-invariant-one-number-four-places-
 | `hooks.py` / fixtures / custom fields | `bench --site <site> clear-cache` then `bench --site <site> migrate` |
 | Python | `bench restart` |
 | `public/js` | `bench build --app optima_zatca` |
+| `public/css/riyal_symbol.css` | Nothing to build — it is included unbundled. Browsers cache `/assets` for a year, so users see the edit only after a hard refresh |
 
 The customizations (`setup/customizations.py`) also carry `PERCENTAGE_PRECISION = 9`, one of the
 four layers that must stay in sync — see [prepayment/reference.md](../prepayment/reference.md).

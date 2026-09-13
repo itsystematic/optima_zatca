@@ -25,7 +25,7 @@ required_apps = ["erpnext"]
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/optima_zatca/css/optima_zatca.css"
+app_include_css = "/assets/optima_zatca/css/riyal_symbol.css"
 
 # Load modular JS files in dependency order
 app_include_js = [

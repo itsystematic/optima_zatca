@@ -67,7 +67,11 @@ Adding footer support to a format is a developer task; see
 ## Fonts: Arabic text or the riyal sign looks wrong
 
 The PDF/A-3 is rendered by a different engine than the ordinary print preview, and it does
-**not** inherit the fonts your browser has. If Arabic comes out in the wrong typeface, or the
+**not** inherit the fonts your browser has. The desk shows the riyal sign on its own because
+Optima ZATCA loads the Claudion font on every desk page, but that never reaches the PDF — a sign
+that looks right on screen can still print as an empty box.
+
+If Arabic comes out in the wrong typeface, or the
 riyal sign appears as an empty box, the fix is in your print format's **CSS** field, not in
 the letterhead.
 
