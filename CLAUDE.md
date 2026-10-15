@@ -80,7 +80,12 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 - `doc_events` on `Sales Invoice`: `validate` → `validate_prepayments`, plus `on_submit` / `before_cancel` / `on_trash` in `events/sales_invoice.py`.
 - `regional_overrides` (Saudi Arabia): replaces ERPNext's `update_itemised_tax_data` with `zatca/itemised_tax.py` for ZATCA-compliant per-line tax.
 - `app_include_js`: the three `public/js/sales_invoice/*.js` modules are loaded **in dependency order** — `prepayment.js` (constants) first, then `pos_payments.js`, then `zatca_buttons.js`. Preserve that order.
-- `app_include_css`: `public/css/riyal_symbol.css` gives the whole desk the Saudi Riyal sign (U+20C0, U+FDFC), which no font Frappe ships contains. It loads `public/fonts/Claudion.ttf` with a `unicode-range` limited to those two characters and puts `Claudion` first in `--font-stack`, so every currency value picks it up without a class. The stack is a copy of Frappe's (`espresso/_typography.scss`) — re-sync it if a Frappe upgrade changes it. The file is included unbundled and nginx serves `/assets` with a one-year `max-age`, so an edit only reaches browsers that hard-refresh. Print formats and PDF/A-3 do not use it; they load Claudion themselves.
+- `app_include_css`: `public/css/desk_fonts.bundle.css` is the **only** owner of the desk's `--font-stack` across the Optima suite — other apps must not set it, because whichever app's CSS loads last replaces the whole variable. It gives the desk:
+  - the Saudi Riyal sign (U+20C0, U+FDFC) from `public/fonts/Claudion.ttf`, `unicode-range`-limited to those two characters and **first** in the stack. Almarai has its own older U+FDFC glyph, so Claudion must stay ahead of it.
+  - Almarai (300/400/700/800) for Arabic text only, via an Arabic `unicode-range`, so Latin text keeps Inter.
+  - `body .chart-container { font-family: var(--font-stack) }` — frappe-charts injects its own `.chart-container` font into `<head>` at runtime, after every `app_include_css` link, so equal specificity would lose.
+
+  The stack is a copy of Frappe's (`espresso/_typography.scss`) with Claudion and Almarai added — re-sync it if a Frappe upgrade changes it. As a bundle it needs `bench build --app optima_zatca`; in return its filename is content-hashed, so edits reach browsers despite nginx's one-year `/assets` cache. Print formats and PDF/A-3 do not use it; they load Claudion and Almarai themselves.
 - `website_route_rules` + `www/zatca-onboarding.html` serve the onboarding SPA at `/zatca-onboarding`.
 - `after_install` / `after_app_install` run installers; migrations run the patches in `optima_zatca/patches.txt` (prepayment doctypes/fields, roles, print formats, item-tax setup).
 
