@@ -11,6 +11,7 @@ __pycache__/
 *__pycache__*
 
 optima_zatca/public/node_modules
+optima_zatca/public/dist/
 optima_zatca/public/zatca-onboarding/
 optima_zatca/public/zatca-onboarding/zatca_onboarding.js
 
