@@ -9,8 +9,7 @@ Why the helpers and not ``validate_prepayments``: the public entry point re-rais
 ``ValidationError`` untouched but still funnels *unexpected* exceptions through
 ``log_and_throw_error`` (generic message + Error Log row). Calling the helpers
 directly keeps every assertion on the real business-rule message and touches no
-DB, except the two lookup helpers, whose ``frappe.db.get_value`` calls are mocked
-here.
+DB: the lookups are mocked here.
 """
 
 from unittest.mock import patch
@@ -190,12 +189,26 @@ class TestPrepaymentLinkage(FrappeTestCase):
             with self.assertRaises(frappe.ValidationError):
                 prepayment._validate_prepayment_linkage(doc)
 
-    def test_already_linked_throws(self):
+    def test_linked_by_another_invoice_throws(self):
         doc = _si(return_against="PRE-001")
         linked = frappe._dict({"is_linked": 1, "name": "PRE-001"})
         with patch("optima_zatca.events.prepayment.frappe.db.get_value", return_value=linked):
-            with self.assertRaises(frappe.ValidationError):
+            with patch.object(prepayment, "_is_linked_by_current_invoice", return_value=False):
+                with self.assertRaises(frappe.ValidationError):
+                    prepayment._validate_prepayment_linkage(doc)
+
+    def test_linked_by_current_invoice_passes(self):
+        doc = _si(return_against="PRE-001")
+        linked = frappe._dict({"is_linked": 1, "name": "PRE-001"})
+        with patch("optima_zatca.events.prepayment.frappe.db.get_value", return_value=linked):
+            with patch.object(prepayment, "_is_linked_by_current_invoice", return_value=True):
                 prepayment._validate_prepayment_linkage(doc)
+
+    def test_new_invoice_is_never_the_linker(self):
+        doc = _si(return_against="PRE-001")
+        with patch("optima_zatca.events.prepayment.frappe.db.exists") as exists:
+            self.assertFalse(prepayment._is_linked_by_current_invoice(doc))
+        exists.assert_not_called()
 
     def test_unlinked_prepayment_passes(self):
         doc = _si(return_against="PRE-001")

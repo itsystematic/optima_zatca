@@ -124,13 +124,23 @@ def _validate_prepayment_linkage(doc):
             )
         )
 
-    if prepayment_data.is_linked:
+    if prepayment_data.is_linked and not _is_linked_by_current_invoice(doc):
         frappe.throw(
             _("Prepayment Invoice {0} is already linked with another Sales Invoice").format(
                 frappe.bold(doc.return_against)
             )
         )
-        
+
+
+def _is_linked_by_current_invoice(doc) -> bool:
+    """Whether this invoice's own ZATCA send set ``is_linked``, which submit must then accept."""
+    if doc.is_new():
+        return False
+
+    return bool(frappe.db.exists(
+        "Prepayment Invoice",
+        {"sales_invoice": doc.name, "previous_prepayment_invoice": doc.return_against},
+    ))
 
 
 # ====================================================================================================

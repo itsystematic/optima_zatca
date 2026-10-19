@@ -16,7 +16,9 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from optima_zatca.overrides.sales_invoice import CustomSalesInvoice
+from optima_zatca.events import prepayment
 from optima_zatca.events.tests import helpers
+from optima_zatca.zatca.prepayment_invoice import create_prepayment_invoice
 
 
 class TestPrepaymentValidationWiring(FrappeTestCase):
@@ -72,3 +74,24 @@ class TestPrepaymentValidationWiring(FrappeTestCase):
         )
         with self.assertRaises(frappe.ValidationError):
             duplicate.insert(ignore_permissions=True)
+
+    def test_return_accepts_link_made_by_its_own_zatca_send(self):
+        # Regression: a draft return is sent to ZATCA before submit, and the
+        # successful send creates its own Prepayment Invoice record and marks
+        # return_against is_linked. Submit re-runs validate, which used to reject
+        # that link as "already linked with another Sales Invoice".
+        # A return can't be inserted here without submitting its original, so this
+        # replays send-then-submit on a saved draft with the real bookkeeping.
+        returned = helpers.make_prepayment_invoice()
+        si = helpers.make_sales_invoice(sales_invoice_type="Initial Prepayment")
+        si.update({"is_return": 1, "return_against": returned.name, "adjustment_percentage": 0})
+
+        create_prepayment_invoice(si, frappe.generate_hash())
+
+        self.assertTrue(frappe.db.get_value("Prepayment Invoice", returned.name, "is_linked"))
+        prepayment._validate_prepayment_linkage(si)
+
+        other = helpers.make_sales_invoice(sales_invoice_type="Initial Prepayment")
+        other.return_against = returned.name
+        with self.assertRaises(frappe.ValidationError):
+            prepayment._validate_prepayment_linkage(other)
