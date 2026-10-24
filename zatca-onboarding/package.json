@@ -45,7 +45,9 @@
     "**/brace-expansion": "^1.1.21 || ^2.1.7",
     "eslint/minimatch": "3.1.4",
     "typescript-eslint/@typescript-eslint/typescript-estree/minimatch": "9.0.7",
-    "tailwindcss/sucrase/glob/minimatch": "9.0.7"
+    "tailwindcss/sucrase/glob/minimatch": "9.0.7",
+    "ws" : "8.21.0",
+    "tailwindcss/postcss-selector-parser": "6.1.5"
   },
   "main": "index.js",
   "license": "MIT"
