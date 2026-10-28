@@ -113,3 +113,9 @@ jobs:
         run: |
           bench --site test_site run-tests \
             --module optima_zatca.events.tests.test_sales_invoice_integration
+
+      - name: Run advance payment report tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.optima_zatca.report.advance_payment_report.test_advance_payment_report
