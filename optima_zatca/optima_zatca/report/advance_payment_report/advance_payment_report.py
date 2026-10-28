@@ -109,6 +109,7 @@ def get_invoices(filters):
             invoice.base_net_total,
             invoice.deducted_taxable_amount,
             invoice.deducted_tax_amount,
+            invoice.deducted_grand_total,
             invoice.adjustment_percentage,
             invoice.clearance_or_reporting,
         )
@@ -179,6 +180,7 @@ def build_chain(members, filters, precision=2):
         row.advance = _round(advance_amount(row), precision)
         row.deducted_taxable = _round(signed_deduction(row, row.deducted_taxable_amount), precision)
         row.deducted_vat = _round(signed_deduction(row, row.deducted_tax_amount), precision)
+        row.deducted_total = _round(signed_deduction(row, row.deducted_grand_total), precision)
         row.balance_delta = _round(row.advance + row.deducted_taxable, precision)
         balance = row.balance = _round(balance + row.balance_delta, precision)
         row.signed_percentage = _round(-signed_deduction(row, row.adjustment_percentage), PERCENTAGE_PRECISION)
@@ -302,6 +304,7 @@ def get_columns(approach):
         amount("advance", "Advance"),
         amount("deducted_taxable", "Deducted Taxable"),
         amount("deducted_vat", "Deducted VAT", 120),
+        amount("deducted_total", "Deducted Grand Total", 150),
         column("adjustment_percentage", "Adjustment %", "Percent", 130, precision=PERCENTAGE_PRECISION),
         amount("balance", "Advance Balance", 140),
         *(chain_state if is_tree else []),
@@ -349,6 +352,7 @@ def invoice_row(chain, row, currency):
         "advance": row.advance,
         "deducted_taxable": row.deducted_taxable,
         "deducted_vat": row.deducted_vat,
+        "deducted_total": row.deducted_total,
         "adjustment_percentage": row.signed_percentage,
         "balance": row.balance,
         "cost_center": row.cost_center,
@@ -374,6 +378,7 @@ def chain_row(chain, currency, precision=2):
         "advance": total("advance"),
         "deducted_taxable": total("deducted_taxable"),
         "deducted_vat": total("deducted_vat"),
+        "deducted_total": total("deducted_total"),
         "adjustment_percentage": total("signed_percentage", PERCENTAGE_PRECISION),
         "balance": chain.balance,
         "remaining_percentage": chain.remaining_percentage,
