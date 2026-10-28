@@ -108,6 +108,8 @@ def get_invoices(filters):
             invoice.cost_center,
             invoice.project,
             invoice.base_net_total,
+            invoice.base_total_taxes_and_charges,
+            invoice.base_grand_total,
             invoice.deducted_taxable_amount,
             invoice.deducted_tax_amount,
             invoice.deducted_grand_total,
@@ -171,23 +173,21 @@ def link_chains(invoices):
 
 def build_chain(members, filters, precision=2):
     """The chain as of To Date, or None when it has no invoice by then. Each member gets its signed
-    deductions and the balance after it; the opening is what the invoices before From Date left."""
+    prepayment amounts and the balance after it; the opening is what the invoices before From Date left."""
     rows = [row for row in members if getdate(row.posting_date) <= filters.to_date]
     if not rows:
         return None
 
     balance = 0.0
     for row in rows:
-        row.advance = _round(advance_amount(row), precision)
-        row.deducted_taxable = _round(signed_deduction(row, row.deducted_taxable_amount), precision)
-        row.deducted_vat = _round(signed_deduction(row, row.deducted_tax_amount), precision)
-        row.deducted_total = _round(signed_deduction(row, row.deducted_grand_total), precision)
-        row.balance_delta = _round(row.advance + row.deducted_taxable, precision)
-        balance = row.balance = _round(balance + row.balance_delta, precision)
+        row.prepayment_amount, row.prepayment_tax, row.prepayment_total = (
+            _round(amount, precision) for amount in prepayment_amounts(row)
+        )
+        balance = row.balance = _round(balance + row.prepayment_amount, precision)
         row.signed_percentage = -signed_deduction(row, row.adjustment_percentage)
 
     def total(selected):
-        return _round(sum(row.balance_delta for row in selected), precision)
+        return _round(sum(row.prepayment_amount for row in selected), precision)
 
     during = [row for row in rows if getdate(row.posting_date) >= filters.from_date]
     status = chain_status(rows)
@@ -208,10 +208,15 @@ def build_chain(members, filters, precision=2):
     )
 
 
-def advance_amount(row):
-    if row.sales_invoice_type not in ADVANCE_TYPES:
-        return 0.0
-    return flt(row.base_net_total)
+def prepayment_amounts(row):
+    """The taxable, tax and total the invoice moves the advance by. An advance adds its own; a
+    settlement takes off what it deducts."""
+    if row.sales_invoice_type in ADVANCE_TYPES:
+        return flt(row.base_net_total), flt(row.base_total_taxes_and_charges), flt(row.base_grand_total)
+    return tuple(
+        signed_deduction(row, amount)
+        for amount in (row.deducted_taxable_amount, row.deducted_tax_amount, row.deducted_grand_total)
+    )
 
 
 def signed_deduction(row, amount):
@@ -302,10 +307,9 @@ def get_columns(approach):
         column("customer", "Customer", "Link", 180, "Customer"),
         column("invoice_type", "Type", "Data", 150),
         *([] if is_tree else [column("chain", "Chain", "Link", 140, "Sales Invoice")]),
-        amount("advance", "Advance"),
-        amount("deducted_taxable", "Deducted Taxable"),
-        amount("deducted_vat", "Deducted VAT", 120),
-        amount("deducted_total", "Deducted Grand Total", 150),
+        amount("prepayment_amount", "Prepayment Amount", 150),
+        amount("prepayment_tax", "Prepayment Tax"),
+        amount("prepayment_total", "Prepayment Total", 150),
         column("adjustment_percentage", "Adjustment %", "Percent", 130, precision=PERCENTAGE_PRECISION),
         amount("balance", "Advance Balance", 140),
         *(chain_state if is_tree else []),
@@ -350,10 +354,9 @@ def invoice_row(chain, row, currency):
         "customer": row.customer,
         "invoice_type": _("{0} (Return)").format(invoice_type) if row.is_return else invoice_type,
         "chain": chain.root.name,
-        "advance": row.advance,
-        "deducted_taxable": row.deducted_taxable,
-        "deducted_vat": row.deducted_vat,
-        "deducted_total": row.deducted_total,
+        "prepayment_amount": row.prepayment_amount,
+        "prepayment_tax": row.prepayment_tax,
+        "prepayment_total": row.prepayment_total,
         "adjustment_percentage": _round(row.signed_percentage, PERCENTAGE_PRECISION),
         "balance": row.balance,
         "cost_center": row.cost_center,
@@ -376,10 +379,9 @@ def chain_row(chain, currency, precision=2):
         "customer": root.customer,
         "invoice_type": _("Chain"),
         "chain": root.name,
-        "advance": total("advance"),
-        "deducted_taxable": total("deducted_taxable"),
-        "deducted_vat": total("deducted_vat"),
-        "deducted_total": total("deducted_total"),
+        "prepayment_amount": total("prepayment_amount"),
+        "prepayment_tax": total("prepayment_tax"),
+        "prepayment_total": total("prepayment_total"),
         "adjustment_percentage": total("signed_percentage", PERCENTAGE_PRECISION),
         "balance": chain.balance,
         "remaining_percentage": chain.remaining_percentage,

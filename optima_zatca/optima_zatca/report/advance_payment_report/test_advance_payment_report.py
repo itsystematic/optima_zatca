@@ -36,6 +36,8 @@ def invoice(name, invoice_type, posting_date, *, parent=None, is_return=0, taxab
         return_against=parent if is_return else None,
         previous_prepayment=parent,
         base_net_total=taxable,
+        base_total_taxes_and_charges=taxable * 0.15,
+        base_grand_total=taxable * 1.15,
         deducted_taxable_amount=deducted,
         deducted_tax_amount=deducted * 0.15,
         deducted_grand_total=deducted * 1.15,
@@ -97,7 +99,10 @@ class TestAdvancePaymentReport(FrappeTestCase):
         chain, *lines = rows
 
         self.assertEqual([line["invoice"] for line in lines], [row.name for row in invoices])
-        self.assertEqual([line["deducted_taxable"] for line in lines[:3]], [0, 0, 0])
+        self.assertEqual(
+            [line["prepayment_amount"] for line in lines],
+            [129961.74, 116770.44, 117855.5, -116770.44, -117855.5, -129961.74],
+        )
         self.assertEqual((chain["balance"], chain["status"]), (0, "Closed"))
         self.assertEqual((chain["adjustment_percentage"], chain["remaining_percentage"]), (100, 0))
         self.assertEqual(cards["Advances Invoiced in Period"], 364587.68)
@@ -106,17 +111,15 @@ class TestAdvancePaymentReport(FrappeTestCase):
 
     def test_each_balance_moves_by_the_advance_and_deduction_beside_it(self):
         """The Prepayment's own 400 shows as its advance, and the 600 the client copied into its
-        deducted fields does not. The balance moves by the taxable deduction, not the grand total."""
+        deducted fields does not. The balance moves by the taxable amount, not the total."""
         chain, *lines = report(contract())[0]
+        fields = ("prepayment_amount", "prepayment_tax", "prepayment_total", "balance")
 
         self.assertEqual(
-            [(line["advance"], line["deducted_taxable"], line["deducted_total"], line["balance"]) for line in lines],
-            [(600, 0, 0, 600), (400, 0, 0, 1000), (0, -400, -460, 600), (0, -600, -690, 0)],
+            [tuple(line[field] for field in fields) for line in lines],
+            [(600, 90, 690, 600), (400, 60, 460, 1000), (-400, -60, -460, 600), (-600, -90, -690, 0)],
         )
-        self.assertEqual(
-            (chain["advance"], chain["deducted_taxable"], chain["deducted_total"], chain["balance"]),
-            (1000, -1000, -1150, 0),
-        )
+        self.assertEqual([chain[field] for field in fields], [0, 0, 0, 0], "a settled chain nets to zero")
 
     def test_returning_the_final_adjustment_reopens_the_chain(self):
         invoices = contract() + [
@@ -130,7 +133,7 @@ class TestAdvancePaymentReport(FrappeTestCase):
 
         self.assertEqual((chain["status"], chain["balance"], chain["remaining_percentage"]), ("Open", 600, 60))
         self.assertEqual(returned["invoice_type"], "Final Adjustment (Return)")
-        self.assertEqual((returned["deducted_taxable"], returned["adjustment_percentage"]), (600, -60))
+        self.assertEqual((returned["prepayment_amount"], returned["adjustment_percentage"]), (600, -60))
 
     def test_the_period_rolls_the_advance_forward(self):
         invoices = [
@@ -211,4 +214,10 @@ class TestExecute(FrappeTestCase):
 
         self.assertEqual([row["invoice"] for row in rows], [initial.name, initial.name, adjustment.name])
         self.assertEqual(rows[0]["balance"], flt(initial.base_net_total - adjustment.deducted_taxable_amount, 2))
-        self.assertEqual(rows[2]["deducted_total"], -adjustment.deducted_grand_total)
+        self.assertEqual(
+            [(row["prepayment_tax"], row["prepayment_total"]) for row in rows[1:]],
+            [
+                (initial.base_total_taxes_and_charges, initial.base_grand_total),
+                (-adjustment.deducted_tax_amount, -adjustment.deducted_grand_total),
+            ],
+        )
