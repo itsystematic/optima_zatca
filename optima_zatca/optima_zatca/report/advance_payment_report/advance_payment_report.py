@@ -37,8 +37,9 @@ APPROACH_TYPES = {"Prepayment": ADVANCE_TYPES, "Adjustment": SETTLEMENT_TYPES}
 OPEN = "Open"
 CLOSED = "Closed"
 
-# Matches the Sales Invoice adjustment_percentage field (setup/customizations.py).
-PERCENTAGE_PRECISION = 9
+# The invoices keep 9 dp so a Final Adjustment settles its chain exactly. The report sums those and
+# rounds only what it shows: rounded one by one, a settled chain can total 100.01%.
+PERCENTAGE_PRECISION = 2
 CHART_CUSTOMERS = 10
 
 
@@ -183,7 +184,7 @@ def build_chain(members, filters, precision=2):
         row.deducted_total = _round(signed_deduction(row, row.deducted_grand_total), precision)
         row.balance_delta = _round(row.advance + row.deducted_taxable, precision)
         balance = row.balance = _round(balance + row.balance_delta, precision)
-        row.signed_percentage = _round(-signed_deduction(row, row.adjustment_percentage), PERCENTAGE_PRECISION)
+        row.signed_percentage = -signed_deduction(row, row.adjustment_percentage)
 
     def total(selected):
         return _round(sum(row.balance_delta for row in selected), precision)
@@ -353,7 +354,7 @@ def invoice_row(chain, row, currency):
         "deducted_taxable": row.deducted_taxable,
         "deducted_vat": row.deducted_vat,
         "deducted_total": row.deducted_total,
-        "adjustment_percentage": row.signed_percentage,
+        "adjustment_percentage": _round(row.signed_percentage, PERCENTAGE_PRECISION),
         "balance": row.balance,
         "cost_center": row.cost_center,
         "project": row.project,

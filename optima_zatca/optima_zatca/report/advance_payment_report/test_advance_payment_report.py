@@ -73,8 +73,8 @@ class TestAdvancePaymentReport(FrappeTestCase):
         """Three advances settled by three adjustments, with figures as stored in production.
 
         Its Prepayments carry 129,961.74 and 246,732.18 in deducted_taxable_amount. Counting those
-        would close the chain at -376,693.92. Its percentages predate the precision fix and leave
-        0.00000204 remaining.
+        would close the chain at -376,693.92. Its percentages sum to 99.99999796, which rounded one by
+        one would total 100.01%.
         """
         invoices = [
             invoice("INIT", "Initial Prepayment", "2026-07-16", taxable=129961.74),
@@ -99,7 +99,7 @@ class TestAdvancePaymentReport(FrappeTestCase):
         self.assertEqual([line["invoice"] for line in lines], [row.name for row in invoices])
         self.assertEqual([line["deducted_taxable"] for line in lines[:3]], [0, 0, 0])
         self.assertEqual((chain["balance"], chain["status"]), (0, "Closed"))
-        self.assertEqual(chain["remaining_percentage"], 0.00000204)
+        self.assertEqual((chain["adjustment_percentage"], chain["remaining_percentage"]), (100, 0))
         self.assertEqual(cards["Advances Invoiced in Period"], 364587.68)
         self.assertEqual(cards["Advances Deducted in Period"], 364587.68)
         self.assertEqual(cards["Closing Advance Balance"], 0)
