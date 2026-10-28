@@ -311,7 +311,7 @@ def get_columns(approach):
         amount("prepayment_tax", "Prepayment Tax"),
         amount("prepayment_total", "Prepayment Total", 150),
         column("adjustment_percentage", "Adjustment %", "Percent", 130, precision=PERCENTAGE_PRECISION),
-        amount("balance", "Advance Balance", 140),
+        amount("balance", "Prepayment Balance", 150),
         *(chain_state if is_tree else []),
         column("cost_center", "Cost Center", "Link", 150, "Cost Center"),
         column("project", "Project", "Link", 120, "Project"),
