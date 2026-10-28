@@ -30,6 +30,13 @@ BASEURL = {
 
 
 
+def _block_in_tests():
+    """No test may reach ZATCA in any environment: the invoice it sends is fabricated, but the
+    certificate it is signed with is the site's real one."""
+    if frappe.flags.in_test:
+        frappe.throw(_("ZATCA requests are blocked while tests run."))
+
+
 def get_base_url(setting:str=None , endpoint:str=None) -> str :
     
     if not setting :
@@ -42,6 +49,7 @@ def get_base_url(setting:str=None , endpoint:str=None) -> str :
 
 def make_post_request(setting, endpoint, header, json_data):
     
+    _block_in_tests()
     url = get_base_url(setting, endpoint)
     try:
         response = requests.post(url, headers=header, json=json_data)
@@ -53,6 +61,7 @@ def make_post_request(setting, endpoint, header, json_data):
 
 def make_get_request(setting , endpoint , header ,json_data) :
     
+    _block_in_tests()
     url = get_base_url(setting , endpoint)
     
     return requests.get(url , headers=header , json=json_data)
@@ -60,6 +69,7 @@ def make_get_request(setting , endpoint , header ,json_data) :
     
 def make_patch_request(setting , endpoint , headers , json_data) :
     
+    _block_in_tests()
     url = get_base_url(setting , endpoint)
 
     return requests.patch(url , header=headers , json=json_data)

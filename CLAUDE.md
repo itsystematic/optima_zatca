@@ -136,6 +136,8 @@ Declared in `pyproject.toml`, installed via `bench setup requirements`: `cryptog
 
 There are **two test suites with deliberately different rules** — match the one you're adding to.
 
+**No test may send anything to ZATCA — not sandbox, simulation or production.** `zatca/request.py` enforces it: every sender calls `_block_in_tests()`, which throws while `frappe.flags.in_test` is set (both bench test runners set it), and `zatca/tests/test_request.py` proves no request leaves. Keep every new outbound call inside `request.py` behind that guard. Still mock `ZatcaInvoiceData` when driving `send_to_zatca`: an unmocked build writes the invoice XML into the site's `public/files/invoices`.
+
 ### `zatca/tests/` — submission logic (mock-only)
 
 - Tests for the submission pipeline live in `optima_zatca/zatca/tests/` and use **`unittest.mock` only** — no live Frappe context, no real HTTP, no DB. This is why they run under bare `pytest` (`python -m pytest apps/optima_zatca/optima_zatca/zatca/tests/`).
