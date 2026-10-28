@@ -97,7 +97,7 @@ class TestAdvancePaymentReport(FrappeTestCase):
 
         self.assertEqual([line["invoice"] for line in lines], [row.name for row in invoices])
         self.assertEqual([line["deducted_taxable"] for line in lines[:3]], [0, 0, 0])
-        self.assertEqual((chain["balance"], chain["status"], chain["flags"]), (0, "Closed", ""))
+        self.assertEqual((chain["balance"], chain["status"]), (0, "Closed"))
         self.assertEqual(chain["remaining_percentage"], 0.00000204)
         self.assertEqual(cards["Advances Invoiced in Period"], 364587.68)
         self.assertEqual(cards["Advances Deducted in Period"], 364587.68)
@@ -155,19 +155,14 @@ class TestAdvancePaymentReport(FrappeTestCase):
         )
         self.assertEqual([(row["invoice"], row["balance"]) for row in rows[1:]], [("INIT", 500), ("ADJ", 400)])
 
-    def test_broken_chains_are_flagged(self):
-        rows, cards = report(
+    def test_an_adjustment_whose_advance_is_gone_roots_its_own_chain(self):
+        rows, _cards = report(
             [
                 invoice("INIT", "Initial Prepayment", "2026-03-02", taxable=1000),
-                invoice("ADJ", "Adjustment", "2026-03-05", parent="INIT", deducted=1200, percentage=100),
                 invoice("ORPHAN", "Adjustment", "2026-03-06", parent="CANCELLED", deducted=100, percentage=10),
             ]
         )
-        self.assertEqual(
-            [(row["invoice"], row["flags"]) for row in chain_rows(rows)],
-            [("INIT", "Over-deducted"), ("ORPHAN", "Over-deducted, No Initial Prepayment")],
-        )
-        self.assertEqual(cards["Exceptions"], 2)
+        self.assertEqual([(row["invoice"], row["balance"]) for row in chain_rows(rows)], [("INIT", 1000), ("ORPHAN", -100)])
 
     def test_a_sales_order_finds_the_adjustments_of_its_chain(self):
         invoices = contract()

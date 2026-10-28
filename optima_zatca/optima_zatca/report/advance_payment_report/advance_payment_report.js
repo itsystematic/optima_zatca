@@ -107,9 +107,6 @@ frappe.query_reports["Advance Payment Report"] = {
 		if (column.fieldname === "status" && data.status_indicator) {
 			value = `<span class="indicator-pill ${data.status_indicator}">${value}</span>`;
 		}
-		if (column.fieldname === "flags" && data.flags) {
-			value = `<span class="text-danger">${value}</span>`;
-		}
 		if (data.indent === 0) {
 			value = `<span style="font-weight: bold">${value}</span>`;
 		}

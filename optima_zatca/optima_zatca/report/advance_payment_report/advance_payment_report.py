@@ -148,8 +148,8 @@ def link_chains(invoices):
     """The invoices split into chains, each in link order from its root, the chains in root date order.
 
     Link order beats posting date, so a backdated Adjustment still follows the advance it consumes.
-    An invoice whose parent is missing (cancelled, or never sent) roots a chain of its own and gets
-    flagged rather than dropped.
+    An invoice whose parent is missing (cancelled, or never sent) roots a chain of its own rather than
+    being dropped.
     """
     names = {row.name for row in invoices}
     children = defaultdict(list)
@@ -202,7 +202,6 @@ def build_chain(members, filters, precision=2):
         days_since_last_invoice=None
         if status == CLOSED
         else (filters.to_date - max(getdate(row.posting_date) for row in rows)).days,
-        flags=chain_flags(rows, balance),
     )
 
 
@@ -235,17 +234,6 @@ def chain_status(rows):
         row.sales_invoice_type == FINAL_ADJUSTMENT and not row.is_return and row.name not in returned for row in rows
     )
     return CLOSED if closed else OPEN
-
-
-def chain_flags(rows, balance):
-    """A chain without an Initial Prepayment gets its deductions skipped in the GL (CustomSalesInvoice
-    only logs an error), so its balance here won't match the ledger."""
-    flags = []
-    if balance < 0:
-        flags.append("Over-deducted")
-    if rows[0].sales_invoice_type != INITIAL_PREPAYMENT:
-        flags.append("No Initial Prepayment")
-    return flags
 
 
 def _round(value, precision):
@@ -303,7 +291,6 @@ def get_columns(approach):
     chain_state = [
         column("remaining_percentage", "Remaining %", "Percent", 130, precision=PERCENTAGE_PRECISION),
         column("status", "Status", "Data", 90),
-        column("flags", "Flags", "Data", 220),
         column("days_since_last_invoice", "Days Since Last Invoice", "Int", 110),
     ]
     return [
@@ -392,7 +379,6 @@ def chain_row(chain, currency, precision=2):
         "remaining_percentage": chain.remaining_percentage,
         "status": _(chain.status),
         "status_indicator": "orange" if chain.status == OPEN else "green",
-        "flags": ", ".join(_(flag) for flag in chain.flags),
         "days_since_last_invoice": chain.days_since_last_invoice,
         "currency": root.currency,
         "sales_order": chain.sales_order,
@@ -407,7 +393,6 @@ def get_summary(chains, currency, precision=2):
     advanced = _round(sum(chain.advanced for chain in chains), precision)
     deducted = _round(sum(chain.deducted for chain in chains), precision)
     open_chains = sum(chain.status == OPEN for chain in chains)
-    exceptions = sum(bool(chain.flags) for chain in chains)
 
     def amount_card(label, value):
         return {"label": _(label), "value": value, "datatype": "Currency", "currency": currency}
@@ -418,7 +403,6 @@ def get_summary(chains, currency, precision=2):
         amount_card("Advances Deducted in Period", deducted),
         amount_card("Closing Advance Balance", _round(opening + advanced - deducted, precision)),
         {"label": _("Open Chains"), "value": _("{0} of {1}").format(open_chains, len(chains)), "datatype": "Data"},
-        {"label": _("Exceptions"), "value": exceptions, "datatype": "Int", "indicator": "Red" if exceptions else "Green"},
     ]
 
 
