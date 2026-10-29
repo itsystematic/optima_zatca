@@ -40,6 +40,14 @@ function on_date_change(fieldname) {
 	};
 }
 
+// Report filters have no mandatory_depends_on.
+function require_invoice_type_for_single_type(report) {
+	const invoice_type = report.get_filter("invoice_type");
+	invoice_type.df.reqd = report.get_filter_value("approach") === "Single Type" ? 1 : 0;
+	invoice_type.set_required();
+	invoice_type.set_mandatory(invoice_type.get_value());
+}
+
 frappe.query_reports["Advance Payment Report"] = {
 	filters: [
 		{
@@ -83,6 +91,10 @@ frappe.query_reports["Advance Payment Report"] = {
 			options: ["Full Chain", "Prepayment", "Adjustment", "Single Type"],
 			default: "Full Chain",
 			reqd: 1,
+			on_change(report) {
+				require_invoice_type_for_single_type(report);
+				report.refresh(true);
+			},
 		},
 		{
 			fieldname: "invoice_type",
@@ -151,7 +163,8 @@ frappe.query_reports["Advance Payment Report"] = {
 	name_field: "invoice",
 	parent_field: "parent_chain",
 	initial_depth: 1,
-	onload() {
+	onload(report) {
+		require_invoice_type_for_single_type(report);
 		// The formatter only reaches a cell's content, so row-wide styles are set on the row it sits in.
 		// Rows before From Date fade rather than turn grey: a link keeps its own colour, and grey is
 		// already the chain row's tint.
