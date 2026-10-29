@@ -5,7 +5,7 @@ the adjustment chain that draws them down to 100%.
 
 | Document | For | What it covers |
 |----------|-----|----------------|
-| [user-guide.md](user-guide.md) | Accountants & implementers | The invoice types, how a prepayment chain works, the Final Adjustment auto-fill, what gets validated |
+| [user-guide.md](user-guide.md) | Accountants & implementers | The invoice types, how a prepayment chain works, the Final Adjustment auto-fill, what gets validated, and reading the Advance Payment Report (dates, period balance, Open/Closed) |
 | [reference.md](reference.md) | Developers | The `validate_prepayments` rule set, `adjustment_percentage` vs `max_adjustment_limit`, the **9-dp precision invariant**, and `CustomSalesInvoice` GL |
 
 The model spans `events/prepayment.py` (validation), `overrides/sales_invoice.py` (GL), and the
