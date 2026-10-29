@@ -439,7 +439,7 @@ def get_chart(chains, currency):
         "data": {
             "labels": [names[customer] for customer in top],
             "datasets": [
-                {"name": _("Deducted"), "values": [deducted[customer] for customer in top]},
+                {"name": _("Deducted to Date"), "values": [deducted[customer] for customer in top]},
                 {"name": _("Remaining"), "values": [remaining[customer] for customer in top]},
             ],
         },
