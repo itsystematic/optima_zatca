@@ -59,11 +59,20 @@ def contract():
     ]
 
 
-def report(invoices, **filters):
-    """The report's rows and its summary cards by label."""
+def run_report(invoices, **filters):
     filters = parse_filters({"company": "_Test Company", "from_date": "2026-03-01", "to_date": "2026-03-31", **filters})
     _columns, rows, _message, _chart, summary = build_report(invoices, filters, "SAR")
     return rows, {card["label"]: card["value"] for card in summary}
+
+
+def report(invoices, **filters):
+    """The report's rows, less its total row, and its summary cards by label."""
+    rows, cards = run_report(invoices, **filters)
+    return [row for row in rows if not row.get("is_total_row")], cards
+
+
+def total_row(invoices, **filters):
+    return run_report(invoices, **filters)[0][-1]
 
 
 def chain_rows(rows):
@@ -194,7 +203,37 @@ class TestAdvancePaymentReport(FrappeTestCase):
         rows, _cards = report(invoices, approach="Adjustment", sales_order="SO-1")
         self.assertEqual([(row["invoice"], row["chain"]) for row in rows], [("ADJ", "INIT"), ("FIN", "INIT")])
         self.assertNotIn("indent", rows[0], "an indent would turn the flat list into a tree")
-        self.assertEqual(report(invoices, approach="Adjustment", sales_order="SO-2")[0], [])
+        self.assertEqual(run_report(invoices, approach="Adjustment", sales_order="SO-2")[0], [], "nothing to total")
+
+    def test_a_flat_total_nets_the_amounts_and_averages_the_percentage(self):
+        """The return adds back what its Final Adjustment deducted, and its -60% counts in the mean."""
+        invoices = contract() + [
+            invoice(
+                "RET", "Final Adjustment", "2026-03-25",
+                is_return=1, parent="FIN", taxable=-1200, deducted=-600, percentage=60,
+            )
+        ]
+        total = total_row(invoices, approach="Adjustment")
+        fields = ("prepayment_amount", "prepayment_tax", "prepayment_total", "adjustment_percentage")
+
+        self.assertEqual([total[field] for field in fields], [-400, -60, -460, 13.33])
+        self.assertNotIn("indent", total, "an indent would turn the flat list into a tree")
+
+    def test_the_chain_total_counts_each_chain_once(self):
+        """Summed with their invoices, the chains' amounts would double. The settled contract has no
+        days since its last invoice, so that mean is the open chain's alone."""
+        invoices = contract() + [
+            invoice("OPEN", "Initial Prepayment", "2026-03-15", taxable=500),
+            invoice("OPEN-ADJ", "Adjustment", "2026-03-25", parent="OPEN", deducted=200, percentage=40),
+        ]
+        total = total_row(invoices)
+        fields = (
+            "prepayment_amount", "prepayment_tax", "prepayment_total",
+            "adjustment_percentage", "remaining_percentage", "chain_period", "days_since_last_invoice",
+        )
+
+        self.assertEqual([total[field] for field in fields], [300, 45, 345, 70, 30, 14, 6])
+        self.assertIsNone(total["balance"], "a running balance has no total")
 
 
 class TestExecute(FrappeTestCase):
@@ -228,10 +267,10 @@ class TestExecute(FrappeTestCase):
             }
         )
 
-        self.assertEqual([row["invoice"] for row in rows], [initial.name, initial.name, adjustment.name])
+        self.assertEqual([row["invoice"] for row in rows], [initial.name, initial.name, adjustment.name, "Total"])
         self.assertEqual(rows[0]["balance"], flt(initial.base_net_total - adjustment.deducted_taxable_amount, 2))
         self.assertEqual(
-            [(row["prepayment_tax"], row["prepayment_total"]) for row in rows[1:]],
+            [(row["prepayment_tax"], row["prepayment_total"]) for row in rows[1:3]],
             [
                 (initial.base_total_taxes_and_charges, initial.base_grand_total),
                 (-adjustment.deducted_tax_amount, -adjustment.deducted_grand_total),

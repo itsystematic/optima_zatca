@@ -158,7 +158,9 @@ frappe.query_reports["Advance Payment Report"] = {
 		frappe.dom.set_style(
 			`.dt-row:has(.advance-chain-row) .dt-cell { background-color: var(--subtle-fg); }
 			.advance-chain-row { font-weight: var(--weight-semibold); }
-			.dt-row:has(.advance-before-period) .dt-cell__content { opacity: 0.45; }`,
+			.dt-row:has(.advance-before-period) .dt-cell__content { opacity: 0.45; }
+			.dt-row:has(.advance-total-row) .dt-cell { border-top: 1px solid var(--dark-border-color); }
+			.advance-total-row { font-weight: var(--weight-bold); }`,
 			"advance-payment-report"
 		);
 	},
@@ -166,7 +168,10 @@ frappe.query_reports["Advance Payment Report"] = {
 		if (!data) return default_formatter(value, row, column, data);
 
 		const raw = data[column.fieldname];
-		if (["Currency", "Float", "Percent"].includes(column.fieldtype) && raw < 0) {
+		if (data.is_total_row && column.fieldtype === "Link") {
+			// The "Total" label names no document, so it must not render as a link to one.
+			value = frappe.utils.escape_html(raw || "");
+		} else if (["Currency", "Float", "Percent"].includes(column.fieldtype) && raw < 0) {
 			value = this.parenthesize(default_formatter(-raw, row, column, data));
 		} else {
 			value = default_formatter(value, row, column, data);
@@ -180,6 +185,9 @@ frappe.query_reports["Advance Payment Report"] = {
 		}
 		if (data.out_of_range) {
 			value = `<span class="advance-before-period">${value}</span>`;
+		}
+		if (data.is_total_row) {
+			value = `<span class="advance-total-row">${value}</span>`;
 		}
 		return value;
 	},

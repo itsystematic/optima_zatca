@@ -133,9 +133,10 @@ def get_invoices(filters):
 
 def build_report(invoices, filters, currency, precision=2):
     chains = [chain for chain in build_chains(invoices, filters, precision) if chain_in_scope(chain, filters)]
+    rows = get_rows(chains, filters, currency, precision)
     return (
         get_columns(filters.approach),
-        get_rows(chains, filters, currency, precision),
+        rows + get_total_row(rows, currency, precision),
         None,
         get_chart(chains, currency),
         get_summary(chains, currency, precision),
@@ -401,6 +402,42 @@ def chain_row(chain, currency, precision=2):
         "company_currency": currency,
         "indent": 0,
     }
+
+
+def get_total_row(rows, currency, precision=2):
+    """The amounts summed and the percentages and day counts averaged, over the rows at the top level:
+    every row of a flat list, or each chain row of the tree. Frappe's own total row is off for tree
+    reports, and it would sum the day counts and average the percentages over the invoices too.
+
+    A closed chain has no days since its last invoice, so that average covers the open chains only.
+    """
+    rows = [row for row in rows if not row.get("indent")]
+    if not rows:
+        return []
+
+    def total(fieldname):
+        return _round(sum(flt(row.get(fieldname)) for row in rows), precision)
+
+    def mean(fieldname, digits):
+        values = [row[fieldname] for row in rows if row.get(fieldname) is not None]
+        return _round(sum(values) / len(values), digits) if values else None
+
+    return [
+        {
+            "invoice": _("Total"),
+            "prepayment_amount": total("prepayment_amount"),
+            "prepayment_tax": total("prepayment_tax"),
+            "prepayment_total": total("prepayment_total"),
+            "adjustment_percentage": mean("adjustment_percentage", PERCENTAGE_PRECISION),
+            # A running balance has no total, and only null, not a missing key, prints blank.
+            "balance": None,
+            "remaining_percentage": mean("remaining_percentage", PERCENTAGE_PRECISION),
+            "chain_period": mean("chain_period", 0),
+            "days_since_last_invoice": mean("days_since_last_invoice", 0),
+            "company_currency": currency,
+            "is_total_row": 1,
+        }
+    ]
 
 
 def get_summary(chains, currency, precision=2):
