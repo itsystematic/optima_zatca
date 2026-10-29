@@ -152,10 +152,13 @@ frappe.query_reports["Advance Payment Report"] = {
 	parent_field: "parent_chain",
 	initial_depth: 1,
 	onload() {
-		// The formatter only reaches a cell's content, so the chain row's tint is set on the row it sits in.
+		// The formatter only reaches a cell's content, so row-wide styles are set on the row it sits in.
+		// Rows before From Date fade rather than turn grey: a link keeps its own colour, and grey is
+		// already the chain row's tint.
 		frappe.dom.set_style(
 			`.dt-row:has(.advance-chain-row) .dt-cell { background-color: var(--subtle-fg); }
-			.advance-chain-row { font-weight: var(--weight-semibold); }`,
+			.advance-chain-row { font-weight: var(--weight-semibold); }
+			.dt-row:has(.advance-before-period) .dt-cell__content { opacity: 0.45; }`,
 			"advance-payment-report"
 		);
 	},
@@ -176,7 +179,7 @@ frappe.query_reports["Advance Payment Report"] = {
 			value = `<span class="advance-chain-row">${value}</span>`;
 		}
 		if (data.out_of_range) {
-			value = `<span class="text-muted">${value}</span>`;
+			value = `<span class="advance-before-period">${value}</span>`;
 		}
 		return value;
 	},
