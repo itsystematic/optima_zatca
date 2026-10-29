@@ -121,6 +121,13 @@ class TestAdvancePaymentReport(FrappeTestCase):
         )
         self.assertEqual([chain[field] for field in fields], [0, 0, 0, 0], "a settled chain nets to zero")
 
+    def test_only_the_chain_row_shows_what_remains(self):
+        """An invoice row's Remaining % is null, since Frappe prints a missing one as 0%."""
+        chain, *lines = report(contract()[:3])[0]
+
+        self.assertEqual(chain["remaining_percentage"], 60)
+        self.assertEqual({line["remaining_percentage"] for line in lines}, {None})
+
     def test_returning_the_final_adjustment_reopens_the_chain(self):
         invoices = contract() + [
             invoice(

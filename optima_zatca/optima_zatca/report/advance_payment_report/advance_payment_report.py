@@ -345,6 +345,8 @@ def get_rows(chains, filters, currency, precision=2):
                 "parent_chain": chain.root.name,
                 "indent": 1,
                 "out_of_range": int(getdate(row.posting_date) < filters.from_date),
+                # Frappe's Percent formatter blanks only null; a missing key would print as 0%.
+                "remaining_percentage": None,
             }
             for row in chain.invoices
         ]
