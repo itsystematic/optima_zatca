@@ -100,6 +100,14 @@ frappe.query_reports["Advance Payment Report"] = {
 	name_field: "invoice",
 	parent_field: "parent_chain",
 	initial_depth: 1,
+	onload() {
+		// The formatter only reaches a cell's content, so the chain row's tint is set on the row it sits in.
+		frappe.dom.set_style(
+			`.dt-row:has(.advance-chain-row) .dt-cell { background-color: var(--subtle-fg); }
+			.advance-chain-row { font-weight: var(--weight-semibold); }`,
+			"advance-payment-report"
+		);
+	},
 	formatter(value, row, column, data, default_formatter) {
 		if (!data) return default_formatter(value, row, column, data);
 
@@ -114,7 +122,7 @@ frappe.query_reports["Advance Payment Report"] = {
 			value = `<span class="indicator-pill ${data.status_indicator}">${value}</span>`;
 		}
 		if (data.indent === 0) {
-			value = `<span style="font-weight: bold">${value}</span>`;
+			value = `<span class="advance-chain-row">${value}</span>`;
 		}
 		if (data.out_of_range) {
 			value = `<span class="text-muted">${value}</span>`;
