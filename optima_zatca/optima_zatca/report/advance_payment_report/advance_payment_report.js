@@ -1,6 +1,45 @@
 // Copyright (c) 2026, IT Systematic and contributors
 // For license information, please see license.txt
 
+// Each timespan is a unit and how many of them it starts and ends from today, matching Frappe's own
+// get_timespan_date_range: Last 6 Months is the two whole quarters before this one, not 180 days back.
+const TIMESPANS = {
+	"Last Week": ["week", -1],
+	"Last Month": ["month", -1],
+	"Last Quarter": ["quarter", -1],
+	"Last 6 Months": ["quarter", -2, -1],
+	"Last Year": ["year", -1],
+	Yesterday: ["day", -1],
+	Today: ["day", 0],
+	Tomorrow: ["day", 1],
+	"This Week": ["week", 0],
+	"This Month": ["month", 0],
+	"This Quarter": ["quarter", 0],
+	"This Year": ["year", 0],
+};
+
+function timespan_range(timespan) {
+	if (!TIMESPANS[timespan]) return null;
+	const [unit, start, end = start] = TIMESPANS[timespan];
+	const today = moment(frappe.datetime.get_today());
+	return {
+		from_date: today.clone().add(start, unit).startOf(unit).format("YYYY-MM-DD"),
+		to_date: today.clone().add(end, unit).endOf(unit).format("YYYY-MM-DD"),
+	};
+}
+
+// A filter's on_change replaces the report's own refresh, so it refreshes here. Each date checks only
+// its own bound, so a timespan filling both dates never finds them half-set and clears itself.
+function on_date_change(fieldname) {
+	return (report) => {
+		const range = timespan_range(report.get_filter_value("timespan"));
+		if (range && range[fieldname] !== report.get_filter_value(fieldname)) {
+			report.set_filter_value("timespan", "");
+		}
+		report.refresh(true);
+	};
+}
+
 frappe.query_reports["Advance Payment Report"] = {
 	filters: [
 		{
@@ -12,11 +51,22 @@ frappe.query_reports["Advance Payment Report"] = {
 			reqd: 1,
 		},
 		{
+			fieldname: "timespan",
+			label: __("Timespan"),
+			fieldtype: "Select",
+			options: ["", ...Object.keys(TIMESPANS)],
+			on_change(report) {
+				const range = timespan_range(report.get_filter_value("timespan"));
+				if (range) report.set_filter_value(range);
+			},
+		},
+		{
 			fieldname: "from_date",
 			label: __("From Date"),
 			fieldtype: "Date",
 			default: frappe.datetime.add_months(frappe.datetime.get_today(), -1),
 			reqd: 1,
+			on_change: on_date_change("from_date"),
 		},
 		{
 			fieldname: "to_date",
@@ -24,6 +74,7 @@ frappe.query_reports["Advance Payment Report"] = {
 			fieldtype: "Date",
 			default: frappe.datetime.get_today(),
 			reqd: 1,
+			on_change: on_date_change("to_date"),
 		},
 		{
 			fieldname: "approach",
