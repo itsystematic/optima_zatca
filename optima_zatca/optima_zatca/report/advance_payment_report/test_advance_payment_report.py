@@ -169,6 +169,7 @@ class TestAdvancePaymentReport(FrappeTestCase):
             ]
         )
         self.assertEqual([(row["invoice"], row["balance"]) for row in rows[1:]], [("INIT", 500), ("ADJ", 400)])
+        self.assertEqual(rows[0]["chain_period"], 9, "the period runs between dates, not along the links")
 
     def test_an_adjustment_whose_advance_is_gone_roots_its_own_chain(self):
         rows, _cards = report(

@@ -194,6 +194,7 @@ def build_chain(members, filters, precision=2):
 
     during = [row for row in rows if getdate(row.posting_date) >= filters.from_date]
     status = chain_status(rows)
+    dates = [getdate(row.posting_date) for row in rows]
     return frappe._dict(
         root=rows[0],
         invoices=rows,
@@ -205,9 +206,8 @@ def build_chain(members, filters, precision=2):
         balance=balance,
         remaining_percentage=_round(100 - sum(row.signed_percentage for row in rows), PERCENTAGE_PRECISION),
         status=status,
-        days_since_last_invoice=None
-        if status == CLOSED
-        else (filters.to_date - max(getdate(row.posting_date) for row in rows)).days,
+        chain_period=(max(dates) - min(dates)).days,
+        days_since_last_invoice=None if status == CLOSED else (filters.to_date - max(dates)).days,
     )
 
 
@@ -303,6 +303,7 @@ def get_columns(approach):
     chain_state = [
         column("remaining_percentage", "Remaining %", "Percent", 130, precision=PERCENTAGE_PRECISION),
         column("status", "Status", "Data", 90),
+        column("chain_period", "Chain Period", "Int", 110),
         column("days_since_last_invoice", "Days Since Last Invoice", "Int", 110),
     ]
     return [
@@ -391,6 +392,7 @@ def chain_row(chain, currency, precision=2):
         "remaining_percentage": chain.remaining_percentage,
         "status": _(chain.status),
         "status_indicator": "orange" if chain.status == OPEN else "green",
+        "chain_period": chain.chain_period,
         "days_since_last_invoice": chain.days_since_last_invoice,
         "currency": root.currency,
         "sales_order": chain.sales_order,
