@@ -308,7 +308,7 @@ def get_columns(approach):
     ]
     return [
         column("invoice", "Invoice", "Link", 160, "Sales Invoice"),
-        column("posting_date", "Date", "Date", 100),
+        column("posting_date", "Date", "Date", 110),
         column("customer", "Customer", "Link", 180, "Customer"),
         column("invoice_type", "Type", "Data", 150),
         *([] if is_tree else [column("chain", "Chain", "Link", 140, "Sales Invoice")]),
