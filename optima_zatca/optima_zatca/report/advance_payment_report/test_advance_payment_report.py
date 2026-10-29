@@ -153,6 +153,14 @@ class TestAdvancePaymentReport(FrappeTestCase):
             [1000, 500, 300, 1200],
         )
 
+    def test_the_status_filter_keeps_the_cards_to_its_chains(self):
+        invoices = contract() + [invoice("UNSETTLED", "Initial Prepayment", "2026-03-15", taxable=500)]
+        for status, chains, closing in (("Open", ["UNSETTLED"], 500), ("Closed", ["INIT"], 0)):
+            with self.subTest(status=status):
+                rows, cards = report(invoices, status=status)
+                self.assertEqual([row["invoice"] for row in chain_rows(rows)], chains)
+                self.assertEqual(cards["Closing Advance Balance"], closing)
+
     def test_a_backdated_adjustment_still_follows_its_advance(self):
         rows, _cards = report(
             [

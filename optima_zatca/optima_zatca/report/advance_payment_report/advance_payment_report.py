@@ -36,6 +36,7 @@ APPROACH_TYPES = {"Prepayment": ADVANCE_TYPES, "Adjustment": SETTLEMENT_TYPES}
 
 OPEN = "Open"
 CLOSED = "Closed"
+CHAIN_STATUSES = (OPEN, CLOSED)
 
 # The invoices keep 9 dp so a Final Adjustment settles its chain exactly. The report sums those and
 # rounds only what it shows: rounded one by one, a settled chain can total 100.01%.
@@ -66,6 +67,8 @@ def parse_filters(filters):
                 ", ".join(_(name) for name in CHAIN_TYPES)
             )
         )
+    if filters.status and filters.status not in CHAIN_STATUSES:
+        frappe.throw(_("Status must be Open or Closed."))
 
     filters.customer_groups = with_descendants("Customer Group", filters.customer_group)
     filters.cost_centers = with_descendants("Cost Center", filters.cost_center)
@@ -265,6 +268,7 @@ def chain_in_scope(chain, filters):
     rows = chain.invoices
     return (
         (chain.opening != 0 or any(in_period(row, filters) for row in rows))
+        and (not filters.status or chain.status == filters.status)
         and (not filters.sales_order or any(invoice_sales_order(row) == filters.sales_order for row in rows))
         and (not filters.customer_groups or any(row.customer_group in filters.customer_groups for row in rows))
         and (not filters.cost_centers or any(row.cost_center in filters.cost_centers for row in rows))
@@ -440,4 +444,5 @@ def get_chart(chains, currency):
         "fieldtype": "Currency",
         "options": "currency",
         "currency": currency,
+        "colors": ["#1A43Bf", "#adc0e6"],
     }

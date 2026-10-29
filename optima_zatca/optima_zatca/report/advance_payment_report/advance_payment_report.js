@@ -42,6 +42,12 @@ frappe.query_reports["Advance Payment Report"] = {
 			get_query: () => ({ filters: { name: ["!=", "Normal"] } }),
 		},
 		{
+			fieldname: "status",
+			label: __("Status"),
+			fieldtype: "Select",
+			options: ["", "Open", "Closed"],
+		},
+		{
 			fieldname: "customer",
 			label: __("Customer"),
 			fieldtype: "Link",
