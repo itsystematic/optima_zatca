@@ -61,7 +61,7 @@ Follow these steps to install Optima ZATCA on your ERPNext setup:
 
 1. Get the app:
    ```bash
-   bench get-app https://github.com/itsystematic/optima_zatca.git
+   bench get-app --branch version-16 https://github.com/itsystematic/optima_zatca.git
    ```
 2. Setup requirements:
    ```bash
@@ -137,7 +137,14 @@ Full documentation lives in **[`docs/`](docs/README.md)**, organized by domain:
 Watch our step-by-step tutorials on our **[Youtube channel](https://www.youtube.com/@itsystematic)**.
 
 ### Supported ERPNext Versions
-- ERPNext Version 15
+- ERPNext Version 16
+
+This is the `version-16` branch. ERPNext v16 needs **Node 24+** and **Python
+3.14**, and `bench get-app` runs the onboarding SPA's install through the root
+`postinstall`, so an older Node fails the install outright. For ERPNext v15, use
+the [`version-15`](https://github.com/itsystematic/optima_zatca/tree/version-15)
+branch.
+
 ---
 
 ## 📞 Support
@@ -165,7 +172,7 @@ Guidelines
 
 ## 📜 License
 
-Optima ZATCA is Open-Source licensed under the **MIT License**. See the full license in the [LICENSE](https://github.com/itsystematic/optima_zatca/blob/version-15/LICENSE) file.
+Optima ZATCA is Open-Source licensed under the **MIT License**. See the full license in the [LICENSE](https://github.com/itsystematic/optima_zatca/blob/version-16/LICENSE) file.
 
 ---
 
