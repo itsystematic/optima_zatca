@@ -5468,3 +5468,78 @@ your shortcuts,الاختصارات
 تدوينات المدفوعات,سندات الصرف و القبض
 ← Back to upload files,← الرجوع إلى تحميل الملفات
 🎊️🎊️ Work Anniversary Reminder 🎊️🎊️,🎊️🎊️ تذكير ذكرى العمل 🎊️🎊️
+1 commercial register is live.,سجل تجاري واحد مفعّل.
+"15 digits, starting and ending with 3",15 رقمًا، يبدأ وينتهي بالرقم 3
+A main register and its branches,سجل رئيسي وفروعه
+Add CR,إضافة سجل تجاري
+Add commercial registers,إضافة سجلات تجارية
+Back to registers,العودة إلى السجلات
+Building no,رقم المبنى
+Building no must be 4 digits,يجب أن يتكون رقم المبنى من 4 أرقام
+CR name,اسم السجل التجاري
+CR name is required,اسم السجل التجاري مطلوب
+CRN,رقم السجل التجاري
+CRN must be 10 digits,يجب أن يتكون رقم السجل التجاري من 10 أرقام
+City is required,المدينة مطلوبة
+Commercial register,السجل التجاري
+Commercial registers,السجلات التجارية
+Company name (Arabic),اسم الشركة (بالعربية)
+Company name in Arabic is required,اسم الشركة بالعربية مطلوب
+Connect,ربط
+Connect your company to ZATCA,اربط شركتك بهيئة الزكاة والضريبة والجمارك
+Connected,مرتبط
+Connected registers stay connected while you retry the others.,تبقى السجلات المرتبطة مرتبطة أثناء إعادة محاولة البقية.
+Connecting 1 commercial register,جارٍ ربط سجل تجاري واحد
+Connecting {0} commercial registers,جارٍ ربط {0} سجلات تجارية
+District is required,الحي مطلوب
+Docs,الدليل
+Edit commercial register,تعديل السجل التجاري
+Enter OTPs,إدخال رموز التحقق
+Get OTP from Fatoora,احصل على رمز التحقق من بوابة فاتورة
+Get started,ابدأ الآن
+How many commercial registers?,كم عدد السجلات التجارية؟
+I confirm this data is correct,أؤكد صحة هذه البيانات
+Integration with ZATCA,الربط مع هيئة الزكاة والضريبة والجمارك
+Main CRN,سجل تجاري رئيسي
+Multiple CRNs,سجلات تجارية متعددة
+National address,العنوان الوطني
+New sales invoice,فاتورة مبيعات جديدة
+OTP for {0},رمز التحقق لـ {0}
+OTP must be 6 digits,يجب أن يتكون رمز التحقق من 6 أرقام
+"One code per commercial register, from the Fatoora portal.",رمز واحد لكل سجل تجاري، من بوابة فاتورة.
+One commercial register,سجل تجاري واحد
+Phase,المرحلة
+Phase 1,المرحلة الأولى
+Phase 2,المرحلة الثانية
+Postal code,الرمز البريدي
+Postal code must be 5 digits,يجب أن يتكون الرمز البريدي من 5 أرقام
+QR code only,رمز QR فقط
+Register your commercial registers and get certified for e-invoicing.,سجّل سجلاتك التجارية واحصل على شهادات الفوترة الإلكترونية.
+Registers you add appear here.,تظهر هنا السجلات التي تضيفها.
+Requesting compliance certificate,جارٍ طلب شهادة الامتثال
+Requesting production certificate,جارٍ طلب شهادة الإنتاج
+Secondary no,الرقم الفرعي
+Secondary no is required,الرقم الفرعي مطلوب
+Short address,العنوان المختصر
+Short address is required,العنوان المختصر مطلوب
+Street,الشارع
+Street is required,الشارع مطلوب
+Test invoice {0} of {1},فاتورة الاختبار {0} من {1}
+Test invoices,فواتير الاختبار
+This CRN is already added,رقم السجل التجاري هذا مضاف مسبقًا
+VAT number,الرقم الضريبي
+"VAT number must be 15 digits, starting and ending with 3",يجب أن يتكون الرقم الضريبي من 15 رقمًا، يبدأ وينتهي بالرقم 3
+Waiting,في الانتظار
+WhatsApp support,الدعم عبر واتساب
+Which phase is your company in?,في أي مرحلة شركتك؟
+{0} commercial registers are live.,{0} سجلات تجارية مفعّلة.
+{0} is connected to ZATCA,{0} مرتبطة بهيئة الزكاة والضريبة والجمارك
+{0} of {1} connected,{0} من {1} مرتبطة
+{0} of {1} done,{0} من {1} مكتملة
+Back,رجوع,onboarding
+Review,المراجعة,onboarding
+This CRN is already registered,رقم السجل التجاري هذا مسجل مسبقًا
+Could not start,تعذّر البدء
+Compliance certificate refused,رُفض طلب شهادة الامتثال
+Test invoice rejected,رُفضت فاتورة اختبار
+Production certificate refused,رُفض طلب شهادة الإنتاج
