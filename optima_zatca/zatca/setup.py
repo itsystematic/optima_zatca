@@ -240,7 +240,8 @@ def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_regist
         "address" : company_address ,
         "invoice_type" : "1100" ,
         "otp" : kwargs.get("otp") or "123456",
-        "api_endpoints" : "production"
+        # The wizard has no environment choice yet; a test site sets this to sandbox or simulation.
+        "api_endpoints" : frappe.conf.get("zatca_onboarding_environment") or "production"
     }).insert(ignore_if_duplicate=True , ignore_permissions=True)
 
     return settings.name
