@@ -37,13 +37,18 @@ def _block_in_tests():
         frappe.throw(_("ZATCA requests are blocked while tests run."))
 
 
-def get_base_url(setting:str=None , endpoint:str=None) -> str :
-    
+def get_base_url(setting=None , endpoint:str=None) -> str :
+
     if not setting :
         frappe.throw(_("Please Select Company"))
-        
-    environment = frappe.db.get_value("Optima Zatca Setting" , setting , "api_endpoints")
-    
+
+    # Callers pass either the setting's name or the loaded document, and Frappe 16 refuses
+    # a document as a get_value filter.
+    if isinstance(setting, str):
+        environment = frappe.db.get_value("Optima Zatca Setting" , setting , "api_endpoints")
+    else:
+        environment = setting.get("api_endpoints")
+
     return BASEURL.get(environment).get(endpoint)
 
 

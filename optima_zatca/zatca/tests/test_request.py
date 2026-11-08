@@ -23,3 +23,13 @@ class TestRequestsBlockedInTests(FrappeTestCase):
                 with self.assertRaises(frappe.ValidationError):
                     send("Any Setting", "reporting", {}, {})
                 http.assert_not_called()
+
+
+class TestBaseUrl(FrappeTestCase):
+    def test_environment_comes_from_a_setting_name_or_a_loaded_setting(self):
+        loaded = frappe.get_doc({"doctype": "Optima Zatca Setting", "api_endpoints": "simulation"})
+        with patch.object(request.frappe.db, "get_value", return_value="sandbox") as get_value:
+            self.assertEqual(request.get_base_url("Any Setting", "reporting"), request.BASEURL["sandbox"]["reporting"])
+            # The sample-invoice and Send to ZATCA paths pass the document itself.
+            self.assertEqual(request.get_base_url(loaded, "reporting"), request.BASEURL["simulation"]["reporting"])
+            get_value.assert_called_once()
