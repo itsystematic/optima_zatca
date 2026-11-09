@@ -5544,4 +5544,11 @@ Compliance certificate refused,رُفض طلب شهادة الامتثال
 Test invoice rejected,رُفضت فاتورة اختبار
 Production certificate refused,رُفض طلب شهادة الإنتاج
 Commercial register {0} belongs to another company,السجل التجاري {0} تابع لشركة أخرى
-Commercial register {0} is already connected to ZATCA,السجل التجاري {0} مرتبط مسبقًا بهيئة الزكاة والضريبة والجمارك
+Commercial register {0} is already connected to ZATCA in the {1} environment,السجل التجاري {0} مرتبط مسبقًا بهيئة الزكاة والضريبة والجمارك في بيئة {1}
+Environment,البيئة
+Use for Invoices,استخدام للفواتير
+Send to ZATCA signs this commercial register's invoices with the one setting that has this ticked. Ticking it here unticks it on the register's other settings.,يوقّع الإرسال إلى الهيئة فواتير هذا السجل التجاري بالإعداد الوحيد المحدد عليه هذا الخيار. تحديده هنا يلغي تحديده في إعدادات السجل الأخرى.
+The {0} environment is not offered on this site,البيئة {0} غير متاحة في هذا الموقع
+Commercial register {0} already has a setting in the {1} environment: {2},للسجل التجاري {0} إعداد مسبق في بيئة {1}: {2}
+Only a setting with a production CSID can be used for invoices,لا يُستخدم للفواتير إلا إعداد لديه شهادة CSID للإنتاج
+No Optima Zatca Setting of commercial register {0} is ticked Use for Invoices,لا يوجد إعداد Optima Zatca للسجل التجاري {0} محدد عليه خيار استخدام للفواتير

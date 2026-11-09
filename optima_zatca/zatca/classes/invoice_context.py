@@ -38,6 +38,8 @@ class InvoiceContextLoader:
                 customer_address=customer_address,
                 customer_country_code=customer_country_code,
             )
+        except frappe.ValidationError:
+            raise
         except Exception as e:
             log_and_throw_error(
                 operation="Load Related Documents",
@@ -46,12 +48,21 @@ class InvoiceContextLoader:
             )
 
     def _get_company_settings(self) -> Document:
-        """Get company ZATCA settings."""
+        """The register's setting ticked Use for Invoices: a register may have one per environment."""
         commercial_register = self.sales_invoice.get("commercial_register")
         if not commercial_register:
             frappe.throw(_("Commercial Register is required for ZATCA processing"))
 
-        return frappe.get_doc("Optima Zatca Setting", {"commercial_register": commercial_register})
+        try:
+            return frappe.get_doc(
+                "Optima Zatca Setting", {"commercial_register": commercial_register, "use_for_invoices": 1}
+            )
+        except frappe.DoesNotExistError:
+            frappe.throw(
+                _("No Optima Zatca Setting of commercial register {0} is ticked Use for Invoices").format(
+                    commercial_register
+                )
+            )
 
     def _get_address(self, address_name: str) -> Dict[str, Any]:
         """Get address document safely."""

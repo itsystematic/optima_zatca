@@ -9,6 +9,9 @@
     renew_production_certificate          a new production CSID, from the setting's form
 
 Progress goes out on the "zatca" realtime event, which the wizard's progress board follows.
+
+A register may be onboarded in more than one environment: each gets its own Optima Zatca Setting,
+while the Address and Commercial Register are shared.
 """
 
 import binascii
@@ -29,9 +32,29 @@ from optima_zatca.zatca.keys import GenerateCSR
 
 # ====================================================================================================
 # REGISTRATION FROM THE ONBOARDING WIZARD
-# One Address, Commercial Register and Optima Zatca Setting per register, keyed on its CRN. A retry
-# sends the same register again, so it is matched to what is already stored and updated or resumed,
-# never added a second time.
+# One Address and Commercial Register per register, keyed on its CRN, and one Optima Zatca Setting per
+# register and environment. A retry sends the same register again, so it is matched to what is already
+# stored and updated or resumed, never added a second time.
+
+
+ENVIRONMENTS = ("sandbox", "simulation", "production")
+
+
+def onboarding_environments(configured: str | None) -> list[str]:
+    """The environments the wizard offers. Sandbox is for developers, so only a site whose
+    zatca_onboarding_environment names it offers it."""
+    return [e for e in ENVIRONMENTS if e != "sandbox" or configured == "sandbox"]
+
+
+def default_environment(configured: str | None) -> str:
+    return configured if configured in ENVIRONMENTS else "production"
+
+
+def _decide_environment(requested: str | None, configured: str | None) -> str | None:
+    """The environment to onboard in, or None when this site does not offer the one requested.
+    A caller that names none gets the site's default, as before the wizard offered a choice."""
+    environment = requested or default_environment(configured)
+    return environment if environment in onboarding_environments(configured) else None
 
 
 def saving_register_data(**kwargs) :
@@ -55,52 +78,65 @@ def saving_branches_data(**kwargs) :
     tax_id = kwargs.get("tax_id")
     legal_name = kwargs.get("company_name_in_arabic")
 
+    environment = _decide_environment(kwargs.get("environment"), frappe.conf.get("zatca_onboarding_environment"))
+    if not environment:
+        frappe.throw(_("The {0} environment is not offered on this site").format(kwargs.get("environment")))
+
     list_of_branches = json.loads(kwargs.get("commercial_register")) if isinstance(kwargs.get("commercial_register") , str) else kwargs.get("commercial_register")
 
     for branch in list_of_branches:
         crn = branch.get("commercial_register_number")
-        stored = _load_stored_register(crn)
+        stored = _load_stored_register(crn, environment)
         action = _decide_register_action(stored, company)
 
         if action == "other_company":
             frappe.throw(_("Commercial register {0} belongs to another company").format(crn))
         if action == "connected":
-            frappe.throw(_("Commercial register {0} is already connected to ZATCA").format(crn))
+            frappe.throw(_("Commercial register {0} is already connected to ZATCA in the {1} environment").format(crn, environment))
 
         if action == "resume":
             optima_settings = stored["setting"]
+        elif action == "save_setting":
+            optima_settings = saving_zatca_setting(company ,tax_id, legal_name , crn , stored["address"] , stored["setting"] , environment , **branch)
         else:
             stored = stored or {}
             company_address = saving_address_data(company , stored.get("address") , **branch)
             commercial_register = saving_commercial_register(company , company_address , **branch)
-            optima_settings = saving_zatca_setting(company ,tax_id, legal_name , commercial_register , company_address , stored.get("setting") , **branch)
+            optima_settings = saving_zatca_setting(company ,tax_id, legal_name , commercial_register , company_address , stored.get("setting") , environment , **branch)
 
         add_company_to_zatca(optima_settings)
 
 
-def _load_stored_register(crn):
-    """What is already saved for this CRN, as plain values, or None for a new register."""
+def _load_stored_register(crn, environment):
+    """What is already saved for this CRN, as plain values, or None for a new register. `setting` and
+    its flags are the one in `environment`."""
     register = frappe.db.get_value("Commercial Register", crn, ["company", "address"], as_dict=True)
     if not register:
         return None
 
-    setting = frappe.db.get_value(
-        "Optima Zatca Setting", {"commercial_register": crn}, ["name", "check_csid", "check_pcsid"], as_dict=True
-    ) or {}
+    settings = frappe.get_all(
+        "Optima Zatca Setting",
+        filters={"commercial_register": crn},
+        fields=["name", "api_endpoints", "check_csid", "check_pcsid"],
+    )
+    setting = next((s for s in settings if s.api_endpoints == environment), {})
     return {
         "company": register.company,
         "address": register.address,
         "setting": setting.get("name"),
         "check_csid": setting.get("check_csid"),
         "check_pcsid": setting.get("check_pcsid"),
+        "csid_in_other_environment": any(s.check_csid for s in settings if s.api_endpoints != environment),
     }
 
 
 def _decide_register_action(stored, company) -> str:
-    """What to do with one branch: "save", "resume", or the refusal "other_company" / "connected".
+    """What to do with one branch: "save", "save_setting", "resume", or the refusal "other_company" /
+    "connected".
 
     The register's identity, address included, goes into the CSR, so its records may be edited only
-    until the compliance CSID is issued. From then on a retry resumes with them as they are.
+    until a compliance CSID is issued in any environment. From then on a retry in that environment
+    resumes with them as they are, and another environment saves only its own setting ("save_setting").
     """
     if not stored:
         return "save"
@@ -110,6 +146,8 @@ def _decide_register_action(stored, company) -> str:
         return "connected"
     if stored["check_csid"]:
         return "resume"
+    if stored["csid_in_other_environment"]:
+        return "save_setting"
     return "save"
 
 
@@ -138,11 +176,12 @@ def saving_commercial_register(company , address , **kwargs) :
     })
 
 
-def saving_zatca_setting(company ,tax_id, legal_name ,commercial_register ,company_address , setting=None , **kwargs) :
-    """Create or update the register's Optima Zatca Setting; returns its name."""
+def saving_zatca_setting(company ,tax_id, legal_name ,commercial_register ,company_address , setting=None , environment="production" , **kwargs) :
+    """Create or update the register's Optima Zatca Setting in `environment`; returns its name."""
     values = {
         "company" : company ,
         "commercial_register" : commercial_register ,
+        "api_endpoints" : environment ,
         "organization_identifier" : tax_id,
         "organization_unit_name" : kwargs.get("commercial_register_name") ,
         "location" : kwargs.get("short_address") ,
@@ -156,8 +195,6 @@ def saving_zatca_setting(company ,tax_id, legal_name ,commercial_register ,compa
     if not setting :
         # otp is mandatory on the doctype, so a register saved without one gets a placeholder.
         values["otp"] = "123456"
-        # The wizard has no environment choice yet; a test site sets this to sandbox or simulation.
-        values["api_endpoints"] = frappe.conf.get("zatca_onboarding_environment") or "production"
     if kwargs.get("otp") :
         values["otp"] = kwargs.get("otp")
 
@@ -178,7 +215,8 @@ def saving_main_settings(**kwargs) :
 
 
 def get_registered_companies() :
-    """Every register that has an Optima Zatca Setting, in the shape the wizard lists and prefills.
+    """Every Optima Zatca Setting with its register, in the shape the wizard lists and prefills: one
+    row per register and environment.
 
     `phase` is the one global phase from Zatca Main Settings, repeated on every row.
     """
@@ -199,12 +237,18 @@ def get_registered_companies() :
             ad.pincode,
             ad.district ,
             ozs.otp,
-            IF(1=0 , "Not Registered" , %(phase)s ) as phase
+            IF(1=0 , "Not Registered" , %(phase)s ) as phase,
+            ozs.name as setting,
+            ozs.api_endpoints as environment,
+            ozs.check_csid,
+            ozs.check_pcsid,
+            ozs.use_for_invoices
         FROM `tabOptima Zatca Setting` ozs
         LEFT JOIN `tabCommercial Register` cr
             ON cr.name = ozs.commercial_register
         LEFT JOIN `tabAddress` ad
             ON ad.name = cr.address
+        ORDER BY ozs.creation
 
     """,{"phase" : phase},as_dict=True)
 
@@ -245,6 +289,10 @@ def add_company_to_zatca(name):
 
         if not settings.check_pcsid and all_sample_invoices_passed(setting_updates):
             get_production_certificate(settings, setting_updates)
+            # A register's first connected setting signs its invoices; moving them to another
+            # environment is the user's choice, made on the setting's form.
+            if not frappe.db.exists("Optima Zatca Setting", {"commercial_register": settings.commercial_register, "use_for_invoices": 1}):
+                setting_updates["use_for_invoices"] = 1
 
         saving_data_to_setting(name, setting_updates)
         notify_completion_status(settings, setting_updates)
@@ -254,13 +302,15 @@ def add_company_to_zatca(name):
         frappe.log_error(f"ZATCA Setup Failed for {name}", str(e))
 
 
+# The flags are named for the spelt-out ordinal, not the digit.
+SAMPLE_INVOICE_FIELDS = (
+    "invoice_one", "invoice_two", "invoice_three",
+    "invoice_four", "invoice_five", "invoice_six"
+)
+
+
 def all_sample_invoices_passed(setting_updates):
-    # The flags are named for the spelt-out ordinal, not the digit.
-    invoice_fields = [
-        "invoice_one", "invoice_two", "invoice_three",
-        "invoice_four", "invoice_five", "invoice_six"
-    ]
-    return all(setting_updates.get(field) for field in invoice_fields)
+    return all(setting_updates.get(field) for field in SAMPLE_INVOICE_FIELDS)
 
 
 def get_compliance_certificate(settings: frappe._dict, company_csr: str, setting_updates: dict) -> None:

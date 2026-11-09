@@ -1,4 +1,5 @@
-"""A retried onboarding keeps the key its compliance certificate was issued for."""
+"""A retried onboarding keeps the key its compliance certificate was issued for, and a register's
+first connected setting is the one that signs its invoices."""
 
 import unittest
 from unittest.mock import MagicMock, patch
@@ -6,14 +7,19 @@ from unittest.mock import MagicMock, patch
 from optima_zatca.zatca import setup
 
 
-def run_onboarding(settings):
+def pass_every_sample_invoice(settings, setting_updates):
+	setting_updates.update({field: True for field in setup.SAMPLE_INVOICE_FIELDS})
+
+
+def run_onboarding(settings, invoices_pass=False, register_has_invoice_setting=False):
 	with (
 		patch.object(setup.frappe.local, "site", "test.site", create=True),
 		patch.object(setup.frappe, "get_doc", return_value=settings),
 		patch.object(setup, "get_csr_identity", return_value={}),
 		patch.object(setup, "GenerateCSR") as generate,
 		patch.object(setup, "get_compliance_certificate"),
-		patch.object(setup, "send_sample_sales_invoices"),
+		patch.object(setup, "send_sample_sales_invoices", side_effect=pass_every_sample_invoice if invoices_pass else None),
+		patch.object(setup.frappe, "db", MagicMock(**{"exists.return_value": register_has_invoice_setting})),
 		patch.object(setup, "get_production_certificate"),
 		patch.object(setup, "saving_data_to_setting") as save,
 		patch.object(setup, "notify_completion_status"),
@@ -35,3 +41,15 @@ class TestOnboardingRetry(unittest.TestCase):
 		generate, save = run_onboarding(MagicMock(check_csid=1, check_pcsid=0, otp="123345"))
 		generate.assert_not_called()
 		self.assertNotIn("private_key", save.call_args.args[1])
+
+
+class TestInvoiceSetting(unittest.TestCase):
+	def test_the_first_connected_setting_of_a_register_signs_its_invoices(self):
+		_, save = run_onboarding(MagicMock(check_csid=1, check_pcsid=0, otp="123345"), invoices_pass=True)
+		self.assertEqual(save.call_args.args[1]["use_for_invoices"], 1)
+
+	def test_a_later_environment_leaves_the_invoices_where_they_are(self):
+		_, save = run_onboarding(
+			MagicMock(check_csid=1, check_pcsid=0, otp="123345"), invoices_pass=True, register_has_invoice_setting=True
+		)
+		self.assertNotIn("use_for_invoices", save.call_args.args[1])

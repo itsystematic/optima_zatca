@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:{company}-{commercial_register}",
+ "autoname": "format:{company}-{commercial_register}-{api_endpoints}",
  "creation": "2024-11-25 11:20:52.732617",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -33,6 +33,7 @@
   "otp",
   "column_break_zyfp",
   "api_endpoints",
+  "use_for_invoices",
   "section_break_jvhf",
   "check_csr",
   "check_csid",
@@ -163,10 +164,23 @@
    "label": "Configuration"
   },
   {
+   "default": "production",
    "fieldname": "api_endpoints",
    "fieldtype": "Select",
-   "label": "API Endpoints",
-   "options": "sandbox\nsimulation\nproduction"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Environment",
+   "options": "sandbox\nsimulation\nproduction",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Send to ZATCA signs this commercial register's invoices with the one setting that has this ticked. Ticking it here unticks it on the register's other settings.",
+   "fieldname": "use_for_invoices",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Use for Invoices"
   },
   {
    "description": "The OTP Code From Fatoora Platform.",
@@ -279,8 +293,7 @@
    "label": "Commercial Register",
    "no_copy": 1,
    "options": "Commercial Register",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "section_break_jvhf",
@@ -411,7 +424,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-23 16:26:05.580705",
+ "modified": "2026-11-09 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Setting",
