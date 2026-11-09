@@ -179,7 +179,6 @@
    "fieldname": "use_for_invoices",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "Use for Invoices"
   },
   {
@@ -424,7 +423,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-09 15:00:00.000000",
+ "modified": "2026-11-09 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Setting",

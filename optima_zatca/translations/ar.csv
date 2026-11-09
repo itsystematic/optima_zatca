@@ -5566,3 +5566,4 @@ The {0} environment is not offered on this site,البيئة {0} غير متاح
 Commercial register {0} already has a setting in the {1} environment: {2},للسجل التجاري {0} إعداد مسبق في بيئة {1}: {2}
 Only a setting with a production CSID can be used for invoices,لا يُستخدم للفواتير إلا إعداد لديه شهادة CSID للإنتاج
 No Optima Zatca Setting of commercial register {0} is ticked Use for Invoices,لا يوجد إعداد Optima Zatca للسجل التجاري {0} محدد عليه خيار استخدام للفواتير
+Not Connected,غير مرتبط
