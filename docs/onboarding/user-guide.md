@@ -1,48 +1,39 @@
 # Onboarding — User Guide
 
-A plain-language guide for implementers to connecting a company's device to ZATCA
+A plain-language guide for implementers to connecting a company's devices to ZATCA
 (Fatoora). For the technical flow and the fields it writes, see [reference.md](reference.md).
 
-Onboarding is a **one-time** activity per device. You do it once for each **Commercial
-Register** (each branch/device that will issue invoices), and after it succeeds that device
+Onboarding is a **one-time** activity per device. You do it once for each **commercial
+register** (each branch/device that will issue invoices), and after it succeeds that register
 can clear and report invoices. You do **not** repeat it for every invoice.
 
-The guided **onboarding wizard** lives at **`/zatca-onboarding`** on your site. It walks you
-through the steps below and shows a live progress bar as each stage completes.
+The guided **onboarding wizard** lives at **`/zatca-onboarding`** on your site (the ZATCA
+workspace's **Set up e-invoicing** shortcut opens it). It walks you through the steps below and
+then shows a live progress board, one row per register.
 
 ---
 
 ## Before you start
 
-Onboarding will fail early unless these are ready:
+Have these ready. The wizard creates the Commercial Register and its address for you, so they
+do not need to exist yet.
 
-| Prerequisite | Where | Why |
-|--------------|-------|-----|
-| Company **Arabic name** | Company → `company_name_in_arabic` | Goes into the certificate as the organization name |
-| Company **VAT number** (15 digits) | Company → `tax_id` | Goes into the certificate as the organization identifier |
-| A **Commercial Register** record | Commercial Register doctype | Identifies the device; onboarding config attaches to it |
-| Commercial Registration number | Commercial Register | Goes into the certificate as the organization unit |
-| A complete **Saudi National Address** | Company Address | ZATCA validates the address components (below) |
-| An **OTP** from the Fatoora portal | ZATCA Fatoora portal | Authorizes this device to request its certificate — valid for a short time, so generate it just before you run onboarding |
+| You need | For | Rules the wizard checks |
+|----------|-----|-------------------------|
+| The company's **Arabic name** | The company | Required |
+| The company's **VAT number** | The company | 15 digits, starting and ending with 3 |
+| Each register's **name** and **CRN** | Each register | CRN is 10 digits, and not already added |
+| Each register's **Saudi National Address** | Each register | Short address, building no (4 digits), street, secondary no, district, city, postal code (5 digits) |
+| One **OTP** per register from the Fatoora portal | Each register | 6 digits |
 
-The **National Address** must carry all of Saudi Arabia's standard components, or the CSR is
-rejected: **Building Number** (4 digits), **Street Name**, **District**, **City**, **Postal
-Code** (5 digits), and an optional **Additional Number**.
-
-> **One OTP, one device.** The OTP you generate in the Fatoora portal is tied to the device
-> you're registering. If onboarding fails after the OTP expires, generate a fresh one and run
-> it again.
-
-> **One device per branch.** Each branch that issues invoices is its own **Commercial
-> Register** with its own certificate — onboard them one at a time. Mark the head office as the
-> company's main/default register.
+> **One OTP, one register.** Each OTP you generate in the Fatoora portal authorizes one
+> register, and it expires quickly. Generate them just before the Review step.
 
 ---
 
-## Choosing the environment
+## The environment
 
-Onboarding runs against one of three ZATCA environments — pick it on the setting before you
-start:
+Every register connects to one of three ZATCA environments:
 
 | Environment | Use it for |
 |-------------|-----------|
@@ -50,9 +41,10 @@ start:
 | **simulation** | Pre-production rehearsal that mirrors production behavior |
 | **production** | The live connection that issues real, legally-valid invoices |
 
-Start in **sandbox** or **simulation** to prove the setup, then run **production** for the
-real device. Each environment issues its own certificate — a sandbox certificate can't clear
-production invoices.
+The wizard does not ask. A register connects to **production** unless your site administrator
+has set `zatca_onboarding_environment` to `sandbox` or `simulation` in the site configuration.
+The environment is fixed when a register is first saved, and each environment issues its own
+certificate: a sandbox certificate can't clear production invoices.
 
 ---
 
@@ -60,42 +52,59 @@ production invoices.
 
 ```mermaid
 flowchart LR
-    A["Enter company<br/>+ OTP"] --> B["Generate<br/>certificate request"]
-    B --> C["Compliance<br/>certificate ✅"]
-    C --> D["Sample<br/>invoices checked"]
-    D --> E["Production<br/>certificate ✅"]
-    E --> F["Connected"]
+    A["Phase"] --> B["One or several<br/>registers"]
+    B --> C["Company"]
+    C --> D["Registers"]
+    D --> E["Review<br/>+ OTPs"]
+    E --> F["Progress<br/>board"]
+    F --> G["Done"]
 ```
 
-1. **Enter the company and OTP.** Select the Commercial Register / company, choose the
-   environment, and paste the freshly-generated OTP.
-2. **Generate.** The wizard creates the device's cryptographic request and sends it to ZATCA.
-   ZATCA returns a **compliance certificate** — the device is now recognized.
-3. **Sample invoices.** The wizard automatically submits a set of **sample invoices** so ZATCA
-   can verify your invoices are well-formed. All of them must pass.
-4. **Production certificate.** Once every sample invoice passes, the wizard requests the
-   **production certificate** — the credential that clears and reports real invoices.
-5. **Connected.** The status becomes **Connected** and the progress bar reaches 100%.
+1. **Phase.** Choose **Phase 1** (QR code only) or **Phase 2** (integration with ZATCA).
+2. **How many registers.** **Main CRN** for a single register, or **Multiple CRNs** for a main
+   register and its branches.
+3. **Company.** Pick the company and enter its Arabic name and VAT number.
+4. **Registers.** Add each register's name, CRN and National Address.
+5. **Review.** Check everything, confirm the data is correct, and enter one OTP per register.
+6. **Progress.** Each register goes through three stages on its own row:
+   - the **compliance certificate** (CSID),
+   - six **test invoices**,
+   - the **production certificate** (PCSID).
+
+   The registers are processed one after another.
+7. **Done.** When the board finishes, the last page shows how many registers are live.
 
 ---
 
-## Reading the result
+## Reading the progress board
 
-The progress bar and its color tell you where you landed:
+| A register's row shows | Meaning | What to do |
+|------------------------|---------|-----------|
+| **Waiting** | Its turn has not come yet | Nothing |
+| **Requesting compliance certificate** / **Test invoice n of 6** / **Requesting production certificate** | That stage is running | Wait |
+| **Connected** | Production certificate obtained; the register is live | Nothing — start invoicing |
+| **Compliance certificate refused** | ZATCA refused the OTP or the data | **Retry** asks for a fresh OTP |
+| **Test invoice rejected** / **Production certificate refused** | A later stage failed | **Retry** |
+| **Could not start** | The request was refused before any stage ran, e.g. a CRN that belongs to another company | Fix the cause, then retry |
 
-| Result | Meaning | What to do |
-|--------|---------|-----------|
-| **100% · green** — "Setup Completed" | Production certificate obtained; the device is fully live | Nothing — start invoicing |
-| **50% · red** — "Setup Partially Completed" | Compliance certificate obtained, but the production step didn't finish (e.g. a sample invoice didn't pass) | Re-run onboarding; it resumes from where it stopped |
-| **0% · red** — "Setup Failed" | An earlier stage errored (bad OTP, missing company field, network) | Fix the cause (often a fresh OTP or a missing Arabic name / VAT number) and run again |
+**Retrying is safe.** A retry picks up where that register stopped and never creates a second
+copy of its records. Registers that are already connected stay connected while you retry the
+others.
 
-Onboarding is **safe to re-run.** It remembers the stages already done — a partial run
-continues from the compliance certificate rather than starting over.
+> **Details are fixed after the compliance certificate.** The register's name, VAT number and
+> address are written into that certificate. A retry after it reuses them as they were, so
+> correct any mistake before the certificate is issued.
 
 ---
 
-## Renewing a certificate
+## After onboarding
 
-Production certificates expire. When one is near expiry, use **renew** (a fresh OTP is
-required, exactly as for the first onboarding) to obtain a new production certificate without
-redoing the whole setup.
+- **Default register.** The wizard does not choose one. To have new sales invoices pick a
+  register automatically, tick **Is Default** on that register's **Commercial Register** in the
+  desk. A company can have only one.
+- **Renewing a certificate.** Production certificates expire. The **Optima Zatca Setting** form
+  has a **Renew Production Certificate** button (under **Setup Zatca**), which needs a fresh OTP
+  from the Fatoora portal entered on that form first.
+
+> **Renewal does not work yet.** It currently fails before it reaches ZATCA. Until it is fixed,
+> contact support when a production certificate nears expiry.

@@ -11,8 +11,8 @@ mechanics see [../setup/](../setup/README.md); for domain detail follow the link
 ```mermaid
 graph TB
     subgraph Entry["Entry points (hooks.py)"]
-        W["www/zatca-onboarding<br/>(React SPA)"]
-        WL["@frappe.whitelist<br/>send_to_zatca · add_company_to_zatca"]
+        W["www/zatca_onboarding.py<br/>(Vue SPA)"]
+        WL["@frappe.whitelist<br/>send_to_zatca · register_company · add_company_to_zatca"]
         DE["doc_events<br/>validate · on_submit · before_cancel · on_trash"]
         RO["regional_overrides<br/>update_itemised_tax_data"]
     end
@@ -27,7 +27,7 @@ graph TB
         ZID --> XML["classes/xml.py"]
         ZID --> VAL["classes/validate.py"]
     end
-    API["api.py → ZATCA"]
+    API["api.py → request.py → ZATCA"]
     LOG["logs.py → Optima Zatca Logs"]
 
     W --> SU
@@ -40,8 +40,9 @@ graph TB
     SW --> LOG
 ```
 
-- **[Onboarding](../onboarding/reference.md)** — `setup.py` orchestrates CSR/keys (`keys.py`),
-  compliance + production CSID (`api.py`), and sample invoices (`demo.py`).
+- **[Onboarding](../onboarding/reference.md)** — the wizard's `register_company` (`api.py`) hands
+  each register to `setup.py`, which saves or resumes its records and orchestrates CSR/keys
+  (`keys.py`), compliance + production CSID (`api.py`), and sample invoices (`demo.py`).
 - **[Submission](../submission/reference.md)** — `submission_workflow.py` orchestrates
   validate → build+sign XML (`classes/`) → POST (`api.py`) → decide → update → log (`logs.py`).
 - **[Prepayment](../prepayment/reference.md)** — `events/prepayment.py` (validate) +
@@ -70,16 +71,17 @@ optima_zatca/
 ├── zatca/
 │   ├── invoice.py               # send_to_zatca (the ONLY whitelist submit entry)
 │   ├── submission_workflow.py   # submission orchestrator + pure _decide_* functions
-│   ├── setup.py                 # onboarding orchestrator (add_company_to_zatca)
+│   ├── setup.py                 # onboarding: wizard registration + add_company_to_zatca
 │   ├── keys.py                  # GenerateCSR (OpenSSL CSR/keys)
-│   ├── api.py                   # HTTP transport to ZATCA
+│   ├── api.py                   # ZATCA calls (CSIDs, invoices) + the wizard's two methods
+│   ├── request.py               # HTTP: environment + endpoint → URL, send
 │   ├── demo.py                  # compliance sample invoices
 │   ├── logs.py                  # make_action_log → Optima Zatca Logs
 │   ├── prepayment_invoice.py    # Prepayment Invoice records
 │   ├── itemised_tax.py          # regional per-item tax override
 │   ├── xml_transport.py         # XML serialize / base64 / QR extraction
 │   ├── pdfa3.py                 # embed invoice XML into PDF/A-3
-│   ├── request.py · utils.py · sales_order.py
+│   ├── utils.py · sales_order.py
 │   └── classes/
 │       ├── invoice.py           # ZatcaInvoiceData (facade)
 │       ├── invoice_context.py   # InvoiceContextLoader
@@ -87,18 +89,19 @@ optima_zatca/
 │       ├── xml.py               # ZatcaXml (lxml → hash → sign → QR)
 │       └── validate.py          # ZatcaInvoiceValidate
 │
-├── zatca-onboarding/            # React + Vite onboarding SPA
-└── www/zatca-onboarding.html    # SPA entry (served via website_route_rules)
+├── zatca-onboarding/            # Vue 3 + frappe-ui onboarding SPA (source)
+└── www/zatca_onboarding.py      # SPA host page at /zatca-onboarding (website_route_rules)
 ```
 
 ---
 
 ## Design principle — pure decisions, isolated side effects
 
-The submission path (`submission_workflow.py`) and the lifecycle hooks
-(`events/sales_invoice.py`) deliberately separate **pure `_decide_*` functions** (no DB, no HTTP
-— unit-tested directly) from **side-effecting functions** (`_submit_*`, `_update_*`, `_log_*`,
-`_execute_*`, `_write_qr_file`). New branching logic belongs in a `_decide_*` function.
+The submission path (`submission_workflow.py`), the lifecycle hooks
+(`events/sales_invoice.py`) and onboarding registration (`setup.py`, `_decide_register_action`)
+deliberately separate **pure `_decide_*` functions** (no DB, no HTTP — unit-tested directly) from
+**side-effecting functions** (`_submit_*`, `_update_*`, `_log_*`, `_execute_*`, `_write_qr_file`,
+`_load_stored_register`, `_upsert`). New branching logic belongs in a `_decide_*` function.
 
 Two hard constraints when editing these paths:
 
