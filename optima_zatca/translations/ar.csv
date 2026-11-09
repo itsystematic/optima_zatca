@@ -5543,3 +5543,5 @@ Could not start,تعذّر البدء
 Compliance certificate refused,رُفض طلب شهادة الامتثال
 Test invoice rejected,رُفضت فاتورة اختبار
 Production certificate refused,رُفض طلب شهادة الإنتاج
+Commercial register {0} belongs to another company,السجل التجاري {0} تابع لشركة أخرى
+Commercial register {0} is already connected to ZATCA,السجل التجاري {0} مرتبط مسبقًا بهيئة الزكاة والضريبة والجمارك

@@ -1,5 +1,6 @@
 import binascii
 import frappe
+from frappe import _
 import json
 import base64
 from optima_zatca.zatca.api import get_zatca_csid , get_production_csid , renew_production_csid
@@ -158,9 +159,11 @@ def renew_production_certificate(setting ,otp , authorization , csr):
 
 # ====================================================================================================
 # REGISTRATION FROM THE ONBOARDING WIZARD
-# Entered from the React wizard through zatca/api.py. saving_register_data provisions a company's
+# Entered from the onboarding wizard through zatca/api.py. saving_register_data provisions a company's
 # whole device fleet — one Address, Commercial Register and Optima Zatca Setting per branch — and
-# onboards each one as it goes. get_registered_companies reads the fleet back to prefill the wizard.
+# onboards each one as it goes. A retry sends the same branch again, so each branch is matched to
+# what is stored for its CRN and updated or resumed, never added a second time.
+# get_registered_companies reads the fleet back to prefill the wizard.
 
 
 def saving_register_data(**kwargs) :
@@ -186,16 +189,73 @@ def saving_branches_data(**kwargs) :
     list_of_branches = json.loads(kwargs.get("commercial_register")) if isinstance(kwargs.get("commercial_register") , str) else kwargs.get("commercial_register")
 
     for branch in list_of_branches:
-        company_address = saving_address_data(company , **branch)
-        commercial_register = saving_commercial_register(company , company_address , **branch)
-        optima_settings = saving_optima_payment_setting(company ,tax_id, legal_name , commercial_register , company_address , **branch)
+        crn = branch.get("commercial_register_number")
+        stored = _load_stored_register(crn)
+        action = _decide_register_action(stored, company)
+
+        if action == "other_company":
+            frappe.throw(_("Commercial register {0} belongs to another company").format(crn))
+        if action == "connected":
+            frappe.throw(_("Commercial register {0} is already connected to ZATCA").format(crn))
+
+        if action == "resume":
+            optima_settings = stored["setting"]
+        else:
+            stored = stored or {}
+            company_address = saving_address_data(company , stored.get("address") , **branch)
+            commercial_register = saving_commercial_register(company , company_address , **branch)
+            optima_settings = saving_optima_payment_setting(company ,tax_id, legal_name , commercial_register , company_address , stored.get("setting") , **branch)
+
         add_company_to_zatca(optima_settings)
 
 
-def saving_address_data(company , **kwargs) :
+def _load_stored_register(crn):
+    """What is already saved for this CRN, as plain values, or None for a new register."""
+    register = frappe.db.get_value("Commercial Register", crn, ["company", "address"], as_dict=True)
+    if not register:
+        return None
 
-    address = frappe.get_doc({
-        "doctype" : "Address" ,
+    setting = frappe.db.get_value(
+        "Optima Zatca Setting", {"commercial_register": crn}, ["name", "check_csid", "check_pcsid"], as_dict=True
+    ) or {}
+    return {
+        "company": register.company,
+        "address": register.address,
+        "setting": setting.get("name"),
+        "check_csid": setting.get("check_csid"),
+        "check_pcsid": setting.get("check_pcsid"),
+    }
+
+
+def _decide_register_action(stored, company) -> str:
+    """What to do with one branch: "save", "resume", or the refusal "other_company" / "connected".
+
+    The register's identity, address included, goes into the CSR, so its records may be edited only
+    until the compliance CSID is issued. From then on a retry resumes with them as they are.
+    """
+    if not stored:
+        return "save"
+    if stored["company"] != company:
+        return "other_company"
+    if stored["check_pcsid"]:
+        return "connected"
+    if stored["check_csid"]:
+        return "resume"
+    return "save"
+
+
+def _upsert(doctype, name, values, ignore_mandatory=False):
+    """Update the record called `name` with `values`, or create it when there is no such record."""
+    doc = frappe.get_doc(doctype, name) if name and frappe.db.exists(doctype, name) else frappe.new_doc(doctype)
+    doc.update(values)
+    doc.flags.ignore_mandatory = ignore_mandatory
+    doc.save(ignore_permissions=True)
+    return doc.name
+
+
+def saving_address_data(company , address=None , **kwargs) :
+
+    return _upsert("Address" , address , {
         "address_title" : company + " " + kwargs.get("commercial_register_name") ,
         "address_type" : "Billing" ,
         "short_address" : kwargs.get("short_address"),
@@ -205,29 +265,22 @@ def saving_address_data(company , **kwargs) :
         "city" : kwargs.get("city"),
         "pincode" : kwargs.get("pincode"),
         "district" : kwargs.get("district") ,
-
-    }).insert(ignore_permissions=True , ignore_mandatory=True)
-
-    return address.name
+    } , ignore_mandatory=True)
 
 
 def saving_commercial_register(company , address , **kwargs) :
 
-    commercial_register = frappe.get_doc({
-        "doctype" : "Commercial Register" ,
+    return _upsert("Commercial Register" , kwargs.get("commercial_register_number") , {
         "company" : company ,
         "commercial_register_name" : kwargs.get("commercial_register_name") ,
         "commercial_register" : kwargs.get("commercial_register_number"),
         "address" : address
-    }).insert(ignore_if_duplicate=True , ignore_permissions=True)
-
-    return commercial_register.name
+    })
 
 
-def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_register ,company_address , **kwargs) :
-    
-    settings = frappe.get_doc({
-        "doctype" : "Optima Zatca Setting" ,
+def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_register ,company_address , setting=None , **kwargs) :
+
+    values = {
         "company" : company ,
         "commercial_register" : commercial_register ,
         "organization_identifier" : tax_id,
@@ -239,12 +292,15 @@ def saving_optima_payment_setting(company ,tax_id, legal_name ,commercial_regist
         "industry" : "Commercial" ,
         "address" : company_address ,
         "invoice_type" : "1100" ,
-        "otp" : kwargs.get("otp") or "123456",
+    }
+    if not setting :
+        values["otp"] = "123456"
         # The wizard has no environment choice yet; a test site sets this to sandbox or simulation.
-        "api_endpoints" : frappe.conf.get("zatca_onboarding_environment") or "production"
-    }).insert(ignore_if_duplicate=True , ignore_permissions=True)
+        values["api_endpoints"] = frappe.conf.get("zatca_onboarding_environment") or "production"
+    if kwargs.get("otp") :
+        values["otp"] = kwargs.get("otp")
 
-    return settings.name
+    return _upsert("Optima Zatca Setting" , setting , values)
 
 
 def saving_main_settings(**kwargs) :
