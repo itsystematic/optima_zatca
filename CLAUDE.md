@@ -4,27 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-`optima_zatca` is a Frappe/ERPNext v15 app implementing Saudi Arabia's **ZATCA (Fatoora) e-invoicing** — Phase 1 (QR-only simplified invoices) and Phase 2 (full clearance/reporting). It turns an ERPNext Sales Invoice into signed UBL 2.1 XML, submits it to ZATCA's API, and records the full audit trail.
+`optima_zatca` is a Frappe/ERPNext app implementing Saudi Arabia's **ZATCA (Fatoora) e-invoicing** — Phase 1 (QR-only simplified invoices) and Phase 2 (full clearance/reporting). It turns an ERPNext Sales Invoice into signed UBL 2.1 XML, submits it to ZATCA's API, and records the full audit trail. The `version-15` branch is the v15 line; the `version-16*` branches target Frappe/ERPNext 16.
 
-This app lives inside a larger Frappe bench at `/home/erpnext/fawaz`. The bench-level `CLAUDE.md` (one directory up) documents the other apps, the multiple sites, and general `bench` usage. **This bench hosts many sites — ask which site the user is on before running any `bench --site` command.** The rest of this file is specific to `optima_zatca`.
+The v15 line runs in the bench at `/home/erpnext/fawaz`, whose bench-level `CLAUDE.md` documents the other apps, the sites and general `bench` usage. The v16 line runs in `/home/erpnext/frappe-bench16`, which has no bench-level guide. **Both benches host many sites — ask which site the user is on before running any `bench --site` command.** The rest of this file is specific to `optima_zatca`.
 
-> Note: `.github/copilot-instructions.md` is an older AI-agent guide. It is mostly accurate but predates a refactor — trust this file where they disagree. Notably, the onboarding wizard is **React**, not Vue, and the submission logic now lives in `submission_workflow.py`.
+> Note: `.github/copilot-instructions.md` is an older AI-agent guide. It is mostly accurate but predates several refactors — trust this file where they disagree. Notably, the submission logic now lives in `submission_workflow.py`, and the onboarding wizard is the Vue app described under "Onboarding" below.
 
 ## Commands
 
 ```bash
-# Frappe-dependent tests (run inside a real site context)
-bench --site <site> run-tests --app optima_zatca
-bench --site <site> run-tests --app optima_zatca --module optima_zatca.zatca.tests.test_invoice
+# Bench test runs need a site, and on Frappe 16 they WRITE to it: importing ERPNext's
+# test utilities runs BootStrapTestData, which commits test companies, users, custom
+# fields and System Settings changes (time zone, precision). Run them only on a
+# throwaway site (CI's test_site) — never on a site holding real or restored data.
+bench --site <throwaway-site> run-tests --app optima_zatca
+bench --site <throwaway-site> run-tests --module optima_zatca.zatca.tests.test_invoice
 
-# ZATCA unit tests use unittest.mock only (no live Frappe DB, no HTTP) —
-# so they also run under plain pytest from the bench root or app root:
-python -m pytest apps/optima_zatca/optima_zatca/zatca/tests/ -v
+# zatca/tests modules built on plain unittest.TestCase need no site. Run them from the
+# app root with the bench env active (pytest is not installed in the bench env):
+python -m unittest optima_zatca.zatca.tests.test_onboarding_retry optima_zatca.zatca.tests.test_register_company \
+    optima_zatca.zatca.tests.test_xml_transport \
+    optima_zatca.zatca.tests.test_invoice_data optima_zatca.zatca.tests.test_prepayment_invoice
 
-# The events/tests/ prepayment suite needs real doctype meta, so it runs under
-# bench (not bare pytest). Matrix = in-memory logic; integration = real save:
-bench --site <site> run-tests --module optima_zatca.events.tests.test_prepayment
-bench --site <site> run-tests --module optima_zatca.events.tests.test_prepayment_integration
+# The events/tests/ suites need real doctype meta, so they run under bench.
+# Matrix = in-memory logic; integration = real save:
+bench --site <throwaway-site> run-tests --module optima_zatca.events.tests.test_prepayment
+bench --site <throwaway-site> run-tests --module optima_zatca.events.tests.test_prepayment_integration
 
 # After Python changes
 bench restart
@@ -32,12 +37,16 @@ bench restart
 bench --site <site> clear-cache
 bench --site <site> migrate
 
-# Build the app's bundled desk JS (public/js) after editing it
+# Build the app's bundled desk JS (public/js) and the onboarding wizard after editing them
 bench build --app optima_zatca
 
-# Onboarding wizard (React SPA) — see "Onboarding frontend" below
-cd zatca-onboarding && yarn install && yarn dev      # dev server
-yarn build                                            # emits to assets, base-pathed
+# Onboarding wizard (Vue SPA) — see "Onboarding" below
+cd zatca-onboarding && yarn install
+yarn dev:mock     # mocked backend; ?scenario=ok|reject|otp  ?seed=registered|empty  ?lang=ar
+yarn dev          # against the running bench (proxies /api, /assets, /socket.io)
+yarn test         # vitest: progress.ts and validation.ts
+yarn typecheck
+yarn build        # what bench build runs; also copies the HTML entry to www/
 ```
 
 ## Submission Architecture
@@ -74,6 +83,8 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 
 `_decide_post_success_policy` also governs whether the invoice auto-submits after a successful send (gated by the manual-submit setting).
 
+**Frappe 16:** `frappe.db.get_value` refuses a Document as its filter (`ValueError: Unsupported filters type`). `get_base_url` in `zatca/request.py` takes either the setting's name or the loaded setting, because `submission_workflow.py` and the onboarding's `demo.py` pass the document. Pass names to `get_value` in new code.
+
 ## Wiring (hooks.py)
 
 - `override_doctype_class`: `Sales Invoice` → `overrides.sales_invoice.CustomSalesInvoice` (prepayment GL entries). Must subclass ERPNext's `SalesInvoice`.
@@ -86,7 +97,7 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
   - `body .chart-container { font-family: var(--font-stack) }` — frappe-charts injects its own `.chart-container` font into `<head>` at runtime, after every `app_include_css` link, so equal specificity would lose.
 
   The stack is a copy of Frappe's (`espresso/_typography.scss`) with Claudion and Almarai added — re-sync it if a Frappe upgrade changes it. As a bundle it needs `bench build --app optima_zatca`; in return its filename is content-hashed, so edits reach browsers despite nginx's one-year `/assets` cache. Print formats and PDF/A-3 do not use it; they load Claudion and Almarai themselves.
-- `website_route_rules` + `www/zatca-onboarding.html` serve the onboarding SPA at `/zatca-onboarding`.
+- `website_route_rules` + `www/zatca_onboarding.py` serve the onboarding SPA at `/zatca-onboarding/*` (see "Onboarding").
 - `after_install` / `after_app_install` run installers; migrations run the patches in `optima_zatca/patches.txt` (prepayment doctypes/fields, roles, print formats, item-tax setup).
 
 ## Key DocTypes
@@ -136,9 +147,10 @@ Declared in `pyproject.toml`, installed via `bench setup requirements`: `cryptog
 
 There are **two test suites with deliberately different rules** — match the one you're adding to.
 
-### `zatca/tests/` — submission logic (mock-only)
+### `zatca/tests/` — submission and onboarding logic (mock-only)
 
-- Tests for the submission pipeline live in `optima_zatca/zatca/tests/` and use **`unittest.mock` only** — no live Frappe context, no real HTTP, no DB. This is why they run under bare `pytest` (`python -m pytest apps/optima_zatca/optima_zatca/zatca/tests/`).
+- Tests for the submission pipeline and onboarding live in `optima_zatca/zatca/tests/` and use **`unittest.mock` only** — no real HTTP (`zatca/request.py` also throws on any request while `frappe.flags.in_test`), no DB writes.
+- Their base class decides where they run. On Frappe 16 the `FrappeTestCase` modules (`test_invoice`, `test_request`, `test_zatca_integration`) open a site in `setUpClass`, so they need a throwaway site. The `unittest.TestCase` modules run bare with `python -m unittest` (see Commands). **Use plain `unittest.TestCase` for new mock-only tests**, as `test_onboarding_retry.py` does.
 - When adding submission logic, add or extend a `_decide_*` pure function and unit-test it directly rather than testing the whole orchestrator with a live doc.
 
 ### `events/tests/` — the `validate`/lifecycle doc_events (two layers)
@@ -150,8 +162,32 @@ The prepayment `validate` rules (`events/prepayment.py`) are covered by a **two-
 
 **`events/tests/helpers.py` is site-agnostic — keep it that way.** It provisions its own dedicated `Optima Zatca Test …` records (party, item, item-tax-template, commercial register + address) rather than borrowing whatever the site contains; borrowing broke it on a fresh site (the first "non-stock" item found was a fixed asset). Each `get_or_create_*` reuses a real site's record where one fits and fabricates a minimal one otherwise, so a scratch CI site and a real KSA site behave identically. When you add a new fixture, watch for the KSA landmines already handled there: `customer_type="Individual"` (dodges mandatory registration/`tax_id`), the mandatory Item `taxes` table, and pre-seeding order/invoice `taxes` rows **with `cost_center`**. Because existing sites already have the records, the *fabricate* branches only run on a fresh CI site — a wrong field name there stays invisible locally (as the `Sales Invoice Type` `type` field and the fixed-asset item both did), so a green CI run is the real proof.
 
-**CI** (`.github/workflows/ci.yml`) runs both `events/tests/` layers on a throwaway `test_site`; ERPNext's `before_tests` hook supplies the company + chart of accounts. The `zatca/tests/` mock suite is not yet wired into CI.
+**CI** (`.github/workflows/ci.yml`) runs the `events/tests/` suites (prepayment and sales invoice, matrix + integration each) on a throwaway `test_site`; ERPNext's `before_tests` hook supplies the company + chart of accounts. The `zatca/tests/` suite is not yet wired into CI, so its tests only run when someone runs them.
 
-## Onboarding frontend (`zatca-onboarding/`)
+## Onboarding (`/zatca-onboarding`)
 
-A standalone **React + Vite** SPA (Ant Design, Redux Toolkit, `frappe-react-sdk`, socket.io) — the guided ZATCA device-onboarding wizard. It builds with `--base=/assets/optima_zatca/zatca-onboarding/` and its HTML entry is copied to `optima_zatca/www/zatca-onboarding.html` (see the `copy-html-entry` script). Lint with `yarn lint` (ESLint 9 flat config). It is served by Frappe via the `website_route_rules` hook, not by bench's asset bundler.
+The device-onboarding wizard: a **Vue 3 + frappe-ui + Tailwind** SPA in `zatca-onboarding/`, built into `public/zatca-onboarding/` with its HTML entry copied to `www/zatca-onboarding.html` (build output, gitignored). It is a guided task, not documentation: phase → CR type → company → registers → review + OTPs → progress board → done.
+
+```
+www/zatca_onboarding.py   host page: guests → login, website users → /, then a boot JSON
+        │                 (csrf_token, site_name, socketio_port under bench start, lang, rtl, translations)
+        │ 1. frappe.client.get_list Company
+        │ 2. zatca.api.get_companies_registered   → Landing (none yet) or the registered list
+        │ 3. zatca.api.register_company           → fired once; the board follows the events
+        │ realtime "zatca" {message, indicator, percentage, complete, commercial_register_name}
+        ▼
+zatca/setup.py  saving_register_data → per CR: Address → Commercial Register → Optima Zatca Setting
+                → add_company_to_zatca: CSR + keys → compliance CSID (OTP) → 6 sample invoices (demo.py)
+                  → production CSID
+```
+
+- **v15 backend contract.** `register_company` takes `commercial_register` as a **JSON string** — `validate_register_data` only parses strings, and a list crashes it. On Add CR the wizard sends only the new CRs, never the ones already registered.
+- **Fire, then listen.** The board is driven only by the `zatca` events; `progress.ts` maps them (green 20 CSID, 30–80 accepted invoices, red ≥ 20 rejected, red 0 certificate error, 95 PCSID, `complete`). It never waits for `register_company`, which in v15 returns only after the whole run (≥ 30 s per CR: a 5 s sleep after each sample invoice), so moving the run to background jobs needs no UI change.
+- **Retry resumes.** A retry re-sends the same branch, and `_decide_register_action` matches it to what is stored for its CRN: new → created; before the compliance CSID → its Address, Commercial Register and Optima Zatca Setting are updated in place (so a fresh OTP after a refused CSID is saved); after the CSID → resumed untouched, because the register's identity went into the CSR. A CRN of another company, or one already connected, is refused. `check_csid` also gates key generation: the CSID is bound to the key it was requested with, and replacing that key silently breaks every later invoice signature. `demo.py` skips sample invoices already accepted.
+- **Environment.** `api_endpoints` comes from the site config key `zatca_onboarding_environment` (`sandbox` or `simulation`) and defaults to `production`. The sandbox OTP is `123345`.
+- **Mock.** The `#backend` Vite alias picks `src/api/mock.ts` (under `VITE_ZATCA_API=mock`) or `live.ts`, so the mock never ships. Keep the mock's events identical to what `setup.py` and `demo.py` publish.
+- **Strings.** `__()` reads `boot.translations` (Frappe's `get_all_translations`). Add wizard strings to `translations/ar.csv`, but never a string Frappe or ERPNext already translates — a row here overrides it desk-wide. Where the core translation is wrong for the wizard, use the context column (`Back,رجوع,onboarding`).
+- **Socket.io** connects to `<origin or :socketio_port>/<site_name>`: the namespace must be the site name, as in Frappe's own client.
+- The old desk page `/app|desk/zatca-onboarding` only redirects here; the workspace shortcut links here directly.
+
+**Known gaps in the v15 onboarding backend** (not fixed yet): `demo.py` reports gateway errors (429/520/522 from ZATCA's Cloudflare) as "Was Rejected in Zatca" and swallows exceptions without a log; `register_company` has no permission check; Phase 1 still requests certificates like Phase 2.
