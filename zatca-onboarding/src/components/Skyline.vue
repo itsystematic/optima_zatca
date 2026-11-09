@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import flagUrl from "@/assets/saudi.webp";
 
-withDefaults(defineProps<{ height?: number }>(), { height: 132 });
+/** "auto" keeps the drawing's own proportions at full width instead of slicing it to a fixed height. */
+withDefaults(defineProps<{ height?: number | "auto" }>(), { height: 132 });
 
 /** Seven fronds that rise from the crown and droop at the tip, which is what reads as a palm. */
 const FRONDS = [
@@ -40,7 +41,7 @@ const FLAG = { x: 928, y: 38, width: 82, height: (82 * 2) / 3 };
 	<svg
 		viewBox="0 0 1040 132"
 		width="100%"
-		:height="height"
+		:height="height === 'auto' ? undefined : height"
 		preserveAspectRatio="xMidYMax slice"
 		class="block"
 		aria-hidden="true"

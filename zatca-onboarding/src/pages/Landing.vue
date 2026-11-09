@@ -16,7 +16,7 @@ function start() {
 </script>
 
 <template>
-	<AppFrame width="max-w-5xl" center>
+	<AppFrame width="max-w-5xl" center :backdrop="false">
 		<div class="card overflow-hidden">
 			<div class="space-y-6 px-8 pb-4 pt-14 sm:px-20">
 				<h1 class="max-w-2xl text-8xl font-semibold tracking-tight text-navy sm:text-9xl">

@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import backgroundUrl from "@/assets/wizard-background.webp";
 import ITMark from "@/components/ITMark.vue";
+import Skyline from "@/components/Skyline.vue";
 
-withDefaults(defineProps<{ width?: string; center?: boolean }>(), {
+/** `backdrop` lays the Landing card's skyline across the foot of the page, behind the content. */
+withDefaults(defineProps<{ width?: string; center?: boolean; backdrop?: boolean }>(), {
 	width: "max-w-4xl",
 	center: false,
+	backdrop: true,
 });
 </script>
 
 <template>
 	<div class="relative isolate flex min-h-screen flex-col">
-		<div
-			class="pointer-events-none fixed inset-0 -z-10 bg-[length:100%_100%] opacity-30"
-			:style="{ backgroundImage: `url(${backgroundUrl})` }"
-			aria-hidden="true"
-		/>
+		<div v-if="backdrop" class="pointer-events-none fixed inset-x-0 bottom-0 -z-10 opacity-40">
+			<Skyline height="auto" />
+		</div>
 		<header class="flex h-16 flex-none items-center gap-3 px-6 sm:px-10">
 			<ITMark :size="40" />
 			<div class="grow" />
