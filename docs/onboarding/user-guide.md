@@ -41,10 +41,34 @@ Every register connects to one of three ZATCA environments:
 | **simulation** | Pre-production rehearsal that mirrors production behavior |
 | **production** | The live connection that issues real, legally-valid invoices |
 
-The wizard does not ask. A register connects to **production** unless your site administrator
-has set `zatca_onboarding_environment` to `sandbox` or `simulation` in the site configuration.
-The environment is fixed when a register is first saved, and each environment issues its own
-certificate: a sandbox certificate can't clear production invoices.
+You choose **simulation** or **production** on the Review step, and the OTPs must come from the
+matching Fatoora portal. **Sandbox** is offered only on a site whose administrator set
+`zatca_onboarding_environment` to `sandbox` in the site configuration; that key also preselects
+the environment.
+
+A register can be connected in more than one environment, side by side: rehearse in simulation,
+then connect the same register to production. Each environment issues its own certificate — a
+simulation certificate can't clear production invoices — and the register list shows each
+environment's status:
+
+| Status | Meaning | Action offered |
+|--------|---------|----------------|
+| **Connected** | Production CSID issued | — |
+| **In progress** | Compliance CSID issued, sample invoices or production CSID still to do | **Resume**, without an OTP |
+| **Not connected** | Saved, but ZATCA refused the compliance CSID | **Resume**, with a new OTP |
+
+An environment the register has not been connected in yet appears as **Connect to …**. Once
+any environment has a compliance CSID, the register's details are in that certificate, so the
+wizard sends them as they are.
+
+> **Which environment signs your invoices.** A register's first connected environment signs
+> its invoices, marked **Invoices** in the list. Connecting a second environment does not move
+> them: to switch, tick **Use for Invoices** on that environment's Optima Zatca Setting. Only a
+> connected setting can be ticked, and ticking it unticks the register's other settings.
+>
+> **Upgrading a site onboarded before environments.** Its settings arrive unticked. Tick **Use
+> for Invoices** once on each register's Optima Zatca Setting, or Send to ZATCA refuses that
+> register's invoices.
 
 ---
 
