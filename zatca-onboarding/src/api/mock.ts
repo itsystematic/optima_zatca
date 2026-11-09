@@ -7,10 +7,12 @@
  *   ?scenario=ok       every register goes live (default)
  *   ?scenario=reject   the last register of the first run has test invoice 4 rejected
  *   ?scenario=otp      the first register of the first run is refused its CSID
- *   ?seed=registered   start as a return visit with two registers already live
+ *   ?seed=registered   start as a return visit: one register live in production, one live in
+ *                      simulation with production half done
  *   ?seed=empty        forget the registers this mock has onboarded
  */
-import type { Company, CommercialRegister, RegisterPayload, RegisteredRow, ZatcaEvent } from "@/types";
+import { boot } from "@/boot";
+import type { Company, CommercialRegister, Environment, RegisterPayload, RegisteredRow, ZatcaEvent } from "@/types";
 import { TAX_ID } from "@/validation";
 
 const REGISTERED_KEY = "optima_zatca.mock.registered";
@@ -39,13 +41,15 @@ if (params.get("seed") === "registered") {
 	localStorage.setItem(
 		REGISTERED_KEY,
 		JSON.stringify([
-			seedRow("Riyadh HQ", "1010000001", "Riyadh", "Al Olaya"),
-			seedRow("Jeddah Branch", "4030000002", "Jeddah", "Al Rawdah"),
+			seedRow("Riyadh HQ", "1010000001", "Riyadh", "Al Olaya", "production", { check_pcsid: 1, use_for_invoices: 1 }),
+			seedRow("Jeddah Branch", "4030000002", "Jeddah", "Al Rawdah", "simulation", { check_pcsid: 1, use_for_invoices: 1 }),
+			seedRow("Jeddah Branch", "4030000002", "Jeddah", "Al Rawdah", "production", { check_pcsid: 0 }),
 		]),
 	);
 }
 
 const listeners = new Set<(event: ZatcaEvent) => void>();
+/** One device per register and environment, as the backend keeps one Optima Zatca Setting each. */
 const devices = new Map<string, { csid: boolean; tests: boolean[]; pcsid: boolean }>();
 let requests = 0;
 
@@ -73,18 +77,38 @@ export async function registerCompany(payload: RegisterPayload): Promise<string>
 	const first = ++requests === 1;
 	const branches = payload.commercial_register;
 	for (const [i, branch] of branches.entries()) {
+		const crn = branch.commercial_register_number;
+		const saved = readRegistered().find((r) => r.commercial_register_number === crn && r.environment === payload.environment);
+		if (saved?.check_pcsid) {
+			throw serverError(`Commercial register ${crn} is already connected to ZATCA in the ${payload.environment} environment`);
+		}
 		const refuseCsid = first && scenario === "otp" && i === 0;
 		const rejectInvoice = first && scenario === "reject" && i === branches.length - 1;
-		await onboard(branch, refuseCsid, rejectInvoice);
-		if (devices.get(branch.commercial_register_number)?.pcsid) saveRegistered(payload, branch);
+		const device = deviceFor(crn, payload.environment, saved);
+		await onboard(branch, device, refuseCsid, rejectInvoice);
+		saveRegistered(payload, branch, device);
 	}
 	return "Company Data Successfuly Saved";
 }
 
-async function onboard(branch: CommercialRegister, refuseCsid: boolean, rejectInvoice: boolean) {
+function deviceFor(crn: string, environment: Environment, saved?: RegisteredRow) {
+	const key = `${crn}:${environment}`;
+	const device = devices.get(key) ?? {
+		csid: !!saved?.check_csid,
+		tests: Array(6).fill(false),
+		pcsid: !!saved?.check_pcsid,
+	};
+	devices.set(key, device);
+	return device;
+}
+
+async function onboard(
+	branch: CommercialRegister,
+	device: { csid: boolean; tests: boolean[]; pcsid: boolean },
+	refuseCsid: boolean,
+	rejectInvoice: boolean,
+) {
 	const crn = branch.commercial_register_number;
-	const device = devices.get(crn) ?? { csid: false, tests: Array(6).fill(false), pcsid: false };
-	devices.set(crn, device);
 	const publish = (event: ZatcaEvent) =>
 		listeners.forEach((l) => l({ commercial_register_name: crn, ...event }));
 
@@ -134,6 +158,9 @@ function validate(payload: RegisterPayload) {
 	if (!TAX_ID.test(payload.tax_id)) {
 		throw serverError("Tax ID must be 15 digits, starting and ending with 3");
 	}
+	if (!boot.environments.includes(payload.environment)) {
+		throw serverError(`The ${payload.environment} environment is not offered on this site`);
+	}
 }
 
 /** The shape frappe-ui's call() rejects with. */
@@ -145,20 +172,42 @@ function readRegistered(): RegisteredRow[] {
 	return JSON.parse(localStorage.getItem(REGISTERED_KEY) ?? "[]");
 }
 
-function saveRegistered(payload: RegisterPayload, branch: CommercialRegister) {
-	const rows = readRegistered().filter((r) => r.commercial_register_number !== branch.commercial_register_number);
+/** The backend saves the setting before onboarding it, so a register is listed even if it failed. */
+function saveRegistered(
+	payload: RegisterPayload,
+	branch: CommercialRegister,
+	device: { csid: boolean; pcsid: boolean },
+) {
+	const crn = branch.commercial_register_number;
+	const all = readRegistered();
+	const isThis = (r: RegisteredRow) => r.commercial_register_number === crn && r.environment === payload.environment;
+	const previous = all.find(isThis);
+	const othersSignInvoices = all.some((r) => r.commercial_register_number === crn && !isThis(r) && r.use_for_invoices);
+	const rows = all.filter((r) => !isThis(r));
 	rows.push({
 		...branch,
 		company: payload.company,
 		company_name_in_arabic: payload.company_name_in_arabic,
 		tax_id: payload.tax_id,
 		phase: payload.phase,
+		setting: previous?.setting ?? `${payload.company}-${crn}-${payload.environment}`,
+		environment: payload.environment,
+		check_csid: device.csid ? 1 : 0,
+		check_pcsid: device.pcsid ? 1 : 0,
+		use_for_invoices: previous?.use_for_invoices || (device.pcsid && !othersSignInvoices) ? 1 : 0,
 	});
 	// v15 keeps one phase in Zatca Main Settings, so every row reports the latest.
 	localStorage.setItem(REGISTERED_KEY, JSON.stringify(rows.map((r) => ({ ...r, phase: payload.phase }))));
 }
 
-function seedRow(name: string, crn: string, city: string, district: string): RegisteredRow {
+function seedRow(
+	name: string,
+	crn: string,
+	city: string,
+	district: string,
+	environment: Environment,
+	flags: Partial<Pick<RegisteredRow, "check_pcsid" | "use_for_invoices">>,
+): RegisteredRow {
 	return {
 		company: COMPANIES[0].name,
 		company_name_in_arabic: COMPANIES[0].company_name_in_arabic!,
@@ -174,6 +223,12 @@ function seedRow(name: string, crn: string, city: string, district: string): Reg
 		pincode: "12211",
 		otp: "",
 		phase: "Phase Two",
+		setting: `${COMPANIES[0].name}-${crn}-${environment}`,
+		environment,
+		check_csid: 1,
+		check_pcsid: 0,
+		use_for_invoices: 0,
+		...flags,
 	};
 }
 

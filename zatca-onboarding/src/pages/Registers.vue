@@ -12,7 +12,7 @@ import { draft, emptyRegister, removeRegister, resetDraft, saveRegister } from "
 
 const router = useRouter();
 
-const multi = computed(() => draft.register_type === "multi" || draft.adding);
+const multi = computed(() => draft.register_type === "multi" || draft.mode === "adding");
 const form = ref<CommercialRegister>(multi.value ? emptyRegister() : { ...(draft.commercial_register[0] ?? emptyRegister()) });
 const errors = ref<Errors<RegisterField>>({});
 
@@ -46,7 +46,7 @@ function next() {
 }
 
 function back() {
-	if (draft.adding) {
+	if (draft.mode === "adding") {
 		resetDraft();
 		router.push({ name: "registered" });
 	} else {

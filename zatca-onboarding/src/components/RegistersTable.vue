@@ -11,7 +11,9 @@ interface Row {
 	phase?: Phase;
 }
 
-defineProps<{ rows: Row[]; actions?: boolean; disabled?: boolean }>();
+withDefaults(defineProps<{ rows: Row[]; actions?: boolean; removable?: boolean; disabled?: boolean }>(), {
+	removable: true,
+});
 defineEmits<{ edit: [crn: string]; remove: [crn: string] }>();
 
 const PHASE_LABEL: Record<Phase, string> = { "Phase One": "Phase 1", "Phase Two": "Phase 2" };
@@ -50,6 +52,7 @@ const PHASE_LABEL: Record<Phase, string> = { "Phase One": "Phase 1", "Phase Two"
 								@click="$emit('edit', row.commercial_register_number)"
 							/>
 							<Button
+								v-if="removable"
 								variant="ghost"
 								theme="red"
 								icon="lucide-trash-2"

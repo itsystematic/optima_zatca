@@ -1,6 +1,8 @@
 /** Values the backend stores in Zatca Main Settings.phase. */
 export type Phase = "Phase One" | "Phase Two";
 export type RegisterType = "main" | "multi";
+/** Values the backend stores in Optima Zatca Setting.api_endpoints. */
+export type Environment = "sandbox" | "simulation" | "production";
 
 /** One commercial register as register_company receives it. */
 export interface CommercialRegister {
@@ -25,7 +27,7 @@ export interface Company {
 	tax_id?: string | null;
 }
 
-/** A row of get_companies_registered. */
+/** A row of get_companies_registered: one Optima Zatca Setting, so one per register and environment. */
 export interface RegisteredRow {
 	company: string;
 	company_name_in_arabic: string;
@@ -41,6 +43,11 @@ export interface RegisteredRow {
 	district: string;
 	otp: string;
 	phase: Phase;
+	setting: string;
+	environment: Environment;
+	check_csid: 0 | 1;
+	check_pcsid: 0 | 1;
+	use_for_invoices: 0 | 1;
 }
 
 export interface RegisterPayload {
@@ -48,6 +55,7 @@ export interface RegisterPayload {
 	company_name_in_arabic: string;
 	tax_id: string;
 	phase: Phase;
+	environment: Environment;
 	commercial_register: CommercialRegister[];
 }
 

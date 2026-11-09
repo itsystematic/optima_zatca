@@ -1,3 +1,5 @@
+import type { Environment } from "@/types";
+
 export interface Boot {
 	csrf_token: string;
 	site_name: string;
@@ -6,6 +8,9 @@ export interface Boot {
 	lang: string;
 	rtl: boolean;
 	translations: Record<string, string>;
+	/** What the wizard offers; sandbox only when the site config names it. */
+	environments: Environment[];
+	default_environment: Environment;
 }
 
 function read(): Boot {
@@ -16,6 +21,8 @@ function read(): Boot {
 		lang: "en",
 		rtl: false,
 		translations: {},
+		environments: ["simulation", "production"],
+		default_environment: "production",
 	};
 	try {
 		const text = document.getElementById("zatca-boot")?.textContent ?? "";

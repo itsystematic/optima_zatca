@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { Button } from "frappe-ui";
+import { Badge, Button } from "frappe-ui";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import AppFrame from "@/components/AppFrame.vue";
 import OtpDialog from "@/components/OtpDialog.vue";
 import StageBar from "@/components/StageBar.vue";
+import { ENVIRONMENT_TEXT } from "@/environments";
 import { currentStep, currentTestNumber, TEST_INVOICES, type RowProgress } from "@/progress";
-import { board, finishRun, retry, totals } from "@/run";
+import { board, finishRun, retry, run, totals } from "@/run";
 import { __ } from "@/translate";
 import type { CommercialRegister } from "@/types";
 
@@ -73,7 +74,15 @@ function backToRegisters() {
 	<AppFrame width="max-w-5xl">
 		<div class="card overflow-hidden">
 			<div class="flex items-center gap-6 border-b border-outline-gray-1 px-8 py-6">
-				<h1 class="flex-1 text-3xl font-semibold text-navy">{{ title }}</h1>
+				<div class="flex flex-1 items-center gap-3">
+					<h1 class="text-3xl font-semibold text-navy">{{ title }}</h1>
+					<Badge
+						v-if="run.payload"
+						size="lg"
+						theme="blue"
+						:label="__(ENVIRONMENT_TEXT[run.payload.environment].label, undefined, 'onboarding')"
+					/>
+				</div>
 				<div class="w-48 space-y-1.5">
 					<div class="text-end text-sm text-ink-gray-6">
 						{{ __("{0} of {1} done", [totals.live, totals.total]) }}
@@ -138,6 +147,11 @@ function backToRegisters() {
 			</footer>
 		</div>
 
-		<OtpDialog v-model:open="otpOpen" :registers="otpFor ? [otpFor] : []" @connect="retryWithOtp" />
+		<OtpDialog
+			v-model:open="otpOpen"
+			:registers="otpFor ? [otpFor] : []"
+			:environment="run.payload?.environment ?? 'production'"
+			@connect="retryWithOtp"
+		/>
 	</AppFrame>
 </template>

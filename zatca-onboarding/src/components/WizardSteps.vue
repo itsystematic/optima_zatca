@@ -14,7 +14,7 @@ const steps = computed(() => {
 		{ label: __("Registers"), routes: ["registers"] },
 		{ label: __("Review", undefined, "onboarding"), routes: ["review"] },
 	];
-	return draft.adding ? all.slice(2) : all;
+	return draft.mode === "adding" ? all.slice(2) : all;
 });
 
 const current = computed(() => steps.value.findIndex((s) => s.routes.includes(route.name as string)));

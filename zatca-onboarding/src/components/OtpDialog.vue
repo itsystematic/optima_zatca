@@ -3,11 +3,17 @@ import { Button, Dialog, FormControl } from "frappe-ui";
 import { reactive, watch } from "vue";
 import { FATOORA_URL } from "@/links";
 import { __ } from "@/translate";
-import type { CommercialRegister } from "@/types";
+import type { CommercialRegister, Environment } from "@/types";
 import { OTP_LENGTH, otpError } from "@/validation";
 
 const open = defineModel<boolean>("open", { required: true });
-const props = defineProps<{ registers: CommercialRegister[] }>();
+const props = defineProps<{ registers: CommercialRegister[]; environment: Environment }>();
+
+const SOURCE: Record<Environment, string> = {
+	production: "One code per commercial register, from the Fatoora portal.",
+	simulation: "One code per commercial register, from the Fatoora simulation portal.",
+	sandbox: "ZATCA's developer portal accepts the OTP 123345.",
+};
 const emit = defineEmits<{ connect: [otps: Record<string, string>] }>();
 
 const otps = reactive<Record<string, string>>({});
@@ -38,8 +44,8 @@ function connect() {
 	<Dialog v-model:open="open" :title="__('Enter OTPs')" size="md">
 		<form class="space-y-4" novalidate @submit.prevent="connect">
 			<p class="text-sm text-ink-gray-6">
-				{{ __("One code per commercial register, from the Fatoora portal.") }}
-				<a :href="FATOORA_URL" target="_blank" rel="noopener" class="inline-flex items-center gap-1 font-medium text-brand hover:underline">
+				{{ __(SOURCE[environment]) }}
+				<a v-if="environment !== 'sandbox'" :href="FATOORA_URL" target="_blank" rel="noopener" class="inline-flex items-center gap-1 font-medium text-brand hover:underline">
 					{{ __("Get OTP from Fatoora") }}<span class="lucide-external-link size-3.5" aria-hidden="true" />
 				</a>
 			</p>

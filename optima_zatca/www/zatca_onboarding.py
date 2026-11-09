@@ -6,6 +6,8 @@ import frappe
 from frappe.translate import get_all_translations
 from frappe.utils.jinja_globals import is_rtl
 
+from optima_zatca.zatca.setup import default_environment, onboarding_environments
+
 no_cache = 1
 sitemap = 0
 
@@ -22,6 +24,7 @@ def get_context(context):
 	# Minting a CSRF token writes the session, and a GET is only committed when asked to.
 	frappe.local.flags.commit = True
 	lang = frappe.local.lang
+	configured_environment = frappe.conf.get("zatca_onboarding_environment")
 	boot = {
 		"csrf_token": frappe.sessions.get_csrf_token(),
 		"site_name": frappe.local.site,
@@ -30,6 +33,8 @@ def get_context(context):
 		"lang": lang,
 		"rtl": is_rtl(),
 		"translations": get_all_translations(lang) if lang != "en" else {},
+		"environments": onboarding_environments(configured_environment),
+		"default_environment": default_environment(configured_environment),
 	}
 	# The JSON sits inside a <script> element, which a "</" in any translation would close.
 	context.boot_json = json.dumps(boot, ensure_ascii=False).replace("</", "<\\/")
