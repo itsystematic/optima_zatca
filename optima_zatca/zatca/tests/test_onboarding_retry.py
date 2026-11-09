@@ -12,12 +12,12 @@ def run_onboarding(settings):
 		patch.object(setup.frappe, "get_doc", return_value=settings),
 		patch.object(setup, "get_csr_identity", return_value={}),
 		patch.object(setup, "GenerateCSR") as generate,
-		patch.object(setup, "get_certificate"),
+		patch.object(setup, "get_compliance_certificate"),
 		patch.object(setup, "send_sample_sales_invoices"),
 		patch.object(setup, "get_production_certificate"),
-		patch.object(setup, "saving_data_to_company") as save,
+		patch.object(setup, "saving_data_to_setting") as save,
 		patch.object(setup, "notify_completion_status"),
-		patch.object(setup, "handle_zatca_error") as failed,
+		patch.object(setup, "notify_failure_status") as failed,
 	):
 		generate.return_value.get_generated_details.return_value = {"private_key": "NEW", "csr": "CSR"}
 		setup.add_company_to_zatca(settings.name)

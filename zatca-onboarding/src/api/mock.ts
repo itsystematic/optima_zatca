@@ -97,7 +97,7 @@ async function onboard(branch: CommercialRegister, refuseCsid: boolean, rejectIn
 		}
 		device.csid = true;
 		publish({ message: "CSID Created Successfully", indicator: "green", percentage: 20, complete: false });
-		// saving_data_to_company's event carries no register, and the board must ignore it
+		// saving_data_to_setting's event carries no register, and the board must ignore it
 		listeners.forEach((l) => l({ message: "Data Saved Successfully", indicator: "green" }));
 	}
 
