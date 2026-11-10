@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-`optima_zatca` is a Frappe/ERPNext app implementing Saudi Arabia's **ZATCA (Fatoora) e-invoicing** — Phase 1 (QR-only simplified invoices) and Phase 2 (full clearance/reporting). It turns an ERPNext Sales Invoice into signed UBL 2.1 XML, submits it to ZATCA's API, and records the full audit trail. The `version-15` branch is the v15 line; the `version-16*` branches target Frappe/ERPNext 16.
+`optima_zatca` is a Frappe/ERPNext app implementing Saudi Arabia's **ZATCA (Fatoora) e-invoicing** — Phase 1 (QR-only simplified invoices) and Phase 2 (full clearance/reporting). It turns an ERPNext Sales Invoice into signed UBL 2.1 XML, submits it to ZATCA's API, and records the full audit trail. `develop` (the default branch) and `version-16` target Frappe/ERPNext 16, and `version-15` targets 15. Work lands on `develop`, `version-16` moves only by release merges from it, and `version-15` gets labelled backports; `CONTRIBUTING.md` has the full branch, backport and release rules. Branch new work from `develop`, never from a release branch.
 
 The v15 line runs in the bench at `/home/erpnext/fawaz`, whose bench-level `CLAUDE.md` documents the other apps, the sites and general `bench` usage. The v16 line runs in `/home/erpnext/frappe-bench16`, which has no bench-level guide. **Both benches host many sites — ask which site the user is on before running any `bench --site` command.** The rest of this file is specific to `optima_zatca`.
 
