@@ -4,38 +4,99 @@ Developer + power-user reference for **device onboarding** — turning a Commerc
 into a ZATCA-connected device (CSR → compliance CSID → sample invoices → production CSID).
 For the implementer walkthrough, see [user-guide.md](user-guide.md).
 
-Onboarding is orchestrated by one whitelisted entry point and driven from the React wizard at
-`/zatca-onboarding`; progress is streamed back over a realtime channel.
+The wizard at `/zatca-onboarding` makes one call, `register_company`, which saves each
+commercial register and then onboards it. Progress streams back over a realtime channel.
 
-Orchestrator: `optima_zatca/zatca/setup.py` → `add_company_to_zatca(name)`
+| Entry point | Called by | Does |
+|-------------|-----------|------|
+| `api.register_company(**payload)` | The wizard's Review step | Validates, saves each register's records, runs `add_company_to_zatca` on each |
+| `api.get_companies_registered()` | The wizard, on load | Lists registers that already have a setting, to prefill and block re-adding them |
+| `setup.add_company_to_zatca(name)` | Per register, and the setting form's **Setup Zatca** button | The onboarding pipeline below |
+| `setup.renew_production_certificate(...)` | The setting form's **Renew Production Certificate** button | [Renewal](#renewal) |
+
+Registration + pipeline: `optima_zatca/zatca/setup.py`
 CSR/keys: `optima_zatca/zatca/keys.py` → `GenerateCSR`
-HTTP transport: `optima_zatca/zatca/api.py`
+Sample invoices: `optima_zatca/zatca/demo.py` → `send_sample_sales_invoices`
+ZATCA calls: `optima_zatca/zatca/api.py`, sent through `optima_zatca/zatca/request.py`
+
+---
+
+## Registration
+
+`saving_register_data` writes the company's Arabic name and VAT number onto the **Company**,
+the phase onto **Zatca Main Settings**, and then works through the registers one at a time.
+Each register owns an Address and a Commercial Register keyed on its CRN, and one Optima Zatca
+Setting per environment it is onboarded in:
+
+```
+CRN 1010101010 → Address "Masar Demo HQ-Billing"
+               → Commercial Register "1010101010"
+               → Optima Zatca Setting "Masar Demo-1010101010-production" → add_company_to_zatca
+               → Optima Zatca Setting "Masar Demo-1010101010-simulation" (added later)
+```
+
+### The environment
+
+`register_company` takes an `environment`. `_decide_environment` accepts `simulation` and
+`production`, plus `sandbox` only when the site config key `zatca_onboarding_environment` is
+`sandbox`; anything else is refused. A caller that sends none gets the site config value, or
+`production`. The wizard reads the same rules from its boot data (`environments`,
+`default_environment`, built by `onboarding_environments` and `default_environment`).
+
+### Matching what is stored
+
+Before saving, `_decide_register_action` compares the register with what is already stored for
+its CRN, reading the setting **in the requested environment**. A retry sends the same register
+again, so this step is what stops it adding a second set of records:
+
+| Stored for the CRN | Action |
+|--------------------|--------|
+| Nothing | **save**: create the Address, Commercial Register and setting |
+| A Commercial Register of another company | **refuse**: "belongs to another company" |
+| This environment: production CSID issued | **refuse**: "already connected to ZATCA in the … environment" |
+| This environment: compliance CSID issued | **resume**: write nothing, run the pipeline from where it stopped |
+| Another environment: compliance CSID issued | **save_setting**: create (or update) only this environment's setting, with the stored address |
+| Records, no compliance CSID in any environment | **save**: update the same records in place, including a newly entered OTP |
+
+> **Identity is frozen at the first compliance CSID.** The register's name, VAT number and
+> address go into the CSR, so its records can change only until a compliance CSID is issued in
+> any environment. After that a retry resumes with them as they are, and another environment
+> reuses them.
+
+A refusal aborts the request. Registers earlier in the same request have already been
+onboarded by then.
+
+A setting created here gets values the wizard does not ask for:
+
+| Field | Value |
+|-------|-------|
+| `api_endpoints` | The decided environment |
+| `otp` | The OTP entered for the register, or the placeholder `123456` when none was given (the field is mandatory) |
+| `use_for_invoices` | Ticked when the production CSID is issued, if no other setting of the register is ticked — see [Which setting signs invoices](#which-setting-signs-invoices) |
 
 ---
 
 ## The pipeline
 
 `add_company_to_zatca(name)` loads the **Optima Zatca Setting** identified by `name` and runs
-the stages below in order. The whole body is wrapped in a `try/except` that routes any failure
-to `handle_zatca_error` (realtime 0% + an Error Log row), so a failed stage never leaves a
-half-written success.
+the stages below in order.
 
 ```mermaid
 graph TD
-    A[add_company_to_zatca] --> B[Generate CSR + keys]
-    B --> C{otp set AND not check_csid?}
-    C -->|Yes| D[get_certificate → compliance CSID]
-    D --> E[save to company]
-    C -->|No| F{check_csid?}
-    F -->|Yes| G[send_sample_sales_invoices]
+    A[add_company_to_zatca] --> B{check_csid?}
+    B -->|No| C[Generate CSR + keys]
+    C --> D{otp set?}
+    D -->|Yes| E[get_compliance_certificate<br/>save + commit]
+    D -->|No| J[partial]
     E --> G
+    B -->|Yes| G[send_sample_sales_invoices]
     G --> H{all 6 sample invoices passed<br/>AND not check_pcsid?}
     H -->|Yes| I[get_production_certificate → production CSID]
-    H -->|No| J[partial]
+    H -->|No| J
     I --> K[save + notify]
     J --> K
 
-    style D fill:#345718,stroke:#2e7d32
+    style E fill:#345718,stroke:#2e7d32
     style I fill:#345718,stroke:#2e7d32
     style J fill:#7a5c00,stroke:#f9a825
 ```
@@ -44,14 +105,23 @@ Stage by stage:
 
 | # | Stage | Function | Effect |
 |---|-------|----------|--------|
-| 1 | **CSR + keys** | `GenerateCSR(...).get_generated_details()` | Creates private/public key + CSR from the setting's device identity (see below) |
-| 2 | **Compliance CSID** | `get_certificate` → `api.get_zatca_csid` | Submits CSR + OTP to the *compliance* endpoint; stores binary security token, secret, request_id, certificate; sets `check_csid` |
-| 3 | **Sample invoices** | `demo.send_sample_sales_invoices` | Submits the compliance sample invoices; sets `invoice_one … invoice_six` as each passes |
+| 1 | **CSR + keys** | `GenerateCSR(...).get_generated_details()` | Only while `check_csid` is unset. Creates the private/public key and CSR from the setting's device identity (see below) |
+| 2 | **Compliance CSID** | `get_compliance_certificate` → `api.get_zatca_csid` | Submits CSR + OTP to the *compliance* endpoint; stores binary security token, secret, request_id, certificate; sets `check_csid`, and commits at once |
+| 3 | **Sample invoices** | `demo.send_sample_sales_invoices` | Submits the six compliance sample invoices, skipping any already accepted; sets `invoice_one … invoice_six` as each passes |
 | 4 | **Production CSID** | `get_production_certificate` → `api.get_production_csid` | Runs only when **all six** sample flags are set and `check_pcsid` is unset; stores production token/secret/request_id; sets `check_pcsid` |
-| 5 | **Save + notify** | `saving_data_to_company`, `notify_completion_status` | Persists to the setting/company and publishes the final realtime status |
+| 5 | **Save + notify** | `saving_data_to_setting`, `notify_completion_status` | Writes the collected fields onto the setting, commits, and publishes the final realtime status |
 
 The stage gates are the `check_*` flags on the setting — which is exactly what makes
 onboarding **resumable**: a re-run skips whatever is already flagged.
+
+> **Keys are kept once the compliance CSID exists.** That certificate is bound to the key it was
+> requested with. Generating a new key on a retry would silently break every later invoice
+> signature, so stage 1 runs only before `check_csid` is set.
+
+**Failures.** The whole body is wrapped in a `try/except`. Any failure goes to
+`notify_failure_status` (realtime 0%) plus an Error Log row, and is **not raised**, so the next
+register in the same request still runs. Whatever was committed before the failure stays saved,
+the compliance CSID in particular, and that is what the next retry resumes from.
 
 ---
 
@@ -112,10 +182,22 @@ Onboarding yields two certificates, in order — the compliance one gates the pr
 
 ---
 
-## HTTP transport (`zatca/api.py`)
+## ZATCA calls (`zatca/api.py` → `zatca/request.py`)
 
-Onboarding touches two of the ZATCA endpoints; the third (`make_invoice_request`) belongs to
-the [submission](../submission/) domain.
+`api.py` adds each endpoint's headers and body. `request.py` turns the setting's
+`api_endpoints` and the endpoint name into a URL (its `BASEURL` table) and sends the request.
+
+- **No request leaves under tests.** `request.py` throws on any call while `frappe.flags.in_test`.
+- **Status handling is in `api.py`.** The certificate calls throw ZATCA's response text on
+  anything but HTTP 200. `make_invoice_request` returns the response untouched for its caller
+  to judge.
+- **Network failures.** Only `make_post_request` turns one into a readable "not responding"
+  error; the PATCH helper lets the `requests` exception through.
+
+Onboarding uses the certificate calls below, and `demo.py` sends the sample invoices with
+`make_invoice_request` to the `complainace_checks` endpoint. That misspelt key is also stored on
+**Optima Zatca Logs** and filtered on by the Zatca Logs report, so renaming it means migrating
+those rows.
 
 | Function | ZATCA endpoint | Returns |
 |----------|----------------|---------|
@@ -124,23 +206,30 @@ the [submission](../submission/) domain.
 | `renew_production_csid(setting, otp, authorization, csr)` | `onboarding` | A fresh production CSID (renewal path) |
 
 Both certificate responses are base64 payloads: `_decode_certificate` decodes the binary
-security token to the PEM certificate, and `_create_auth_header` builds the
-`token:secret` Basic auth header used on later calls.
+security token to the PEM certificate, and `make_auth_header_for_request` (`zatca/utils.py`)
+builds the `token:secret` Basic auth header used on later calls.
 
 ---
 
 ## Realtime progress
 
 Every stage publishes to the **`zatca`** realtime event (`frappe.publish_realtime`), which the
-onboarding SPA subscribes to over socket.io. Terminal states:
+onboarding SPA subscribes to over socket.io. Each event is
+`{message, indicator, percentage, complete, commercial_register_name}`. The wizard's progress
+board files each one under its `commercial_register_name` and ignores events without one, such
+as the "Data Saved Successfully" event `saving_data_to_setting` sends.
+
+Terminal states (`complete` is true):
 
 | Outcome | `percentage` | `indicator` | Message |
 |---------|-------------|-------------|---------|
 | Full success (`check_pcsid` set) | `100` | green | ZATCA Setup Completed |
 | Partial (compliance only) | `50` | red | ZATCA Setup Partially Completed |
-| Error (any raised exception) | `0` | red | ZATCA Setup Failed: … |
+| Error (any exception) | `0` | red | ZATCA Setup Failed: … |
 
-Intermediate ticks: CSID created → 20%, production CSID created → 95%.
+Intermediate ticks: CSID created → 20%, each accepted sample invoice → +10% (30–80%), production
+CSID created → 95%. A refused certificate request publishes its error at 0% before the terminal
+error event.
 
 ---
 
@@ -148,24 +237,47 @@ Intermediate ticks: CSID created → 20%, production CSID created → 95%.
 
 ### Optima Zatca Setting
 
-One record **per Commercial Register / device** — the entire onboarding state machine lives
-here. Field groups:
+One record **per Commercial Register and environment** — the entire onboarding state machine
+lives here. It is named `{company}-{commercial_register}-{api_endpoints}`; settings created
+before environments were added keep their old `{company}-{commercial_register}` name. A register
+has at most one setting per environment: the controller refuses a second, and a unique index on
+(`commercial_register`, `api_endpoints`) backs it up.
+Field groups:
 
 | Group | Fields |
 |-------|--------|
 | **Identity** | `company`, `commercial_register`, `address`, `registration_type` |
 | **CSR inputs** | `organization_unit_name`, `invoice_type`, `industry`, plus `address` and `location` — the last two produce `registeredAddress` |
-| **Generated by the run** | `common_name`, `egs_serial_number` — read-only; regenerated on every run and written back by `get_generated_details` |
+| **Generated by the run** | `common_name`, `egs_serial_number` — read-only; regenerated with the keys (any run before the compliance CSID) and written back by `get_generated_details` |
 | **Device identity** | `organization_identifier` (mandatory, validated as a Saudi VAT number) and `organization_name` (read-only, fetched from the company's Arabic name when blank) — these feed both the CSR and the invoice payload's `CompanyID` / `RegistrationName`, with Company as a fallback |
 | **Unused** | `country_name` — always `SA`; the CSR config hardcodes `C= SA` and the payload builder uses its own `DEFAULT_COUNTRY_CODE` |
-| **Environment** | `api_endpoints` (`sandbox` / `simulation` / `production`), `phases` (`Phase 1` / `Phase 2`) |
+| **Environment** | `api_endpoints`, labelled Environment (`sandbox` / `simulation` / `production`, mandatory, as decided in [Registration](#the-environment)), `phases` (`Phase 1` / `Phase 2`) |
+| **Invoices** | `use_for_invoices` — see below |
 | **Crypto material** | `private_key`, `public_key`, `csr`, `certificate`, `binary_security_token`, `secret`, `request_id`, `production_request_id`, `authorization`, `token_type` |
 | **Stage flags** | `check_csr`, `check_csid`, `check_pcsid`, `invoice_one … invoice_six`, `status` (`Not Connected` / `Connected`) |
 | **OTP** | `otp` (entered per run; short-lived) |
 
+#### Which setting signs invoices
+
+Send to ZATCA signs a register's invoices with its setting ticked **Use for Invoices**
+(`InvoiceContextLoader._get_company_settings`), and refuses an invoice whose register has none
+ticked. The rules:
+
+- Onboarding ticks a register's first setting to get its production CSID, so a single-environment
+  register needs no extra step.
+- A later environment leaves the tick where it is. Moving invoices to it is a deliberate choice on
+  the setting's form; ticking one setting unticks the register's others (`on_update`).
+- Only a setting with a production CSID can be newly ticked.
+- Nothing ticks settings that existed before the field. After the upgrade, each register's
+  setting has to be ticked once by hand, or Send to ZATCA refuses its invoices.
+
+Each environment keeps its own invoice chain: `get_invoice_counter_and_pih` reads the counter and
+previous hash from the logs of the setting's environment only.
+
 ### Commercial Register
 
-One record **per device/branch** of a company.
+One record **per device/branch** of a company, named by its CRN. The wizard creates it, with
+its Address, during [Registration](#registration).
 
 Controller: `optima_zatca/optima_zatca/doctype/commercial_register/commercial_register.py`
 
@@ -186,4 +298,10 @@ Controller: `optima_zatca/optima_zatca/doctype/commercial_register/commercial_re
 
 `renew_production_certificate(setting, otp, authorization, csr)` (`zatca/setup.py`) obtains a
 fresh production CSID for an already-onboarded device. It needs a **new OTP**, exactly like the
-first onboarding, but skips CSR generation and the sample-invoice stage.
+first onboarding, but skips CSR generation and the sample-invoice stage. The setting form's
+button sends the setting's own `otp`, `authorization` and `csr`.
+
+> **Renewal is broken.** `api.renew_production_csid` passes `header=` to
+> `request.make_patch_request`, whose parameter is `headers`. `make_patch_request` in turn
+> passes `header=` to `requests.patch`. Either one raises `TypeError` before anything reaches
+> ZATCA.

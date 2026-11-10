@@ -75,8 +75,10 @@ The endpoint is chosen inside `ZatcaInvoiceData` from the invoice type and passe
 | Standard (B2B) | **clearance** | set — ZATCA must clear before validity |
 | Simplified (B2C) | **reporting** | not set — reported after issue |
 
-Transport: `optima_zatca/zatca/api.py` → `make_invoice_request(clearance_status, authorization,
-invoice_hash, uuid, encoded_invoice, setting, endpoint)`.
+Transport: `optima_zatca/zatca/api.py` → `make_invoice_request(clearance_status, authentication,
+invoice_hash, invoice_uuid, invoice_encoded, setting, endpoint)`, sent through
+`optima_zatca/zatca/request.py`. It returns ZATCA's response untouched; the workflow's `_decide_*`
+functions judge it.
 
 ---
 
