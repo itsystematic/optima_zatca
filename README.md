@@ -162,7 +162,7 @@ We offer comprehensive support to ensure you have the best experience with Optim
 ---
   
 ## 🤝 Contributing
-We welcome contributions from the community! Please follow the contribution guidelines outlined in our Contributing Guide.
+We welcome contributions from the community! Please follow the contribution guidelines outlined in our [Contributing Guide](CONTRIBUTING.md).
 
 Guidelines
 - Submit issues through GitHub Issues.
