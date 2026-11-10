@@ -1,0 +1,37 @@
+name: Backport
+
+on:
+  pull_request_target:
+    types: [closed]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  backport:
+    runs-on: ubuntu-latest
+    # The repo is public, so anyone can comment; only maintainers may start a backport.
+    if: >
+      (
+        github.event_name == 'pull_request_target' &&
+        github.event.pull_request.merged &&
+        contains(toJSON(github.event.pull_request.labels.*.name), '"backport ')
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/backport') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
+    steps:
+      # A pull request opened with GITHUB_TOKEN starts no CI run; BACKPORT_TOKEN, when set, makes the backport PR run CI.
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.BACKPORT_TOKEN || github.token }}
+      - uses: korthout/backport-action@0ebd44f9c79a4a0a171200dcdcceec3ed9ca732f # v4.7.1
+        with:
+          github_token: ${{ secrets.BACKPORT_TOKEN || github.token }}
+          # Merges of develop into a PR branch are develop's commits, not the PR's, and would otherwise fail the backport.
+          merge_commits: skip
