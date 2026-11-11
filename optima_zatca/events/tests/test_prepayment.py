@@ -15,7 +15,7 @@ DB: the lookups are mocked here.
 from unittest.mock import patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from optima_zatca.events import prepayment
 
@@ -27,7 +27,7 @@ def _si(**fields):
     return doc
 
 
-class TestAdjustmentPercentageRange(FrappeTestCase):
+class TestAdjustmentPercentageRange(UnitTestCase):
     def test_below_minimum_throws(self):
         doc = _si(adjustment_percentage=-0.000000001)
         with self.assertRaises(frappe.ValidationError):
@@ -44,7 +44,7 @@ class TestAdjustmentPercentageRange(FrappeTestCase):
         prepayment._validate_adjustment_percentage_range(_si(adjustment_percentage=100))
 
 
-class TestRequiredFields(FrappeTestCase):
+class TestRequiredFields(UnitTestCase):
     def _complete(self):
         return _si(adjustment_percentage=50, total_grands=100, grand_total=50)
 
@@ -60,7 +60,7 @@ class TestRequiredFields(FrappeTestCase):
                     prepayment._validate_required_fields(doc)
 
 
-class TestDeductedTotals(FrappeTestCase):
+class TestDeductedTotals(UnitTestCase):
     def test_deducted_greater_than_grand_throws(self):
         doc = _si(deducted_grand_total=150, grand_total=100)
         with self.assertRaises(frappe.ValidationError):
@@ -83,7 +83,7 @@ class TestDeductedTotals(FrappeTestCase):
         )
 
 
-class TestCalculateMaxAdjustmentLimit(FrappeTestCase):
+class TestCalculateMaxAdjustmentLimit(UnitTestCase):
     def test_repeating_decimal_kept_at_nine_dp(self):
         # 2/3 * 100 = 66.6666...%, the value that historically truncated to a
         # whole number and produced false "exceeds max limit" rejections.
@@ -98,7 +98,7 @@ class TestCalculateMaxAdjustmentLimit(FrappeTestCase):
         )
 
 
-class TestAdjustmentPercentageLimit(FrappeTestCase):
+class TestAdjustmentPercentageLimit(UnitTestCase):
     def test_zero_total_grands_throws(self):
         doc = _si(total_grands=0, grand_total=2, adjustment_percentage=10)
         with self.assertRaises(frappe.ValidationError):
@@ -115,7 +115,7 @@ class TestAdjustmentPercentageLimit(FrappeTestCase):
             prepayment._validate_adjustment_percentage_limit(doc)
 
 
-class TestPosPaymentForAdjustment(FrappeTestCase):
+class TestPosPaymentForAdjustment(UnitTestCase):
     def test_non_pos_short_circuits(self):
         # is_pos != 1 -> the POS ceiling never runs, even with impossible amounts.
         prepayment._validate_pos_payment_for_adjustment(
@@ -133,7 +133,7 @@ class TestPosPaymentForAdjustment(FrappeTestCase):
         )
 
 
-class TestNonPosPaymentForAdjustment(FrappeTestCase):
+class TestNonPosPaymentForAdjustment(UnitTestCase):
     def test_pos_short_circuits(self):
         # is_pos != 0 -> the non-POS ceiling never runs.
         prepayment._validate_non_pos_payment_for_adjustment(
@@ -151,7 +151,7 @@ class TestNonPosPaymentForAdjustment(FrappeTestCase):
         )
 
 
-class TestUniqueInitialPrepayment(FrappeTestCase):
+class TestUniqueInitialPrepayment(UnitTestCase):
     def test_non_initial_prepayment_type_short_circuits(self):
         doc = _si(sales_invoice_type="Adjustment", prepayment_sales_order="SO-0001")
         with patch.object(prepayment, "_get_existing_initial_prepayment") as lookup:
@@ -182,7 +182,7 @@ class TestUniqueInitialPrepayment(FrappeTestCase):
             prepayment._validate_unique_initial_prepayment(doc)
 
 
-class TestPrepaymentLinkage(FrappeTestCase):
+class TestPrepaymentLinkage(UnitTestCase):
     def test_missing_prepayment_throws(self):
         doc = _si(return_against="PRE-404")
         with patch("optima_zatca.events.prepayment.frappe.db.get_value", return_value=None):
@@ -217,7 +217,7 @@ class TestPrepaymentLinkage(FrappeTestCase):
             prepayment._validate_prepayment_linkage(doc)
 
 
-class TestReturnRequirements(FrappeTestCase):
+class TestReturnRequirements(UnitTestCase):
     def test_non_return_short_circuits(self):
         # is_return falsy -> linkage is never consulted.
         doc = _si(is_return=0, return_against="")
@@ -231,7 +231,7 @@ class TestReturnRequirements(FrappeTestCase):
             prepayment._validate_return_requirements(doc)
 
 
-class TestValidatePrepaymentsDispatch(FrappeTestCase):
+class TestValidatePrepaymentsDispatch(UnitTestCase):
     """The public entry point's routing only: assert *which* checks run, not
     their text (message content is the individual helpers' concern above)."""
 

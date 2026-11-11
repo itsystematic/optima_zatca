@@ -8,7 +8,7 @@ TestExecute saves one real chain to prove the query reads the right fields and o
 """
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase, UnitTestCase
 from frappe.utils import add_days, flt, getdate, nowdate
 
 from optima_zatca.events.tests import helpers
@@ -79,7 +79,7 @@ def chain_rows(rows):
     return [row for row in rows if row["indent"] == 0]
 
 
-class TestAdvancePaymentReport(FrappeTestCase):
+class TestAdvancePaymentReport(UnitTestCase):
     def test_a_real_contract_settles_to_zero(self):
         """Three advances settled by three adjustments, with figures as stored in production.
 
@@ -236,7 +236,7 @@ class TestAdvancePaymentReport(FrappeTestCase):
         self.assertIsNone(total["balance"], "a running balance has no total")
 
 
-class TestExecute(FrappeTestCase):
+class TestExecute(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
 

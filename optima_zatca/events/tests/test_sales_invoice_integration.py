@@ -14,12 +14,12 @@ setters and the Company region read go through caches).
 
 import erpnext
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from optima_zatca.events.tests import helpers
 
 
-class TestSalesInvoiceLifecycleWiring(FrappeTestCase):
+class TestSalesInvoiceLifecycleWiring(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
         frappe.clear_cache()
