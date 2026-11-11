@@ -142,9 +142,8 @@ database:
 fallback, so a missing Address degrades to blanks instead of raising.
 
 For a **shipped format**, put the logic in a controller module next to the format
-(`print_format/sales_invoice_controller.py` is the worked example, unit-tested in
-`test_sales_invoice_controller.py`) and expose it as a Jinja global through
-`hooks.jinja.methods`. The template then keeps the same one-line shape.
+(`print_format/sales_invoice_controller.py` is the worked example) and expose it as a Jinja
+global through `hooks.jinja.methods`. The template then keeps the same one-line shape.
 
 > **Avoid `frappe.call(...)` in a template.** It routes through `execute_cmd`, which requires
 > an HTTP request: it works from the desk button but raises `AttributeError: request` in a
