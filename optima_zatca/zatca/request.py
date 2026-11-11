@@ -68,7 +68,7 @@ def get_base_url(setting=None , endpoint:str=None) -> str :
 def _block_in_tests():
     """No test may reach ZATCA in any environment: the invoice it sends is fabricated, but the
     certificate it is signed with is the site's real one."""
-    if frappe.flags.in_test:
+    if frappe.in_test:
         frappe.throw(_("ZATCA requests are blocked while tests run."))
 
 
