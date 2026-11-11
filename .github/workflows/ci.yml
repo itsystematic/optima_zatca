@@ -129,3 +129,15 @@ jobs:
         run: |
           bench --site test_site run-tests \
             --module optima_zatca.events.tests.test_sales_invoice_integration
+
+      - name: Run itemised tax matrix tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.zatca.tests.test_itemised_tax
+
+      - name: Run itemised tax integration tests
+        working-directory: frappe-bench
+        run: |
+          bench --site test_site run-tests \
+            --module optima_zatca.zatca.tests.test_itemised_tax_integration
