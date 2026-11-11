@@ -15,9 +15,11 @@ company has them); the two mandatory Sales Invoice custom fields
 
 """
 
-import frappe
+import hashlib
+
 import erpnext
-from frappe.utils import nowdate, add_days
+import frappe
+from frappe.utils import add_days, nowdate
 
 
 # ====================================================================================================
@@ -59,20 +61,19 @@ TEST_COMMERCIAL_REGISTER = "Optima Zatca Test CR"
 def get_or_create_commercial_register(company=None):
     """Provision the mandatory (``reqd``) Sales Invoice ``commercial_register``.
 
-    Tests never submit, so the certificate/device side of a real Commercial
+    No test reaches ZATCA, so the certificate/device side of a real Commercial
     Register is never exercised — a bare record with its three mandatory fields
     (``commercial_register``, ``commercial_register_name``, ``address``) is
     enough to clear ``validate``.
 
     A real KSA site already has a (cert-bound, ``is_default``) Commercial
     Register, and the controller forbids adding a second default for the same
-    company — so reuse the site's existing register when there is one and only
-    fabricate a minimal record on a scratch site that has none.
+    company — so reuse the company's own register when there is one and only
+    fabricate a minimal record for a company that has none. Never another
+    company's: its invoices would carry a register they don't belong to.
     """
     company = company or get_company()
-    existing = frappe.db.get_value(
-        "Commercial Register", {"company": company}, "name"
-    ) or frappe.db.get_value("Commercial Register", {}, "name")
+    existing = frappe.db.get_value("Commercial Register", {"company": company}, "name")
     if existing:
         return existing
 
@@ -81,13 +82,19 @@ def get_or_create_commercial_register(company=None):
         {
             "doctype": "Commercial Register",
             "company": company,
-            "commercial_register": "1010101010",  # 10-digit CRN, per the field's description
+            "commercial_register": _test_crn(company),
             "commercial_register_name": TEST_COMMERCIAL_REGISTER,
             "address": address,
         }
     )
     cr.insert(ignore_permissions=True)
     return cr.name
+
+
+def _test_crn(company):
+    """Ten digits, as the field asks. The register is named by its CRN, so each company
+    needs its own; deriving it from the company keeps it the same on every run."""
+    return "10" + str(int(hashlib.sha256(company.encode()).hexdigest(), 16) % 10**8).zfill(8)
 
 
 def _get_or_create_test_address(company):
@@ -185,24 +192,23 @@ def get_or_create_item(company=None):
     return TEST_ITEM
 
 
+KSA_STANDARD_RATE_TEMPLATE = "KSA VAT 15% Selling"
 TEST_ITEM_TAX_TEMPLATE = "Optima Zatca Test VAT 15%"
 
 
 def get_or_create_item_tax_template(company=None):
-    """An Item Tax Template for ``company``.
+    """The company's standard-rated (15%) selling template.
 
-    A real KSA site already has the ``KSA VAT …`` templates that
-    ``setup_item_tax_templates`` installs in ``after_install`` — reuse one.
-    Only a scratch site (where that installer found no VAT accounts, so created
-    no template) reaches the fabricate branch, which builds a minimal 15%
-    template backed by a get-or-created Tax account.
+    ``setup_item_tax_templates`` creates ``KSA VAT 15% Selling`` for every company
+    that exists at install, and the test bootstrap does the same for the CI company.
+    Asking for it by title keeps every run on the same template; taking whichever
+    template came first once handed the factories a 0% purchase one. A company
+    without it gets a minimal 15% template of its own, never another company's.
     """
     company = company or get_company()
-    existing = frappe.db.get_value(
-        "Item Tax Template", {"company": company}, "name"
-    ) or frappe.db.get_value("Item Tax Template", {}, "name")
-    if existing:
-        return existing
+    for title in (KSA_STANDARD_RATE_TEMPLATE, TEST_ITEM_TAX_TEMPLATE):
+        if existing := frappe.db.get_value("Item Tax Template", {"company": company, "title": title}, "name"):
+            return existing
 
     template = frappe.get_doc(
         {
