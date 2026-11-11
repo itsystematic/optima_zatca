@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests import IntegrationTestCase
 
-from optima_zatca.events.tests import helpers
+from optima_zatca.tests import utils
 
 
 class TestZatcaIntegration(IntegrationTestCase):
@@ -15,14 +15,14 @@ class TestZatcaIntegration(IntegrationTestCase):
         commit.start()
         self.addCleanup(commit.stop)
 
-        self.company = helpers.get_company()
-        self.customer = helpers.get_or_create_customer()
+        self.company = utils.get_company()
+        self.customer = utils.get_or_create_customer()
         # Phase Two skips the Phase One QR file, which the rollback could not remove from disk.
-        helpers.set_zatca_main_settings(phase="Phase Two", manual_submit=0)
+        utils.set_zatca_main_settings(phase="Phase Two", manual_submit=0)
 
     def create_test_sales_invoice(self, **kwargs):
         """Create a test sales invoice"""
-        return helpers.make_sales_invoice(company=self.company, customer=self.customer, **kwargs)
+        return utils.make_sales_invoice(company=self.company, customer=self.customer, **kwargs)
 
     @patch('optima_zatca.zatca.submission_workflow.make_invoice_request')
     @patch('optima_zatca.zatca.submission_workflow.ZatcaInvoiceData')

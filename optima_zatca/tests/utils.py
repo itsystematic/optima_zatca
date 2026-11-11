@@ -1,4 +1,4 @@
-"""Shared test factories for the Sales Invoice events suite.
+"""Shared test factories for the app's integration tests.
 
 Modeled on ``optima_payment/optima_payment/tests/utils.py``: idempotent,
 ``get_value``/``exists``-guarded builders. **Site-agnostic** — they provision
