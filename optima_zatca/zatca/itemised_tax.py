@@ -1,5 +1,4 @@
 import frappe
-import json
 import traceback
 from frappe.utils import flt
 from optima_zatca.zatca.utils import log_and_throw_error
@@ -25,7 +24,7 @@ def _calculate_sales_document_item_taxes(doc):
     item_discount, tax_rate, tax_amount, total_amount.
     """
     try:
-        itemised_tax = get_itemised_tax(doc.taxes)
+        itemised_tax = get_itemised_tax(doc)
         # Returns: {item_code: {tax_description: {tax_rate, tax_amount, included_in_print_rate}}}
 
         for row in doc.items:
@@ -94,7 +93,7 @@ def _calculate_purchase_invoice_item_taxes(doc):
     item_discount, tax_rate, tax_amount, total_amount.
     """
     try:
-        itemised_tax = get_itemised_tax(doc.taxes)
+        itemised_tax = get_itemised_tax(doc)
 
         for row in doc.items:
             try:
@@ -154,33 +153,38 @@ def _calculate_purchase_invoice_item_taxes(doc):
 
 
 
-def get_itemised_tax(taxes):
+def get_itemised_tax(doc):
+    """Group the document's tax breakup by item code, then by tax description.
 
-	itemised_tax = {}
-	for tax in taxes:
-		if getattr(tax, "category", None) and tax.category == "Valuation":
-			continue
+    Frappe 16 dropped `item_wise_tax_detail` from the tax rows. The breakup now lives in
+    `doc._item_wise_tax_details`, which `calculate_taxes_and_totals` fills before ERPNext
+    calls `update_itemised_tax_data`.
+    """
+    return _build_itemised_tax(doc.get("_item_wise_tax_details") or [])
 
-		item_tax_map = json.loads(tax.item_wise_tax_detail) if tax.item_wise_tax_detail else {}
 
-		if item_tax_map:
-			for item_code, tax_data in item_tax_map.items():
-				itemised_tax.setdefault(item_code, frappe._dict())
+def _build_itemised_tax(rows):
+    """{item_code: {tax_description: {tax_rate, tax_amount, included_in_print_rate, tax_account}}}
 
-				tax_rate = 0.0
-				tax_amount = 0.0
+    Each row is one item line under one tax. Lines sharing an item code share an entry, so
+    their amounts add up while the rate stays the tax's rate.
+    """
+    itemised_tax = {}
+    for row in rows:
+        item, tax = row.get("item"), row.get("tax")
+        if not item or not tax or tax.get("category") == "Valuation":
+            continue
 
-				if isinstance(tax_data, list):
-					tax_rate = flt(tax_data[0])
-					tax_amount = flt(tax_data[1])
-				else:
-					tax_rate = flt(tax_data)
+        item_code = item.get("item_code") or item.get("item_name")
+        entry = itemised_tax.setdefault(item_code, frappe._dict()).setdefault(
+            tax.description,
+            frappe._dict(
+                tax_rate=flt(row.get("rate")),
+                tax_amount=0.0,
+                included_in_print_rate=tax.included_in_print_rate or 0,
+                tax_account=tax.account_head,
+            ),
+        )
+        entry.tax_amount += flt(row.get("amount"))
 
-				itemised_tax[item_code][tax.description] = frappe._dict(dict(
-                    tax_rate=tax_rate, 
-                    tax_amount=tax_amount , 
-                    included_in_print_rate=tax.included_in_print_rate or 0, 
-                    tax_account = tax.account_head
-                ))
-
-	return itemised_tax
+    return itemised_tax
