@@ -13,7 +13,7 @@ never touched, and ``tearDown`` rolls the transaction back.
 """
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from optima_zatca.overrides.sales_invoice import CustomSalesInvoice
 from optima_zatca.events import prepayment
@@ -21,7 +21,7 @@ from optima_zatca.events.tests import helpers
 from optima_zatca.zatca.prepayment_invoice import create_prepayment_invoice
 
 
-class TestPrepaymentValidationWiring(FrappeTestCase):
+class TestPrepaymentValidationWiring(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
 

@@ -37,6 +37,17 @@ jobs:
         with:
           path: optima_zatca
 
+      # Importing any ERPNext test module runs its BootStrapTestData, whose _Test Item
+      # has no taxes and is refused by this app's mandatory Item taxes rule. Tests build
+      # their records with optima_zatca's own factories instead.
+      - name: Refuse imports of ERPNext test modules
+        working-directory: optima_zatca
+        run: |
+          if grep -rnE "erpnext[.a-z_]*\.(tests|test_[a-z_]+)" --include=*.py optima_zatca/; then
+            echo "::error::A test imports an ERPNext test module; use optima_zatca's factories instead."
+            exit 1
+          fi
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -111,9 +122,8 @@ jobs:
           bench --site test_site run-tests \
             --module optima_zatca.events.tests.test_sales_invoice
 
-      # The QR generate-path is region-gated; the CI company (Wind Power LLC) is
-      # not Saudi Arabia, so this proves the hook wiring + region short-circuit.
-      # Full Phase-1 QR generation is proven locally on a KSA site.
+      # The QR generate-path is region-gated. The CI company comes from
+      # optima_zatca.tests.bootstrap and is Saudi, so the full Phase-1 path runs.
       - name: Run sales invoice lifecycle integration tests
         working-directory: frappe-bench
         run: |
