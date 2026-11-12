@@ -1,8 +1,8 @@
-import importlib
-import sys
 import types
 import unittest
 from unittest.mock import MagicMock, patch
+
+from optima_zatca.tests.isolation import load_with_fakes
 
 
 class FakeDoc(dict):
@@ -65,11 +65,14 @@ def _load_invoice_module():
         "optima_zatca.zatca.xml_transport": xml_transport_module,
     }
 
-    sys.modules.pop("optima_zatca.zatca.classes.invoice", None)
-    sys.modules.pop("optima_zatca.zatca.classes.invoice_context", None)
-    sys.modules.pop("optima_zatca.zatca.classes.invoice_payload_builder", None)
-    with patch.dict(sys.modules, patched_modules):
-        return importlib.import_module("optima_zatca.zatca.classes.invoice")
+    return load_with_fakes(
+        "optima_zatca.zatca.classes.invoice",
+        patched_modules,
+        also_reload=(
+            "optima_zatca.zatca.classes.invoice_context",
+            "optima_zatca.zatca.classes.invoice_payload_builder",
+        ),
+    )
 
 
 class InvoiceDataTestCase(unittest.TestCase):

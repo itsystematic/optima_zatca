@@ -220,7 +220,7 @@ doc_events = {
 # Testing
 # -------
 
-# before_tests = "optima_zatca.install.before_tests"
+before_tests = "optima_zatca.tests.bootstrap.before_tests"
 
 # Overriding Methods
 # ------------------------------

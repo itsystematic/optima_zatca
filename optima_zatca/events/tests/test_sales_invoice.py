@@ -13,7 +13,7 @@ a QR File gets attached) is the integration layer's job.
 from unittest.mock import patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from optima_zatca.events import sales_invoice as si
 
@@ -26,7 +26,7 @@ def _doc(**fields):
 # CANCEL / DELETE GUARDS
 
 
-class TestCancelDeleteGuards(FrappeTestCase):
+class TestCancelDeleteGuards(UnitTestCase):
     def test_not_sent_is_never_blocked(self):
         doc = _doc(sent_to_zatca=0, clearance_or_reporting=None)
         self.assertFalse(si._decide_cancel_blocked(doc, enable_cancel_invoice=0))
@@ -56,7 +56,7 @@ class TestCancelDeleteGuards(FrappeTestCase):
 # SUBMIT PHASE GUARD
 
 
-class TestSubmitAction(FrappeTestCase):
+class TestSubmitAction(UnitTestCase):
     def test_phase_one_always_generates(self):
         # Phase One ignores the sent/report state entirely.
         doc = _doc(sent_to_zatca=0, clearance_or_reporting=None)
@@ -80,13 +80,13 @@ class TestSubmitAction(FrappeTestCase):
 # TLV QR ENCODING
 
 
-class TestPostingTimestamp(FrappeTestCase):
+class TestPostingTimestamp(UnitTestCase):
     def test_date_and_time_combine_to_utc_iso(self):
         doc = _doc(posting_date="2024-01-01", posting_time="13:30:15")
         self.assertEqual(si._posting_timestamp(doc), "2024-01-01T13:30:15Z")
 
 
-class TestSumVatAmount(FrappeTestCase):
+class TestSumVatAmount(UnitTestCase):
     def _taxes(self, *rows):
         return [frappe._dict(r) for r in rows]
 
@@ -116,7 +116,7 @@ class TestSumVatAmount(FrappeTestCase):
                 si._sum_vat_amount(doc)
 
 
-class TestBuildTlvBase64(FrappeTestCase):
+class TestBuildTlvBase64(UnitTestCase):
     def test_golden_bytes(self):
         # Pins the exact ZATCA Phase-1 payload for known inputs; any change to the
         # TLV byte layout will flip this string.
@@ -135,7 +135,7 @@ class TestBuildTlvBase64(FrappeTestCase):
             si._build_phase_one_tlv_base64(long_name, "300000000000003", "2024-01-01T00:00:00Z", "1", "0")
 
 
-class TestCollectPhaseOneQrInputs(FrappeTestCase):
+class TestCollectPhaseOneQrInputs(UnitTestCase):
     def test_missing_arabic_name_throws(self):
         doc = _doc(company="X")
         with patch.object(si.frappe.db, "get_value", return_value=None):

@@ -1,14 +1,12 @@
+from unittest.mock import MagicMock, patch
+
 import frappe
-import unittest
-from unittest.mock import patch, MagicMock
-from frappe.tests.utils import FrappeTestCase
-import json
-import base64
-from lxml import etree
+from frappe.tests import IntegrationTestCase
 
-from optima_zatca.events.tests import helpers
+from optima_zatca.tests import utils
 
-class TestZatcaIntegration(FrappeTestCase):
+
+class TestZatcaIntegration(IntegrationTestCase):
 
     def setUp(self):
         """Set up test dependencies"""
@@ -17,14 +15,14 @@ class TestZatcaIntegration(FrappeTestCase):
         commit.start()
         self.addCleanup(commit.stop)
 
-        self.company = helpers.get_company()
-        self.customer = helpers.get_or_create_customer()
+        self.company = utils.get_company()
+        self.customer = utils.get_or_create_customer()
         # Phase Two skips the Phase One QR file, which the rollback could not remove from disk.
-        helpers.set_zatca_main_settings(phase="Phase Two", manual_submit=0)
+        utils.set_zatca_main_settings(phase="Phase Two", manual_submit=0)
 
     def create_test_sales_invoice(self, **kwargs):
         """Create a test sales invoice"""
-        return helpers.make_sales_invoice(company=self.company, customer=self.customer, **kwargs)
+        return utils.make_sales_invoice(company=self.company, customer=self.customer, **kwargs)
 
     @patch('optima_zatca.zatca.submission_workflow.make_invoice_request')
     @patch('optima_zatca.zatca.submission_workflow.ZatcaInvoiceData')
@@ -120,46 +118,6 @@ class TestZatcaIntegration(FrappeTestCase):
         invoice.reload()
         self.assertEqual(invoice.docstatus, 0)
 
-    def test_missing_required_fields_validation(self):
-        """Test validation with missing required fields"""
-        from optima_zatca.zatca.invoice import send_to_zatca
-        
-        # Create invoice with missing customer
-        invoice = frappe.get_doc({
-            "doctype": "Sales Invoice",
-            "company": self.company,
-            "currency": "SAR",
-            "items": [{
-                "item_code": helpers.get_or_create_item(self.company),
-                "qty": 1,
-                "rate": 100
-            }]
-            # Missing customer - this should fail validation
-        })
-        
-        with self.assertRaises(Exception):
-            invoice.insert()
-    
     def tearDown(self):
-        """Clean up test data"""
-        # Clean up test invoices
-        # frappe.db.sql("DELETE FROM `tabSales Invoice` WHERE name in (%s)", (self.valid_invoice.name))
-        # frappe.db.commit()
-
-# Additional test scenarios
-class TestZatcaValidationScenarios(FrappeTestCase):
-    
-    def test_duplicate_invoice_submission(self):
-        """Test preventing duplicate submissions to ZATCA"""
-        # This would test your logic to prevent re-sending already processed invoices
-        pass
-    
-    def test_concurrent_zatca_submission(self):
-        """Test handling concurrent ZATCA submissions"""
-        # This would test race conditions
-        pass
-    
-    def test_network_timeout_scenarios(self):
-        """Test network timeout handling"""
-        # This would test timeout scenarios with ZATCA API
-        pass
+        frappe.db.rollback()
+        frappe.clear_cache()

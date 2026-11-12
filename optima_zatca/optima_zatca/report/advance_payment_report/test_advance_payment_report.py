@@ -8,10 +8,10 @@ TestExecute saves one real chain to prove the query reads the right fields and o
 """
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase, UnitTestCase
 from frappe.utils import add_days, flt, getdate, nowdate
 
-from optima_zatca.events.tests import helpers
+from optima_zatca.tests import utils
 from optima_zatca.optima_zatca.report.advance_payment_report.advance_payment_report import (
     build_report,
     execute,
@@ -79,7 +79,7 @@ def chain_rows(rows):
     return [row for row in rows if row["indent"] == 0]
 
 
-class TestAdvancePaymentReport(FrappeTestCase):
+class TestAdvancePaymentReport(UnitTestCase):
     def test_a_real_contract_settles_to_zero(self):
         """Three advances settled by three adjustments, with figures as stored in production.
 
@@ -236,16 +236,16 @@ class TestAdvancePaymentReport(FrappeTestCase):
         self.assertIsNone(total["balance"], "a running balance has no total")
 
 
-class TestExecute(FrappeTestCase):
+class TestExecute(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
 
     def test_the_report_reads_submitted_chains(self):
         """Submitting runs the ZATCA path, so the chain is saved as drafts and marked submitted."""
         today = getdate(nowdate())
-        initial = helpers.make_sales_invoice(sales_invoice_type="Initial Prepayment")
-        helpers.make_prepayment_invoice(id=initial.name)
-        adjustment = helpers.make_sales_invoice(
+        initial = utils.make_sales_invoice(sales_invoice_type="Initial Prepayment")
+        utils.make_prepayment_invoice(id=initial.name)
+        adjustment = utils.make_sales_invoice(
             sales_invoice_type="Adjustment",
             previous_prepayment=initial.name,
             adjustment_percentage=40,
@@ -256,14 +256,14 @@ class TestExecute(FrappeTestCase):
         )
         frappe.db.set_value("Sales Invoice", initial.name, {"docstatus": 1, "posting_date": add_days(today, -10)})
         frappe.db.set_value("Sales Invoice", adjustment.name, "docstatus", 1)
-        helpers.make_sales_invoice(sales_invoice_type="Adjustment")
+        utils.make_sales_invoice(sales_invoice_type="Adjustment")
 
         _columns, rows, _message, _chart, _summary = execute(
             {
-                "company": helpers.get_company(),
+                "company": utils.get_company(),
                 "from_date": today,
                 "to_date": today,
-                "customer": helpers.get_or_create_customer(),
+                "customer": utils.get_or_create_customer(),
             }
         )
 

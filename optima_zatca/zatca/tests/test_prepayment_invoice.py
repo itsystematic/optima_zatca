@@ -1,8 +1,8 @@
-import importlib
-import sys
 import types
 import unittest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, call
+
+from optima_zatca.tests.isolation import load_with_fakes
 
 
 class FakeDoc(dict):
@@ -25,9 +25,7 @@ def _load_prepayment_module():
         "optima_zatca.zatca.utils": utils_module,
     }
 
-    sys.modules.pop("optima_zatca.zatca.prepayment_invoice", None)
-    with patch.dict(sys.modules, patched_modules):
-        return importlib.import_module("optima_zatca.zatca.prepayment_invoice")
+    return load_with_fakes("optima_zatca.zatca.prepayment_invoice", patched_modules)
 
 
 class TestFormatIssueTime(unittest.TestCase):

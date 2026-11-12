@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 import optima_zatca.zatca.invoice as invoice_module
 import optima_zatca.zatca.submission_workflow as workflow_module
@@ -23,7 +23,7 @@ from optima_zatca.zatca.submission_workflow import (
 )
 
 
-class InvoiceTestCase(FrappeTestCase):
+class InvoiceTestCase(UnitTestCase):
     pass
 
 

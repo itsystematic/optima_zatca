@@ -1,0 +1,62 @@
+@import "frappe-ui/style.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* The app's own Almarai, limited to Arabic so Latin text stays in IBM Plex.
+   The same faces and ranges as public/css/desk_fonts.bundle.css. */
+@font-face {
+	font-family: "Almarai";
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/optima_zatca/fonts/Almarai-Regular.ttf") format("truetype");
+	unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+	font-family: "Almarai";
+	font-weight: 700;
+	font-display: swap;
+	src: url("/assets/optima_zatca/fonts/Almarai-Bold.ttf") format("truetype");
+	unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+/* frappe-ui sets Inter on html; this app speaks in the IT Systematic faces. */
+html {
+	font-family: theme("fontFamily.sans");
+}
+
+body {
+	@apply bg-canvas text-ink-gray-9;
+}
+
+[dir="rtl"] .lucide-arrow-right,
+[dir="rtl"] .lucide-arrow-left {
+	transform: scaleX(-1);
+}
+
+@layer components {
+	.card {
+		@apply rounded-6 bg-white shadow-sm;
+	}
+
+	/* frappe-ui's solid button is near-black; primary actions here wear the brand. */
+	.btn-brand:enabled {
+		@apply !bg-brand !text-white hover:!bg-brand-hover;
+	}
+
+	/* A class on FormControl lands on its wrapper, label included; these reach the input only. */
+	.mono-input input {
+		@apply font-mono;
+	}
+
+	.otp-input input {
+		@apply font-mono tracking-[0.3em];
+	}
+
+	/* The two-card choices on the Phase and CR type screens. */
+	.choice {
+		@apply flex flex-col items-start gap-3 rounded-6 border border-outline-gray-2 bg-white p-6 text-start transition hover:border-brand hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand;
+	}
+}
