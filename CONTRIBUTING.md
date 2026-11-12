@@ -53,21 +53,30 @@ Two cases skip `develop`:
 
 ## Releasing
 
-`__version__` in `optima_zatca/__init__.py` is bumped on the release branch, never on `develop`. Because `develop` never touches that line, release merges never conflict on it.
+### Versions and tags
 
-`3.x.y` is the v15 line and `4.x.y` the v16 line. A release with only fixes bumps the patch (`4.1.0` → `4.1.1`); a release with any `feat` bumps the minor (`4.1.1` → `4.2.0`).
+| Branch | Version | Tags | GitHub "latest" release |
+|---|---|---|---|
+| `develop` | not maintained (stays `4.0.0`) | never | — |
+| `version-16` | `4.x.y` | `v4.x.y` | yes |
+| `version-15` | `3.x.y` | `v3.x.y` | no |
+
+- The first number is the Frappe line: `3` for Frappe 15, `4` for Frappe 16, `5` for Frappe 17. It never changes within a branch.
+- A release with only fixes bumps the last number (`4.1.0` → `4.1.1`); a release with any `feat` bumps the middle one (`4.1.1` → `4.2.0`).
+- `__version__` in `optima_zatca/__init__.py` is bumped on the release branch, never on `develop`. Because `develop` never touches that line, release merges never conflict on it.
+- A tag marks the exact commit a release was made from. Never move or delete one.
 
 ### version-16
 
-1. Open a PR from `develop` into `version-16` titled `chore: release v4.2.0`. Merge it with **Create a merge commit**, never squash or rebase: a squashed release gives `version-16` a commit `develop` doesn't have, and the next release PR then conflicts.
-2. Open a PR into `version-16` that sets `__version__ = "4.2.0"`, titled `chore(release): bump version to 4.2.0`, and merge it. The quickest way is to edit the file on GitHub with `version-16` selected and choose **Create a new branch for this commit and start a pull request**.
-3. Under **Releases → Draft a new release**, create the tag `v4.2.0` on target `version-16`, pick the previous `v4` tag, click **Generate release notes**, and publish.
+1. Open a PR from `develop` into `version-16` titled `chore: release v4.2.0`, and merge it once CI passes. The branch allows only **Create a merge commit**: a squashed release would give `version-16` a commit `develop` doesn't have, and the next release PR would then conflict.
+2. After that PR has merged, open a PR into `version-16` that sets `__version__ = "4.2.0"`, titled `chore(release): bump version to 4.2.0`, and merge it once CI passes. Branch it from `version-16` as it stands after the release merge. The quickest way is to edit the file on GitHub with `version-16` selected and choose **Create a new branch for this commit and start a pull request**.
+3. Under **Releases → Draft a new release**, create the tag `v4.2.0` on target `version-16`. Set **Previous tag** to the last `v4` tag yourself, because the automatic choice can pick a `v3` release. Click **Generate release notes**, add a short highlights and deploy section above the generated list, and publish with **Set as the latest release** ticked.
 
 ### version-15
 
 1. Merge the backport PRs that make up the release.
-2. Open a PR into `version-15` that sets `__version__` (for example `"3.1.1"`), titled `chore(release): bump version to 3.1.1`, and merge it.
-3. Draft a release with the tag `v3.1.1` on target `version-15`, pick the previous `v3` tag, generate the notes, and publish.
+2. Open a PR into `version-15` that sets `__version__` (for example `"3.2.1"`), titled `chore(release): bump version to 3.2.1`, and merge it once CI passes.
+3. Draft a release with the tag `v3.2.1` on target `version-15`, set **Previous tag** to the last `v3` tag, and generate the notes. Publish with **Set as the latest release** unticked, so the newest `v4` release stays the latest.
 
 ## Deploying
 

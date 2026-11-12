@@ -137,13 +137,17 @@ Full documentation lives in **[`docs/`](docs/README.md)**, organized by domain:
 Watch our step-by-step tutorials on our **[Youtube channel](https://www.youtube.com/@itsystematic)**.
 
 ### Supported ERPNext Versions
-- ERPNext Version 16
 
-This is the `version-16` branch. ERPNext v16 needs **Node 24+** and **Python
-3.14**, and `bench get-app` runs the onboarding SPA's install through the root
-`postinstall`, so an older Node fails the install outright. For ERPNext v15, use
-the [`version-15`](https://github.com/itsystematic/optima_zatca/tree/version-15)
-branch.
+| ERPNext | Branch | Versions |
+|---|---|---|
+| 16 | [`version-16`](https://github.com/itsystematic/optima_zatca/tree/version-16) | `4.x` |
+| 15 | [`version-15`](https://github.com/itsystematic/optima_zatca/tree/version-15) | `3.x` |
+
+Install from the branch that matches your ERPNext version. Each release and its
+notes are listed on the [Releases](https://github.com/itsystematic/optima_zatca/releases)
+page. ERPNext v16 needs **Node 24+** and **Python 3.14**, and `bench get-app`
+runs the onboarding SPA's install through the root `postinstall`, so an older
+Node fails the install outright.
 
 ---
 
