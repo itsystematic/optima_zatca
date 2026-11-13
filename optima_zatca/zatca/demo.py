@@ -30,7 +30,9 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
 
     PIH = "gSNPKCpoXIlSvtP2p5JwDXLOaEWfkevQ2pbtnkosqjE="
         
-    with open(get_app_path("optima_zatca") + "/zatca/Samples/Invoices/sales_invoices.json" , "r" ) as file : 
+    samples_path = get_app_path("optima_zatca", "zatca", "Samples", "Invoices", "sales_invoices.json")
+    # path is an app-bundled constant, never user input
+    with open(samples_path, "r") as file:  # nosemgrep
         sales_invoices = json.load(file)
         
     company_info = get_company_info(settings)

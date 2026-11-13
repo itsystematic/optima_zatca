@@ -1,7 +1,4 @@
-import json
-
 import frappe
-from frappe.utils import get_bench_relative_path
 from typing import Any, Dict
 
 from optima_zatca.zatca.classes.validate import ZatcaInvoiceValidate
@@ -116,16 +113,3 @@ class ZatcaInvoiceData:
     def get_uuid(self) -> str:
         """Return the invoice UUID used across submission and follow-up flows."""
         return self.zatca_invoice.get("UUID", "")
-
-    def create_json_file(self) -> None:
-        """Create JSON file for testing purposes."""
-        try:
-            import random
-
-            num = random.randint(1, 10000)
-            file_path = get_bench_relative_path(frappe.local.site) + f"/sales{num}invoice.json"
-
-            with open(file_path, "w", encoding="utf-8") as file:
-                json.dump(self.zatca_invoice, file, ensure_ascii=False, indent=2)
-        except Exception as e:
-            frappe.log_error(f"Error creating JSON file: {str(e)}", "ZATCA JSON Error")
