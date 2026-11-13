@@ -17,3 +17,6 @@ optima_zatca/public/zatca-onboarding/zatca_onboarding.js
 
 # Print Format JSON files (auto-generated with embedded HTML/CSS)
 optima_zatca/optima_zatca/print_format/zatca_sales_invoice/zatca_sales_invoice.json
+
+# Review CSVs written by bench zatca-arabic-harvest (working files, not shipped)
+optima_zatca/translations_review/
