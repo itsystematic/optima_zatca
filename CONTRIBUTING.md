@@ -90,3 +90,5 @@ Sites install from a release branch: `bench get-app --branch version-16 …` for
 ## When Frappe 17 ships
 
 `develop` moves to Frappe 17 and a `version-17` branch is cut from it, with its own major version. `version-16` then becomes a maintenance branch like `version-15`, fed by `backport version-16` labels.
+
+- Update `[tool.bench.frappe-dependencies]` in `pyproject.toml` on each branch it changes: `develop` and `version-17` to `>=17.0.0-dev,<18.0.0-dev`; `version-16` keeps `>=16.0.0-dev,<17.0.0-dev`. Each branch states only its own Frappe line, so this section is never backported.
