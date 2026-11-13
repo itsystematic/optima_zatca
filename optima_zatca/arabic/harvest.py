@@ -70,11 +70,33 @@ def core_msgids(apps):
 	"""(msgid, msgctxt) the installed core apps declare, extracted fresh from their source.
 
 	Committed main.pot files can be stale, and ERPNext 15 ships none, so this uses the same
-	extraction as `bench zatca-export-daad`.
+	extraction as `bench zatca-export-daad`. Where that extraction cannot run (an old Babel on a
+	newer Python), it falls back to the msgids in the apps' committed catalogs.
 	"""
 	from optima_zatca.arabic.export import core_template_keys
 
-	return core_template_keys([app for app in catalog.CORE_APPS if app in apps])
+	core = [app for app in catalog.CORE_APPS if app in apps]
+	try:
+		return core_template_keys(core)
+	except Exception as e:
+		click.echo(f"Could not extract msgids from source ({e!r}); using the committed catalogs instead.")
+		return committed_msgids(core)
+
+
+def committed_msgids(apps):
+	"""(msgid, msgctxt) in the apps' locale/main.pot (else locale/ar.po) and translations/ar.csv."""
+	import frappe
+
+	keys = set()
+	for app in apps:
+		root = Path(frappe.get_app_path(app))
+		for po in (root / "locale" / "main.pot", root / "locale" / "ar.po"):
+			if po.exists():
+				keys |= set(catalog.read_entries(po))
+				break
+		if (root / "translations" / "ar.csv").exists():
+			keys |= set(catalog.read_csv(root / "translations" / "ar.csv"))
+	return keys
 
 
 def write_review(rows, target, statuses=STATUSES):
