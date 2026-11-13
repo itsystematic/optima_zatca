@@ -73,16 +73,8 @@ def get_vat_data(company, from_date, to_date, accounts, party=None):
     if not accounts:
         return []
     
-    party_condition = ""
-    if party:
-        party_condition = """
-            AND (
-                (gl.voucher_type = 'Sales Invoice' AND t1.customer LIKE %(party)s)
-                OR (gl.voucher_type = 'Purchase Invoice' AND t2.supplier LIKE %(party)s)
-                OR gl.party LIKE %(party)s
-            )
-        """
-    
+    # The query is a fixed string: every value goes in as a parameter. The party condition is
+    # always present and is a no-op when %(party)s is empty.
     sql_query = frappe.db.sql("""
         SELECT 
             gl.voucher_no as name,
@@ -159,10 +151,15 @@ def get_vat_data(company, from_date, to_date, accounts, party=None):
             AND gl.voucher_type IN ('Sales Invoice', 'Purchase Invoice')
             AND gl.company = %(company)s
             AND gl.posting_date BETWEEN %(from_date)s AND %(to_date)s
-            {party_condition}
+            AND (
+                %(party)s = ''
+                OR (gl.voucher_type = 'Sales Invoice' AND t1.customer LIKE %(party)s)
+                OR (gl.voucher_type = 'Purchase Invoice' AND t2.supplier LIKE %(party)s)
+                OR gl.party LIKE %(party)s
+            )
             
         ORDER BY gl.voucher_type, gl.posting_date DESC
-    """.format(party_condition=party_condition), {
+    """, {
         "from_date": from_date,
         "to_date": to_date,
         "company": company,

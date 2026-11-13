@@ -81,14 +81,8 @@ def get_data(filters=None , accounts:list=None) -> list :
     if not accounts :
         return []
     
-    conditions = ""
-    
-    if filters.get("company") :
-        conditions += "AND gl.company = %(company)s "
-        
-    if filters.get("from_date") and filters.get("to_date"):
-        conditions += "AND gl.posting_date BETWEEN %(from_date)s AND %(to_date)s "
-        
+    # The query is a fixed string: every value goes in as a parameter. The company and date
+    # conditions are always present and are no-ops when their filter is not set.
     if filters.get("tax_account") :
         accounts = [filters.get("tax_account")]
         
@@ -172,14 +166,17 @@ def get_data(filters=None , accounts:list=None) -> list :
             gl.is_cancelled = 0 
             AND gl.account IN %(accounts)s
             AND gl.voucher_type IN ('Sales Invoice', 'Purchase Invoice')
-            {conditions}
+            AND (%(filter_company)s = 0 OR gl.company = %(company)s)
+            AND (%(filter_dates)s = 0 OR gl.posting_date BETWEEN %(from_date)s AND %(to_date)s)
             
         ORDER BY gl.voucher_type , gl.posting_date DESC ;
         
-    """.format(conditions=conditions),{
+    """,{
         "from_date" : filters.get("from_date"),
         "to_date" : filters.get("to_date") ,
         "company" : filters.get("company") ,
+        "filter_company" : 1 if filters.get("company") else 0,
+        "filter_dates" : 1 if filters.get("from_date") and filters.get("to_date") else 0,
         "accounts" : accounts
     
     } ,as_dict=True)
