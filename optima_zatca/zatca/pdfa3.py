@@ -10,6 +10,7 @@ import frappe
 from frappe import _, get_app_path
 from frappe.utils import get_files_path
 from weasyprint import HTML
+from optima_zatca.zatca.pdf_fonts import local_font_fetcher
 from optima_zatca.zatca.utils import log_and_throw_error
 
 @frappe.whitelist()
@@ -176,14 +177,19 @@ class ZatcaPDFA3Generator:
         footer_img_2 = self._get_base64_image("sese_footer-2207.png")
         footer_img_3 = self._get_base64_image("sese_footer-2208.png")
 
-        # 5. Get the HTML from Frappe
-        html_content = frappe.get_print(
-            doctype=self.invoice.doctype,
-            name=self.invoice.name,
-            print_format=self.print_settings["print_format"],
-            doc=self.invoice,
-            no_letterhead=1, 
-        )
+        # 5. Get the HTML from Frappe. The flag makes the Zatca Sales Invoice template emit the
+        #    placeholders replaced below; any other print of it gets URLs on this site instead.
+        self.invoice.flags.zatca_pdfa3 = True
+        try:
+            html_content = frappe.get_print(
+                doctype=self.invoice.doctype,
+                name=self.invoice.name,
+                print_format=self.print_settings["print_format"],
+                doc=self.invoice,
+                no_letterhead=1,
+            )
+        finally:
+            self.invoice.flags.zatca_pdfa3 = False
 
         # 6. The Magic Linker (Replacements)
         # Fonts
@@ -198,8 +204,8 @@ class ZatcaPDFA3Generator:
         html_content = html_content.replace("__FOOTER_IMG_2__", footer_img_2)
         html_content = html_content.replace("__FOOTER_IMG_3__", footer_img_3)
 
-        # 7. Generate PDF
-        pdf_bytes = HTML(string=html_content).write_pdf()
+        # 7. Generate PDF. Font imports (Google Fonts) are answered from local files, never fetched.
+        pdf_bytes = HTML(string=html_content, url_fetcher=local_font_fetcher).write_pdf()
         
         return pdf_bytes
     
