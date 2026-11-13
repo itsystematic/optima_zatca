@@ -177,14 +177,19 @@ class ZatcaPDFA3Generator:
         footer_img_2 = self._get_base64_image("sese_footer-2207.png")
         footer_img_3 = self._get_base64_image("sese_footer-2208.png")
 
-        # 5. Get the HTML from Frappe
-        html_content = frappe.get_print(
-            doctype=self.invoice.doctype,
-            name=self.invoice.name,
-            print_format=self.print_settings["print_format"],
-            doc=self.invoice,
-            no_letterhead=1, 
-        )
+        # 5. Get the HTML from Frappe. The flag makes the Zatca Sales Invoice template emit the
+        #    placeholders replaced below; any other print of it gets URLs on this site instead.
+        self.invoice.flags.zatca_pdfa3 = True
+        try:
+            html_content = frappe.get_print(
+                doctype=self.invoice.doctype,
+                name=self.invoice.name,
+                print_format=self.print_settings["print_format"],
+                doc=self.invoice,
+                no_letterhead=1,
+            )
+        finally:
+            self.invoice.flags.zatca_pdfa3 = False
 
         # 6. The Magic Linker (Replacements)
         # Fonts
