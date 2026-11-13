@@ -81,14 +81,8 @@ def get_data(filters=None , accounts:list=None) -> list :
     if not accounts :
         return []
     
-    conditions = ""
-    
-    if filters.get("company") :
-        conditions += "AND gl.company = %(company)s "
-        
-    if filters.get("from_date") and filters.get("to_date"):
-        conditions += "AND gl.posting_date BETWEEN %(from_date)s AND %(to_date)s "
-        
+    # The query is a fixed string: every value goes in as a parameter. The company and date
+    # conditions are always present and are no-ops when their filter is not set.
     if filters.get("tax_account") :
         accounts = [filters.get("tax_account")]
         
@@ -172,14 +166,17 @@ def get_data(filters=None , accounts:list=None) -> list :
             gl.is_cancelled = 0 
             AND gl.account IN %(accounts)s
             AND gl.voucher_type IN ('Sales Invoice', 'Purchase Invoice')
-            {conditions}
+            AND (%(filter_company)s = 0 OR gl.company = %(company)s)
+            AND (%(filter_dates)s = 0 OR gl.posting_date BETWEEN %(from_date)s AND %(to_date)s)
             
         ORDER BY gl.voucher_type , gl.posting_date DESC ;
         
-    """.format(conditions=conditions),{
+    """,{
         "from_date" : filters.get("from_date"),
         "to_date" : filters.get("to_date") ,
         "company" : filters.get("company") ,
+        "filter_company" : 1 if filters.get("company") else 0,
+        "filter_dates" : 1 if filters.get("from_date") and filters.get("to_date") else 0,
         "accounts" : accounts
     
     } ,as_dict=True)
@@ -195,12 +192,13 @@ def make_group_by_type(data:list[dict] = None) -> list[dict] :
     FinalResult = []
     ReportSummary = []
     # types = ["Sales Invoice" , "Purchase Invoice" , "Journal Entry" , "Payment Entry"]
-    types = list(set(map(lambda x : x.get("parenttype") , data)))
+    # dict.fromkeys keeps the query order (by voucher type); a set gave a random section order
+    types = list(dict.fromkeys(x.get("parenttype") for x in data))
     
     for type in types :
-        filtered_data = list(filter(lambda x : x.get("parenttype") == type , data))
+        filtered_data = [x for x in data if x.get("parenttype") == type]
         if filtered_data :
-            FilteredValue =  sum(map(lambda x : x.get("base_tax_amount" , 0) , filtered_data))
+            FilteredValue = sum(x.get("base_tax_amount", 0) for x in filtered_data)
             FinalResult.append({"name" : "<h5 style='text-align:center; font-weight:bold; color:#9B3922'>{0}</h5>".format(type)})
             FinalResult += filtered_data
             FinalResult.append({
@@ -236,7 +234,7 @@ def get_report_summary(filters:dict = None , data:list[dict] = None , summary:li
         )
         Values.append(fields.get("total"))
         
-    value = sum(map(lambda x : x.get("base_tax_amount" , 0) , data))
+    value = sum(x.get("base_tax_amount", 0) for x in data)
     
     Result.append(
         {
@@ -260,7 +258,7 @@ def get_report_summary(filters:dict = None , data:list[dict] = None , summary:li
 def prepare_chart_data(doctypes, values:list):
     
     # doctypes_values = list(map(lambda x : x.get("total") , values))
-    values = list(map(lambda x : abs(x), values))
+    values = [abs(x) for x in values]
     return {
         "data": {"labels": doctypes, "datasets": [{"values": values }]},
         "type": "donut",

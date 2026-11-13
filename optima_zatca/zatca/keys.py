@@ -1,5 +1,8 @@
+import os
+import re
 import shlex
 import base64
+import hashlib
 import subprocess
 
 import frappe
@@ -136,7 +139,8 @@ title = {self.company_details['invoice_type']}
 registeredAddress = {self.company_details['address']}
 businessCategory = {self.company_details['industry']}"""
 
-        with open(self.get_file_path("config.cnf"), "w", encoding="utf-8") as f:
+        # validated path inside private/files (get_file_path)
+        with open(self.get_file_path("config.cnf"), "w", encoding="utf-8") as f:  # nosemgrep
             f.write(config)
 
     def create_csr(self):
@@ -159,10 +163,11 @@ businessCategory = {self.company_details['industry']}"""
 
     def get_generated_details(self):
         try:
+            # validated paths inside private/files (get_file_path)
             with (
-                open(self.get_file_path("PrivateKey.pem"), "r") as priv_key,
-                open(self.get_file_path("csr.pem"), "r") as csr,
-                open(self.get_file_path("PublicKey.pem"), "r") as pub_key
+                open(self.get_file_path("PrivateKey.pem"), "r") as priv_key,  # nosemgrep
+                open(self.get_file_path("csr.pem"), "r") as csr,  # nosemgrep
+                open(self.get_file_path("PublicKey.pem"), "r") as pub_key  # nosemgrep
             ):
                 return {
                     "private_key": priv_key.read(),
@@ -182,9 +187,8 @@ businessCategory = {self.company_details['industry']}"""
     # FILESYSTEM AND OPENSSL PLUMBING
 
     def get_file_path(self, suffix):
-        site_path = get_bench_relative_path(self.site or frappe.local.site)
-        company_path = self.company.lower().replace(" ", "")
-        return f"{site_path}/private/files/{company_path}_{suffix}"
+        files_dir = os.path.join(get_bench_relative_path(self.site or frappe.local.site), "private", "files")
+        return key_file_path(files_dir, self.company, suffix)
 
     def run_openssl_command(self, command):
         full_cmd = f"openssl {command}"
@@ -194,3 +198,23 @@ businessCategory = {self.company_details['industry']}"""
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+
+
+def key_file_path(files_dir, company, suffix):
+    """Path of one of a company's key/CSR scratch files, guaranteed to be inside files_dir.
+
+    The files are written and read back within one GenerateCSR run (their contents are stored
+    on the Optima Zatca Setting), so the name only has to be unique and safe. The company name
+    is reduced to [a-z0-9_-] and followed by a short hash of the full name, because a name in
+    Arabic would otherwise reduce to nothing and two companies could share a file.
+    """
+    slug = re.sub(r"[^a-z0-9_-]", "", (company or "").lower().replace(" ", ""))
+    digest = hashlib.sha1((company or "").encode("utf-8")).hexdigest()[:8]
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", suffix or "") or ".." in suffix:
+        raise ValueError(f"Invalid key file suffix: {suffix!r}")
+
+    root = os.path.realpath(files_dir)
+    path = os.path.realpath(os.path.join(root, f"{slug or 'company'}-{digest}_{suffix}"))
+    if os.path.dirname(path) != root:
+        raise ValueError(f"Key file path escapes {root}: {path}")
+    return path

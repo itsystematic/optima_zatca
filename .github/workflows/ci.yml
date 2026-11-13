@@ -11,6 +11,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Frappe Cloud's Marketplace audit runs Frappe's Semgrep rules (security + correctness) and hides
+  # the app while any of them fails. This job runs the same command, so a new finding fails the PR
+  # instead of the next audit. A finding that is a deliberate exception gets "# nosemgrep" on its
+  # line, with the reason on the line above.
+  semgrep:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout optima_zatca
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Semgrep
+        run: pip install semgrep==1.185.0
+
+      - name: Fetch Frappe's Semgrep rules
+        run: git clone --depth 1 https://github.com/frappe/semgrep-rules /tmp/frappe-semgrep
+
+      - name: Run Frappe's security and correctness rules
+        run: |
+          semgrep --metrics=off --error \
+            --config /tmp/frappe-semgrep/rules/security \
+            --config /tmp/frappe-semgrep/rules/frappe_correctness.yml \
+            optima_zatca/
+
   tests:
     runs-on: ubuntu-24.04
 

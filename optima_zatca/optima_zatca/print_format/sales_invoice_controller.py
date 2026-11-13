@@ -2,17 +2,12 @@
 
 import frappe
 from frappe import _
+from frappe.model.document import Document
 
 
 PAID_STATUSES = {"Paid", "Partly Paid"}
 STANDARD_TAX_ID_LENGTH = 15
 DEFAULT_VAT_RATE = 15
-INVOICE_TYPES = {
-    (True, False): {"en": _("Tax Invoice"), "ar": "فاتورة ضريبية"},
-    (True, True): {"en": _("Credit Note"), "ar": "اشعار دائن مرتجع"},
-    (False, False): {"en": _("Simplified Tax Invoice"), "ar": "فاتورة ضريبية مبسطة"},
-    (False, True): {"en": _("Simplified Credit Note"), "ar": "فاتورة مرتجع مبسطة"},
-}
 BANK_FIELD_MAPPING = {
     "bank_name": "bank_name",
     "branch_no": "bank_branch_no",
@@ -21,6 +16,17 @@ BANK_FIELD_MAPPING = {
     "account_number": "bank_account_number",
     "iban": "bank_iban",
 }
+
+
+def get_invoice_types() -> dict:
+    """Invoice titles keyed by (is_standard, is_return). Built on each call so that _() uses the
+    language of the current site and user, not whichever was active when the module was imported."""
+    return {
+        (True, False): {"en": _("Tax Invoice"), "ar": "فاتورة ضريبية"},
+        (True, True): {"en": _("Credit Note"), "ar": "اشعار دائن مرتجع"},
+        (False, False): {"en": _("Simplified Tax Invoice"), "ar": "فاتورة ضريبية مبسطة"},
+        (False, True): {"en": _("Simplified Credit Note"), "ar": "فاتورة مرتجع مبسطة"},
+    }
 
 
 class SalesInvoicePrintRepository:
@@ -307,7 +313,7 @@ class SalesInvoicePrintContextBuilder:
 
 
 @frappe.whitelist()
-def get_context(doc):
+def get_context(doc: Document | frappe._dict):
     """
     Prepares all data needed for the Sales Invoice print format.
     This moves database queries out of the Jinja template for better performance.
@@ -323,7 +329,7 @@ def get_invoice_type(customer_tax_id, is_return):
     is_standard = bool(customer_tax_id) and (
         len(str(customer_tax_id)) == STANDARD_TAX_ID_LENGTH
     )
-    return frappe._dict(INVOICE_TYPES[(is_standard, bool(is_return))])
+    return frappe._dict(get_invoice_types()[(is_standard, bool(is_return))])
 
 
 def get_address_details(address_name):

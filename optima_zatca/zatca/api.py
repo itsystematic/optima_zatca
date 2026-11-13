@@ -38,7 +38,7 @@ def get_zatca_csid(setting: str, otp: str, csr: str) -> tuple:
 
 
 @frappe.whitelist()
-def get_production_csid(setting , binary_security_token , secret , request_id) -> dict:
+def get_production_csid(setting: str, binary_security_token: str, secret: str, request_id: str | int) -> dict:
     """Exchange the compliance CSID, identified by its request_id, for the production CSID."""
     auth = base64.b64encode("{0}:{1}".format(binary_security_token,secret).encode()).decode("utf-8")
 
