@@ -37,14 +37,14 @@ export default defineConfig({
 });
 
 /**
- * Files the dev server hands out from the app itself: the translation CSVs that
- * devBoot.ts reads for `?lang=`, and, with no Frappe behind the mock, the app's
+ * Files the dev server hands out from the app itself: the PO catalogs in locale/
+ * that devBoot.ts reads for `?lang=`, and, with no Frappe behind the mock, the app's
  * public files at the path Frappe would serve them.
  */
 function devFiles(): Plugin {
 	const app = path.resolve(__dirname, "../optima_zatca");
 	const TYPES: Record<string, string> = {
-		".csv": "text/csv; charset=utf-8",
+		".po": "text/plain; charset=utf-8",
 		".ttf": "font/ttf",
 		".webp": "image/webp",
 		".png": "image/png",
@@ -61,7 +61,7 @@ function devFiles(): Plugin {
 		name: "optima-zatca-dev-files",
 		apply: "serve",
 		configureServer(server) {
-			server.middlewares.use("/__dev/translations", serve(path.join(app, "translations")));
+			server.middlewares.use("/__dev/locale", serve(path.join(app, "locale")));
 			if (useMock) server.middlewares.use("/assets/optima_zatca", serve(path.join(app, "public")));
 		},
 	};

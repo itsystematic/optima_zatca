@@ -3,25 +3,8 @@
    Version: 2.1 (Merged with Font Logic)
    ============================================================ */
 
-/* 1. THE MAGIC LINKER (REQUIRED FOR PYTHON SCRIPT) */
-@font-face { 
-    font-family: 'Claudion';
-    font-style: normal;
-    font-weight: 400;
-    src: url('__FONT_REG_CLAUDION_PATH__') format('truetype');
-}
-@font-face {
-  font-family: "Almarai";
-  font-weight: 400;
-  font-style: normal;
-  src: url('__FONT_REG_MARAI_PATH__') format('truetype');
-}
-@font-face {
-  font-family: "Almarai";
-  font-weight: 700;
-  font-style: normal;
-  src: url('__FONT_BOLD_MARAI_PATH__') format('truetype');
-}
+/* 1. FONTS: the @font-face rules live in zatca_sales_invoice.html, because only the Jinja
+   template can give each renderer a font URL it can load (see the comment there). */
 
 /* 2. CSS CUSTOM PROPERTIES */
 :root {

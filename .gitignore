@@ -20,3 +20,6 @@ optima_zatca/optima_zatca/print_format/zatca_sales_invoice/zatca_sales_invoice.j
 
 # Built by `yarn build` in zatca-onboarding/ (copy-html-entry)
 optima_zatca/www/zatca-onboarding.html
+
+# Review CSVs written by bench zatca-arabic-harvest (working files, not shipped)
+optima_zatca/translations_review/

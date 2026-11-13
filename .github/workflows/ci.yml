@@ -93,7 +93,9 @@ jobs:
             optima_zatca.zatca.tests.test_invoice_data \
             optima_zatca.zatca.tests.test_prepayment_invoice \
             optima_zatca.zatca.tests.test_onboarding_retry \
-            optima_zatca.zatca.tests.test_register_company
+            optima_zatca.zatca.tests.test_register_company \
+            optima_zatca.arabic.test_arabic \
+            optima_zatca.zatca.tests.test_pdf_fonts
 
       - name: Create test site and install apps
         working-directory: frappe-bench

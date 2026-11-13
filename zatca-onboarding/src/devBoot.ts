@@ -4,53 +4,54 @@ const RTL = ["ar", "fa", "he", "ps", "ur"];
 
 /**
  * Under the Vite dev server no Frappe page renders the boot data, so `?lang=ar`
- * stands in for the user's language and the app's own CSV (served by the dev
- * server, see vite.config.ts) for its translations.
+ * stands in for the user's language and the app's own PO catalog (locale/<lang>.po,
+ * served by the dev server, see vite.config.ts) for its translations.
  */
 export async function applyDevLanguage(boot: Boot) {
 	const lang = new URLSearchParams(window.location.search).get("lang");
 	if (!lang || lang === "en") return;
-	const response = await fetch(`/__dev/translations/${encodeURIComponent(lang)}.csv`);
+	const response = await fetch(`/__dev/locale/${encodeURIComponent(lang)}.po`);
 	if (!response.ok) return;
 	boot.lang = lang;
 	boot.rtl = RTL.includes(lang);
-	boot.translations = parseTranslations(await response.text());
+	boot.translations = parsePo(await response.text());
 }
 
-/** Rows are `source,translation[,context]`, keyed the way Frappe keys them. */
-function parseTranslations(csv: string): Record<string, string> {
+/** Entries keyed the way Frappe keys them: `msgid`, or `msgid:msgctxt` with a context. */
+export function parsePo(text: string): Record<string, string> {
 	const out: Record<string, string> = {};
-	for (const [source, target, context] of parseCsv(csv)) {
-		if (source && target) out[context ? `${source}:${context}` : source] = target;
+	let entry: Record<string, string> = {};
+	let field = "";
+	const flush = () => {
+		const { msgid, msgstr, msgctxt } = entry;
+		if (msgid && msgstr) out[msgctxt ? `${msgid}:${msgctxt}` : msgid] = msgstr;
+		entry = {};
+		field = "";
+	};
+	for (const raw of text.split(/\r?\n/)) {
+		const line = raw.trim();
+		if (!line) {
+			flush();
+			continue;
+		}
+		if (line.startsWith("#")) continue;
+		const keyword = line.match(/^(msgctxt|msgid|msgstr)(?:\[0\])?\s+(".*")$/);
+		if (keyword) {
+			if (keyword[1] === "msgctxt" || (keyword[1] === "msgid" && "msgstr" in entry)) flush();
+			field = keyword[1];
+			entry[field] = unquote(keyword[2]);
+		} else if (line.startsWith('"') && field) {
+			entry[field] += unquote(line);
+		} else {
+			field = ""; // msgid_plural or a later plural form: not used by the wizard
+		}
 	}
+	flush();
 	return out;
 }
 
-function parseCsv(text: string): string[][] {
-	const rows: string[][] = [];
-	let row: string[] = [];
-	let field = "";
-	let quoted = false;
-	for (let i = 0; i < text.length; i++) {
-		const c = text[i];
-		if (quoted) {
-			if (c === '"' && text[i + 1] === '"') {
-				field += '"';
-				i++;
-			} else if (c === '"') quoted = false;
-			else field += c;
-		} else if (c === '"') quoted = true;
-		else if (c === ",") {
-			row.push(field);
-			field = "";
-		} else if (c === "\n" || c === "\r") {
-			if (c === "\r" && text[i + 1] === "\n") i++;
-			row.push(field);
-			rows.push(row);
-			row = [];
-			field = "";
-		} else field += c;
-	}
-	if (field || row.length) rows.push([...row, field]);
-	return rows;
+function unquote(quoted: string): string {
+	return quoted
+		.slice(1, -1)
+		.replace(/\\(.)/g, (_, c: string) => ({ n: "\n", t: "\t", r: "\r" })[c] ?? c);
 }
