@@ -6,7 +6,7 @@ The harvest never changes ar.po by itself. It writes a review CSV; a person mark
 Statuses:
   new      the source has Arabic for a msgid ar.po does not translate
   differs  the source's Arabic differs from ar.po's
-  missing  a frappe / erpnext / hrms msgid that no source and not ar.po translates
+  missing  a frappe / erpnext / hrms msgid (extracted from their source) that no source and not ar.po translates
 """
 
 import csv
@@ -67,19 +67,14 @@ def installed_sources(apps):
 
 
 def core_msgids(apps):
-	"""(msgid, msgctxt) of the core apps' committed templates (main.pot, else their ar.po)."""
-	import frappe
+	"""(msgid, msgctxt) the installed core apps declare, extracted fresh from their source.
 
-	keys = set()
-	for app in catalog.CORE_APPS:
-		if app not in apps:
-			continue
-		locale_dir = Path(frappe.get_app_path(app)) / "locale"
-		for name in ("main.pot", "ar.po"):
-			if (locale_dir / name).exists():
-				keys |= set(catalog.read_entries(locale_dir / name))
-				break
-	return keys
+	Committed main.pot files can be stale, and ERPNext 15 ships none, so this uses the same
+	extraction as `bench zatca-export-daad`.
+	"""
+	from optima_zatca.arabic.export import core_template_keys
+
+	return core_template_keys([app for app in catalog.CORE_APPS if app in apps])
 
 
 def write_review(rows, target, statuses=STATUSES):
