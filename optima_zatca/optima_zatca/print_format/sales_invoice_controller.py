@@ -2,6 +2,7 @@
 
 import frappe
 from frappe import _
+from frappe.model.document import Document
 
 
 PAID_STATUSES = {"Paid", "Partly Paid"}
@@ -312,7 +313,7 @@ class SalesInvoicePrintContextBuilder:
 
 
 @frappe.whitelist()
-def get_context(doc):
+def get_context(doc: Document | frappe._dict):
     """
     Prepares all data needed for the Sales Invoice print format.
     This moves database queries out of the Jinja template for better performance.

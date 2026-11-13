@@ -21,7 +21,7 @@ from optima_zatca.zatca.keys import GenerateCSR
 
 
 @frappe.whitelist()
-def add_company_to_zatca(name):
+def add_company_to_zatca(name: str):
     try:
         settings = frappe.get_doc("Optima Zatca Setting", name)
 
@@ -134,7 +134,7 @@ def get_production_certificate(settings: frappe._dict, company_details: dict) ->
 
 
 @frappe.whitelist()
-def renew_production_certificate(setting ,otp , authorization , csr):
+def renew_production_certificate(setting: str, otp: str, authorization: str, csr: str):
 
     response = renew_production_csid(setting ,otp , authorization , csr)
     certificate = base64.b64decode(response.get("binarySecurityToken")).decode("utf-8")

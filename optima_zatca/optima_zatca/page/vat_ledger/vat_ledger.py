@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 
 @frappe.whitelist()
-def get_tax_accounts(company):
+def get_tax_accounts(company: str | None):
     """Get all tax accounts for the selected company"""
     if not company:
         return []
@@ -21,7 +21,13 @@ def get_tax_accounts(company):
 
 
 @frappe.whitelist()
-def get_vat_ledger_data(company=None, from_date=None, to_date=None, tax_account=None, party=None):
+def get_vat_ledger_data(
+    company: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    tax_account: str | None = None,
+    party: str | None = None,
+):
     """Get VAT ledger data based on filters"""
     
     if not company:
