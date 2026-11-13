@@ -1,10 +1,11 @@
 import frappe
 from frappe import _
+from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 
 
 @frappe.whitelist()
-def make_advance_sales_invoice(source_name, target_doc=None):
+def make_advance_sales_invoice(source_name: str, target_doc: Document | dict | str | None = None):
     """Create an Advance (Prepayment) Sales Invoice from Sales Order"""
     
     def set_missing_values(source, target):

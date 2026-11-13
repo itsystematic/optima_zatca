@@ -262,7 +262,7 @@ def get_registered_companies() :
 
 
 @frappe.whitelist()
-def add_company_to_zatca(name):
+def add_company_to_zatca(name: str):
     """Onboard one Optima Zatca Setting, resuming from the last stage it reached.
 
     Called for each register by saving_branches_data, and by the setting form's Setup Zatca button.
@@ -387,7 +387,7 @@ def _decode_certificate(b64_string: str) -> str:
 
 
 @frappe.whitelist()
-def renew_production_certificate(setting ,otp , authorization , csr):
+def renew_production_certificate(setting: str, otp: str, authorization: str, csr: str):
     """Replace an onboarded setting's production CSID, from the setting form's Renew button.
 
     Needs a fresh OTP, but skips CSR generation and the sample invoices: the form sends the
