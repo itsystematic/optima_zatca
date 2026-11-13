@@ -411,7 +411,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-23 16:26:05.580705",
+ "modified": "2026-11-13 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Optima Zatca Setting",
@@ -436,7 +436,16 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "All",
+   "role": "Accounts Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
    "share": 1
   }
  ],
