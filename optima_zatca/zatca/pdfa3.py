@@ -27,6 +27,22 @@ def generate_pdfa3_for_invoice(sales_invoice_name: str):
             exception=e
         )
 
+def _site_file_path(filename_or_path, is_private=False):
+    """Absolute path of a file in the site's public or private files folder, or None.
+
+    Only the last path segment is used, and the result must resolve inside that folder, so a
+    letter head or QR URL cannot point anywhere else on the server.
+    """
+    filename = os.path.basename(filename_or_path or "")
+    if not filename or filename in (".", "..") or ".." in filename:
+        return None
+    root = os.path.realpath(get_files_path(is_private=is_private))
+    path = os.path.realpath(get_files_path(filename, is_private=is_private))
+    if os.path.dirname(path) != root:
+        return None
+    return path
+
+
 class ZatcaPDFA3Generator:
     """
     Service class to handle the end-to-end generation of ZATCA compliant PDF/A-3.
@@ -84,24 +100,18 @@ class ZatcaPDFA3Generator:
         if not filename_or_path:
             return ""
 
-        # Determine path
-        if "/" in filename_or_path:
-            # It's a URL or full path, extract filename
-            filename = filename_or_path.split("/")[-1]
-            # Check if private based on URL structure
-            if "/private/files/" in filename_or_path:
-                is_private = True
-        else:
-            filename = filename_or_path
-
-        abs_path = get_files_path(filename, is_private=is_private)
+        # Determine path: a URL or path is reduced to its file name in the site's files folder
+        if "/private/files/" in filename_or_path:
+            is_private = True
+        abs_path = _site_file_path(filename_or_path, is_private)
         
-        if os.path.exists(abs_path):
+        if abs_path and os.path.exists(abs_path):
             mime_type, _ = mimetypes.guess_type(abs_path)
             if not mime_type: 
                 mime_type = "image/png"
             
-            with open(abs_path, "rb") as img_file:
+            # validated path inside the site's public/private files folder (_site_file_path)
+            with open(abs_path, "rb") as img_file:  # nosemgrep
                 b64_string = base64.b64encode(img_file.read()).decode("utf-8")
                 return f"data:{mime_type};base64,{b64_string}"
         
