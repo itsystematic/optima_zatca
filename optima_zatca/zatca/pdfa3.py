@@ -10,6 +10,7 @@ import frappe
 from frappe import _, get_app_path
 from frappe.utils import get_files_path
 from weasyprint import HTML
+from optima_zatca.zatca.pdf_fonts import local_font_fetcher
 from optima_zatca.zatca.utils import log_and_throw_error
 
 @frappe.whitelist()
@@ -198,8 +199,8 @@ class ZatcaPDFA3Generator:
         html_content = html_content.replace("__FOOTER_IMG_2__", footer_img_2)
         html_content = html_content.replace("__FOOTER_IMG_3__", footer_img_3)
 
-        # 7. Generate PDF
-        pdf_bytes = HTML(string=html_content).write_pdf()
+        # 7. Generate PDF. Font imports (Google Fonts) are answered from local files, never fetched.
+        pdf_bytes = HTML(string=html_content, url_fetcher=local_font_fetcher).write_pdf()
         
         return pdf_bytes
     
