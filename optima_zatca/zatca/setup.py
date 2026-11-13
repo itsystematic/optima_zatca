@@ -150,7 +150,7 @@ def renew_production_certificate(setting ,otp , authorization , csr):
     }
     extract_details_from_certificate(certificate , company_details)
     saving_data_to_company(setting , company_details)
-    frappe.publish_realtime("zatca" , {"message" :"Production CSID Renew Successfully", "indicator" : "green"})
+    frappe.publish_realtime("zatca" , {"message" :"Production CSID Renew Successfully", "indicator" : "green"}, user=frappe.session.user)
 
 
 # ====================================================================================================
@@ -288,9 +288,10 @@ def saving_data_to_company(
 ) -> None :
     
     frappe.db.set_value("Optima Zatca Setting" , name , company_details , update_modified=True )
-    frappe.db.commit()
+    # commit settings before realtime notify; onboarding state must survive a later ZATCA API failure
+    frappe.db.commit()  # nosemgrep
     
-    frappe.publish_realtime("zatca" , {"message" :"Data Saved Successfully", "indicator" : "green" })
+    frappe.publish_realtime("zatca" , {"message" :"Data Saved Successfully", "indicator" : "green" }, user=frappe.session.user)
 
 
 def notify_completion_status(settings, company_details):
@@ -301,7 +302,7 @@ def notify_completion_status(settings, company_details):
         "complete": True,
         "percentage": 100 if company_details.get("check_pcsid") else 50
     }
-    frappe.publish_realtime("zatca", status)
+    frappe.publish_realtime("zatca", status, user=frappe.session.user)
 
 
 def handle_zatca_error(settings, error):
@@ -312,7 +313,7 @@ def handle_zatca_error(settings, error):
         "complete": True,
         "percentage": 0
     }
-    frappe.publish_realtime("zatca", error_status)
+    frappe.publish_realtime("zatca", error_status, user=frappe.session.user)
 
 
 def _publish_status(settings: frappe._dict, message: str, indicator: str, percentage: int) -> None:
@@ -323,7 +324,7 @@ def _publish_status(settings: frappe._dict, message: str, indicator: str, percen
         "indicator": indicator,
         "percentage": percentage,
         "complete": percentage == 100
-    })
+    }, user=frappe.session.user)
 
 
 def _handle_cert_error(settings: frappe._dict, error: Exception, stage: str) -> None:

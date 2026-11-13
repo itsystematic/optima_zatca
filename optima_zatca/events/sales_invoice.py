@@ -133,8 +133,8 @@ def _sum_vat_amount(doc):
         ["`tabItem Tax Template Detail`.tax_type"],
         join="Left join",
     )
-    tax_accounts = list(map(lambda x: x.get("tax_type"), accounts_type_tax))
-    vat_amount_row = list(filter(lambda x: x.get("account_head") in tax_accounts, doc.taxes))
+    tax_accounts = [x.get("tax_type") for x in accounts_type_tax]
+    vat_amount_row = [x for x in doc.taxes if x.get("account_head") in tax_accounts]
 
     total_vat_amount = 0
     taxes_rate = []

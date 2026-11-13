@@ -247,7 +247,7 @@ class ZatcaPDFA3Generator:
         pdf = pikepdf.Pdf.open(io.BytesIO(pdf_bytes))
         
         # 1. Add Standard Metadata
-        company = frappe.db.get_value("Global Defaults", None, "default_company") or "Company"
+        company = frappe.db.get_single_value("Global Defaults", "default_company") or "Company"
         with pdf.open_metadata() as meta:
             meta["dc:title"] = self.invoice_name
             meta["dc:creator"] = company

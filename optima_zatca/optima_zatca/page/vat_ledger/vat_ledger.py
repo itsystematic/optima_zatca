@@ -175,12 +175,13 @@ def make_group_by_type(data):
     
     final_result = []
     report_summary = []
-    types = list(set(map(lambda x: x.get("parenttype"), data)))
+    # dict.fromkeys keeps the query order (by voucher type); a set gave a random section order
+    types = list(dict.fromkeys(x.get("parenttype") for x in data))
     
     for type in types:
-        filtered_data = list(filter(lambda x: x.get("parenttype") == type, data))
+        filtered_data = [x for x in data if x.get("parenttype") == type]
         if filtered_data:
-            filtered_value = sum(map(lambda x: x.get("base_tax_amount", 0), filtered_data))
+            filtered_value = sum(x.get("base_tax_amount", 0) for x in filtered_data)
             final_result.append({
                 "name": "<h5 style='text-align:center; font-weight:bold; color:#9B3922'>{0}</h5>".format(type)
             })
@@ -207,7 +208,7 @@ def get_report_summary(data, summary):
         })
         values.append(fields.get("total"))
     
-    total_value = sum(map(lambda x: x.get("base_tax_amount", 0), data))
+    total_value = sum(x.get("base_tax_amount", 0) for x in data)
     
     result.append({
         "label": _("Total"),
@@ -221,7 +222,7 @@ def get_report_summary(data, summary):
 def prepare_chart_data(doctypes, values):
     """Prepare chart data"""
     
-    values = list(map(lambda x: abs(x), values))
+    values = [abs(x) for x in values]
     
     return {
         "labels": doctypes,
