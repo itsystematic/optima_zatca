@@ -10094,6 +10094,9 @@ msgstr "يجب أن يكون حساب الإقفال {0} من نوع التزا�
 msgid "Closing Amount"
 msgstr "مبلغ الإقفال"
 
+msgid "Closing Balance"
+msgstr "الرصيد الختامي"
+
 msgctxt "Do MMMM YYYY"
 msgid "Closing Balance as of {}"
 msgstr "الرصيد الختامي كما في {}"
@@ -31709,6 +31712,9 @@ msgstr "الإهلاك المتراكم الافتتاحي"
 
 msgid "Opening Amount"
 msgstr "المبلغ الافتتاحي"
+
+msgid "Opening Balance"
+msgstr "الرصيد الافتتاحي"
 
 msgid "Opening Balances"
 msgstr "الأرصدة الافتتاحية"
