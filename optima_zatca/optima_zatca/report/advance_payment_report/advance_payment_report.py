@@ -199,7 +199,7 @@ def build_chain(members, filters, precision=2):
     return frappe._dict(
         root=rows[0],
         invoices=rows,
-        sales_order=next(filter(None, map(invoice_sales_order, rows)), None),
+        sales_order=next((so for so in (invoice_sales_order(r) for r in rows) if so), None),
         opening=total(row for row in rows if getdate(row.posting_date) < filters.from_date),
         advanced=total(row for row in during if row.sales_invoice_type in ADVANCE_TYPES),
         deducted=_round(-total(row for row in during if row.sales_invoice_type in SETTLEMENT_TYPES), precision),

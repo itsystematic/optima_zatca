@@ -73,7 +73,7 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
                     "message" : _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")),
                     "indicator" : "green" , "percentage" : percentage,
                     "commercial_register_name": settings.get('commercial_register')
-                })
+                }, user=frappe.session.user)
                 # frappe.msgprint(alert=True , indicator="green" , msg= _("Invoice {0}  Type {1} Was Accepted in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
                 PIH = zatca_xml.hash
 
@@ -86,7 +86,7 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
                     "indicator" : "red" ,
                     "percentage" : percentage,
                     "commercial_register_name": settings.get('commercial_register')
-                })
+                }, user=frappe.session.user)
                 # frappe.msgprint(alert=True , indicator="red" , msg=_("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")))
                 
                 Status = "Failed"
@@ -114,7 +114,7 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
         except Exception as e:
             frappe.publish_realtime("zatca" , {
                 "message" : _("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "red"
-            })
+            }, user=frappe.session.user)
     
     # time.sleep(5)
 

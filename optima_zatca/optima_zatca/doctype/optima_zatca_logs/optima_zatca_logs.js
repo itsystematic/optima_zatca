@@ -39,7 +39,7 @@ frappe.ui.form.on("Optima Zatca Logs", {
 
 	add_request_button(frm) {
 		if (frm.doc.message) {
-			let response = JSON.parse(cur_frm.doc.message) ;
+			let response = JSON.parse(frm.doc.message) ;
 			if (response.clearedInvoice) {
 				frm.add_custom_button(__("Show Xml Response"), function () {
 					// const decodedString = atob(base64String);

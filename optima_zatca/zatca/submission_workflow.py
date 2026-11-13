@@ -226,7 +226,8 @@ def _execute_post_success_actions(
 
     if follow_up_policy.auto_submit_invoice:
         sales_invoice.submit()
-        frappe.db.commit()
+        # ZATCA already cleared the invoice; local submit must persist even if a later step fails
+        frappe.db.commit()  # nosemgrep
 
 
 def format_zatca_response(response: dict) -> str:

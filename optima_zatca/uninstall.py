@@ -18,5 +18,5 @@ def before_uninstall():
 
     remove_customizations()
 
-    frappe.db.commit()
+    # No commit here: Frappe commits the uninstall after the before_uninstall hooks.
     click.secho("✅ Optima ZATCA customizations removed.", fg="green")

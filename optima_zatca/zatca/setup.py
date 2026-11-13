@@ -407,7 +407,7 @@ def renew_production_certificate(setting ,otp , authorization , csr):
     }
     extract_details_from_certificate(certificate , setting_updates)
     saving_data_to_setting(setting , setting_updates)
-    frappe.publish_realtime("zatca" , {"message" :"Production CSID Renew Successfully", "indicator" : "green"})
+    frappe.publish_realtime("zatca" , {"message" :"Production CSID Renew Successfully", "indicator" : "green"}, user=frappe.session.user)
 
 
 # ====================================================================================================
@@ -421,9 +421,10 @@ def saving_data_to_setting(name: str, values) -> None:
     """Write `values` onto the Optima Zatca Setting and commit straight away, so a certificate ZATCA
     has issued stays saved even if something later in the request fails."""
     frappe.db.set_value("Optima Zatca Setting" , name , values , update_modified=True )
-    frappe.db.commit()
+    # commit settings before realtime notify; onboarding state must survive a later ZATCA API failure
+    frappe.db.commit()  # nosemgrep
 
-    frappe.publish_realtime("zatca" , {"message" :"Data Saved Successfully", "indicator" : "green" })
+    frappe.publish_realtime("zatca" , {"message" :"Data Saved Successfully", "indicator" : "green" }, user=frappe.session.user)
 
 
 def _publish_status(settings: frappe._dict, message: str, indicator: str, percentage: int) -> None:
@@ -433,7 +434,7 @@ def _publish_status(settings: frappe._dict, message: str, indicator: str, percen
         "indicator": indicator,
         "percentage": percentage,
         "complete": percentage == 100
-    })
+    }, user=frappe.session.user)
 
 
 def notify_completion_status(settings, setting_updates):
@@ -445,7 +446,7 @@ def notify_completion_status(settings, setting_updates):
         "complete": True,
         "percentage": 100 if setting_updates.get("check_pcsid") else 50
     }
-    frappe.publish_realtime("zatca", status)
+    frappe.publish_realtime("zatca", status, user=frappe.session.user)
 
 
 def notify_failure_status(settings, error):
@@ -456,7 +457,7 @@ def notify_failure_status(settings, error):
         "complete": True,
         "percentage": 0
     }
-    frappe.publish_realtime("zatca", error_status)
+    frappe.publish_realtime("zatca", error_status, user=frappe.session.user)
 
 
 def _handle_cert_error(settings: frappe._dict, error: Exception, stage: str) -> None:

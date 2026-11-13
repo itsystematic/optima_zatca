@@ -192,12 +192,13 @@ def make_group_by_type(data:list[dict] = None) -> list[dict] :
     FinalResult = []
     ReportSummary = []
     # types = ["Sales Invoice" , "Purchase Invoice" , "Journal Entry" , "Payment Entry"]
-    types = list(set(map(lambda x : x.get("parenttype") , data)))
+    # dict.fromkeys keeps the query order (by voucher type); a set gave a random section order
+    types = list(dict.fromkeys(x.get("parenttype") for x in data))
     
     for type in types :
-        filtered_data = list(filter(lambda x : x.get("parenttype") == type , data))
+        filtered_data = [x for x in data if x.get("parenttype") == type]
         if filtered_data :
-            FilteredValue =  sum(map(lambda x : x.get("base_tax_amount" , 0) , filtered_data))
+            FilteredValue = sum(x.get("base_tax_amount", 0) for x in filtered_data)
             FinalResult.append({"name" : "<h5 style='text-align:center; font-weight:bold; color:#9B3922'>{0}</h5>".format(type)})
             FinalResult += filtered_data
             FinalResult.append({
@@ -233,7 +234,7 @@ def get_report_summary(filters:dict = None , data:list[dict] = None , summary:li
         )
         Values.append(fields.get("total"))
         
-    value = sum(map(lambda x : x.get("base_tax_amount" , 0) , data))
+    value = sum(x.get("base_tax_amount", 0) for x in data)
     
     Result.append(
         {
@@ -257,7 +258,7 @@ def get_report_summary(filters:dict = None , data:list[dict] = None , summary:li
 def prepare_chart_data(doctypes, values:list):
     
     # doctypes_values = list(map(lambda x : x.get("total") , values))
-    values = list(map(lambda x : abs(x), values))
+    values = [abs(x) for x in values]
     return {
         "data": {"labels": doctypes, "datasets": [{"values": values }]},
         "type": "donut",
