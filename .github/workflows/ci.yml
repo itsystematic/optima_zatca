@@ -11,10 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Frappe Cloud's Marketplace audit runs Frappe's Semgrep rules (security + correctness) and hides
-  # the app while any of them fails. This job runs the same command, so a new finding fails the PR
-  # instead of the next audit. A finding that is a deliberate exception gets "# nosemgrep" on its
-  # line, with the reason on the line above.
   semgrep:
     runs-on: ubuntu-24.04
     steps:
