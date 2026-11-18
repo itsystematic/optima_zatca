@@ -9,7 +9,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2024-01-15 10:08:16.558452",
+ "modified": "2026-11-13 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Optima Zatca",
  "name": "Zatca VAT Details",
@@ -19,9 +19,6 @@
  "report_name": "Zatca VAT Details",
  "report_type": "Script Report",
  "roles": [
-  {
-   "role": "All"
-  },
   {
    "role": "Accounts Manager"
   },

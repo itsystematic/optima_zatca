@@ -7,6 +7,7 @@ import hashlib
 import binascii
 import traceback
 from frappe import _
+from frappe.model.document import Document
 from datetime import datetime
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -249,7 +250,7 @@ def create_qr_code_for_invoice(invoice_id , qrcode_encode):
 
 
 @frappe.whitelist()
-def get_prepayment_details(prepayment_invoice, filters=None):
+def get_prepayment_details(prepayment_invoice: str | None, filters: dict | str | None = None):
     """The prepayment and every earlier one in its chain, newest first."""
     try:
         if not prepayment_invoice:
@@ -283,7 +284,12 @@ def get_prepayment_details(prepayment_invoice, filters=None):
 
 
 @frappe.whitelist()
-def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=True):
+def get_item_details(
+	args: dict | str,
+	doc: Document | dict | str | None = None,
+	for_validate: bool | str | None = False,
+	overwrite_warehouse: bool | str = True,
+):
 	"""ERPNext's get_item_details, with the customer group's advance account as the
 	income account on prepayment invoices — the group account is what carries the
 	correct currency when the invoice is not in company currency.

@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 
 @frappe.whitelist()
-def get_tax_accounts(company):
+def get_tax_accounts(company: str | None):
     """Get all tax accounts for the selected company"""
     if not company:
         return []
@@ -21,7 +21,13 @@ def get_tax_accounts(company):
 
 
 @frappe.whitelist()
-def get_vat_report_data(company=None, from_date=None, to_date=None, tax_account=None, party=None):
+def get_vat_report_data(
+    company: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    tax_account: str | None = None,
+    party: str | None = None,
+):
     """Get VAT report data based on filters"""
     
     if not company:
@@ -73,16 +79,8 @@ def get_vat_data(company, from_date, to_date, accounts, party=None):
     if not accounts:
         return []
     
-    party_condition = ""
-    if party:
-        party_condition = """
-            AND (
-                (gl.voucher_type = 'Sales Invoice' AND t1.customer LIKE %(party)s)
-                OR (gl.voucher_type = 'Purchase Invoice' AND t2.supplier LIKE %(party)s)
-                OR gl.party LIKE %(party)s
-            )
-        """
-    
+    # The query is a fixed string: every value goes in as a parameter. The party condition is
+    # always present and is a no-op when %(party)s is empty.
     sql_query = frappe.db.sql("""
         SELECT 
             gl.voucher_no as name,
@@ -159,10 +157,15 @@ def get_vat_data(company, from_date, to_date, accounts, party=None):
             AND gl.voucher_type IN ('Sales Invoice', 'Purchase Invoice')
             AND gl.company = %(company)s
             AND gl.posting_date BETWEEN %(from_date)s AND %(to_date)s
-            {party_condition}
+            AND (
+                %(party)s = ''
+                OR (gl.voucher_type = 'Sales Invoice' AND t1.customer LIKE %(party)s)
+                OR (gl.voucher_type = 'Purchase Invoice' AND t2.supplier LIKE %(party)s)
+                OR gl.party LIKE %(party)s
+            )
             
         ORDER BY gl.voucher_type, gl.posting_date DESC
-    """.format(party_condition=party_condition), {
+    """, {
         "from_date": from_date,
         "to_date": to_date,
         "company": company,
@@ -178,12 +181,13 @@ def make_group_by_type(data):
     
     final_result = []
     report_summary = []
-    types = list(set(map(lambda x: x.get("parenttype"), data)))
+    # dict.fromkeys keeps the query order (by voucher type); a set gave a random section order
+    types = list(dict.fromkeys(x.get("parenttype") for x in data))
     
     for type in types:
-        filtered_data = list(filter(lambda x: x.get("parenttype") == type, data))
+        filtered_data = [x for x in data if x.get("parenttype") == type]
         if filtered_data:
-            filtered_value = sum(map(lambda x: x.get("base_tax_amount", 0), filtered_data))
+            filtered_value = sum(x.get("base_tax_amount", 0) for x in filtered_data)
             final_result.append({
                 "name": "<h5 style='text-align:center; font-weight:bold; color:#666'>{0}</h5>".format(type)
             })
@@ -210,7 +214,7 @@ def get_report_summary(data, summary):
         })
         values.append(fields.get("total"))
     
-    total_value = sum(map(lambda x: x.get("base_tax_amount", 0), data))
+    total_value = sum(x.get("base_tax_amount", 0) for x in data)
     
     result.append({
         "label": _("Total"),
@@ -224,7 +228,7 @@ def get_report_summary(data, summary):
 def prepare_chart_data(doctypes, values):
     """Prepare chart data"""
     
-    values = list(map(lambda x: abs(x), values))
+    values = [abs(x) for x in values]
     
     return {
         "labels": doctypes,
