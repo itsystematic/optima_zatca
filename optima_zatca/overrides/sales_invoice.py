@@ -126,7 +126,7 @@ class CustomSalesInvoice(SalesInvoice):
             self.debit_to
         ]
         
-        for account in filter(None, account_list):
+        for account in (a for a in account_list if a):
             currencies[account] = frappe.get_cached_value(
                 "Account", account, "account_currency"
             )
