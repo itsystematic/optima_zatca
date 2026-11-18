@@ -54,7 +54,7 @@ def after_install():
     # templates put in place by `create_complete_vat_system` above.
     run_provisioning_patches()
 
-    frappe.db.commit()
+    # No commit here: bench commits the install once every after_install hook has run.
     click.secho("✅ Optima ZATCA installation completed!", fg="green")
 
 

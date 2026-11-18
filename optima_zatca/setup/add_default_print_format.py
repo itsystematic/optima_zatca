@@ -50,7 +50,8 @@ def create_or_update_print_format(name, doctype, html_file, css_file=None):
 	if not os.path.exists(html_path):
 		raise FileNotFoundError(f"HTML template file not found: {html_path}")
 
-	with open(html_path, "r", encoding="utf-8") as f:
+	# path is an app-bundled constant, never user input
+	with open(html_path, "r", encoding="utf-8") as f:  # nosemgrep
 		html_content = f.read()
 
 	# Read CSS content from file if provided
@@ -58,7 +59,8 @@ def create_or_update_print_format(name, doctype, html_file, css_file=None):
 	if css_file:
 		css_path = frappe.get_app_path("optima_zatca", css_file)
 		if os.path.exists(css_path):
-			with open(css_path, "r", encoding="utf-8") as f:
+			# path is an app-bundled constant, never user input
+			with open(css_path, "r", encoding="utf-8") as f:  # nosemgrep
 				css_content = f.read()
 		else:
 			click.secho(f"Warning: CSS file not found: {css_path}", fg="yellow")
