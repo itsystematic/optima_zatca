@@ -1,5 +1,5 @@
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 # The role "All" used to grant read on these doctypes, and "All" includes Website Users.
 ZATCA_DOCTYPES = (
@@ -13,7 +13,7 @@ ZATCA_DOCTYPES = (
 READ_BY_SALES_FORM = ("Commercial Register", "Prepayment Invoice", "Tax Exemption", "Optima Zatca Logs")
 
 
-class TestZatcaDoctypePermissions(IntegrationTestCase):
+class TestZatcaDoctypePermissions(FrappeTestCase):
     def tearDown(self):
         frappe.set_user("Administrator")
         frappe.db.rollback()
