@@ -25,6 +25,7 @@ required_apps = ["erpnext"]
 # ------------------
 
 # include js, css files in header of desk.html
+# desk_fonts.bundle.css is the only owner of --font-stack in the Optima suite (Claudion + Almarai)
 app_include_css = "desk_fonts.bundle.css"
 
 # Load modular JS files in dependency order
@@ -33,10 +34,12 @@ app_include_js = [
     "/assets/optima_zatca/js/sales_invoice/prepayment.js",      # Must load first (provides constants)
     "/assets/optima_zatca/js/sales_invoice/pos_payments.js",    # Depends on prepayment constants
     "/assets/optima_zatca/js/sales_invoice/zatca_buttons.js",   # Independent
+    "/assets/optima_zatca/js/desk_labels_i18n.js",              # Dock / sidebar labels Frappe leaves untranslated
 ]
 
 # include js, css files in header of web template
-# web_include_css = "/assets/optima_zatca/css/optima_zatca.css"
+# The same fonts on the website and the portal
+web_include_css = "desk_fonts.bundle.css"
 # web_include_js = "/assets/optima_zatca/js/optima_zatca.js"
 
 # include custom scss in every website theme (without file extension ".scss")
@@ -101,6 +104,10 @@ jinja = {
 
 # before_install = "optima_zatca.install.before_install"
 after_install = "optima_zatca.install.after_install"
+
+# Warns (never reorders) when frappe / erpnext / hrms load after optima_zatca, which would hide
+# its Arabic (locale/ar.po), or when daad is installed next to it.
+after_migrate = "optima_zatca.arabic.load_order.check_load_order"
 
 # Uninstallation
 # ------------

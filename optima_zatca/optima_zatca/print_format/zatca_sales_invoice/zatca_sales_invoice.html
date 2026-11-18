@@ -10,6 +10,41 @@ Add to your Print Format:
 {# Initialize context from controller #}
 {% set ctx = frappe.call('optima_zatca.optima_zatca.print_format.sales_invoice_controller.get_context', doc=doc) %}
 
+{# Fonts and logo. PDF/A-3 (zatca/pdfa3.py sets doc.flags.zatca_pdfa3) renders with WeasyPrint and
+   replaces the __..._PATH__ placeholders with local file:// paths and a base64 logo. Every other
+   print (browser preview, wkhtmltopdf) gets absolute URLs on this site: Frappe's URL expansion for
+   wkhtmltopdf would append "!important" inside a relative @font-face url(), and a placeholder URL
+   makes wkhtmltopdf refuse the whole PDF. Fonts always come from this server, never a CDN. #}
+{% if doc.flags.zatca_pdfa3 %}
+    {% set font_claudion, font_almarai, font_almarai_bold = '__FONT_REG_CLAUDION_PATH__', '__FONT_REG_MARAI_PATH__', '__FONT_BOLD_MARAI_PATH__' %}
+    {% set logo_src = '__LETTERHEAD_LOGO_PATH__' %}
+{% else %}
+    {% set font_dir = frappe.utils.get_url('/assets/optima_zatca/fonts/') %}
+    {% set font_claudion, font_almarai, font_almarai_bold = font_dir ~ 'Claudion.ttf', font_dir ~ 'Almarai-Regular.ttf', font_dir ~ 'Almarai-Bold.ttf' %}
+    {% set logo_image = frappe.db.get_value('Letter Head', doc.letter_head, 'image') if doc.letter_head else '' %}
+    {% set logo_src = frappe.utils.get_url(logo_image) if logo_image else '' %}
+{% endif %}
+<style>
+@font-face {
+    font-family: 'Claudion';
+    font-style: normal;
+    font-weight: 400;
+    src: url('{{ font_claudion }}') format('truetype');
+}
+@font-face {
+    font-family: "Almarai";
+    font-weight: 400;
+    font-style: normal;
+    src: url('{{ font_almarai }}') format('truetype');
+}
+@font-face {
+    font-family: "Almarai";
+    font-weight: 700;
+    font-style: normal;
+    src: url('{{ font_almarai_bold }}') format('truetype');
+}
+</style>
+
 {# ==================== MACROS ==================== #}
 
 {# Macro for rendering bilingual labels #}
@@ -68,11 +103,12 @@ Add to your Print Format:
                                             <table class="letterhead-table">
                                                 <tr>
                                                     <td>
-                                                        <!-- We use a placeholder that Python will replace with the absolute path -->
-                                                        <img src="__LETTERHEAD_LOGO_PATH__" class="company-logo" alt="Company Logo" 
+                                                        {% if logo_src %}
+                                                        <img src="{{ logo_src }}" class="company-logo" alt="Company Logo" 
                                                             style="max-width: 100%; max-height: 120px; object-fit: contain;" 
                                                             onerror="this.style.display='none'"
                                                         />
+                                                        {% endif %}
                                                     </td>
                                                 </tr>
                                             </table>
