@@ -25,7 +25,7 @@ bench --site <throwaway-site> run-tests --module optima_zatca.events.tests.test_
 python -m unittest optima_zatca.zatca.tests.test_onboarding_retry optima_zatca.zatca.tests.test_register_company \
     optima_zatca.zatca.tests.test_xml_transport \
     optima_zatca.zatca.tests.test_invoice_data optima_zatca.zatca.tests.test_prepayment_invoice \
-    optima_zatca.zatca.tests.test_keys optima_zatca.zatca.tests.test_remove_csr_scratch_files
+    optima_zatca.zatca.tests.test_keys
 
 # After Python changes
 bench restart
