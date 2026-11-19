@@ -23,26 +23,12 @@ def get_columns():
             "width": 300,
         },
         {
-            "fieldname": "amount",
-            "label": _("Amount (SAR)"),
+            "fieldname": "vat_amount",
+            "label": _("VAT Amount (SAR)"),
             "fieldtype": "Currency",
             "options": "currency",
             "width": 150,
         },
-        # {
-        #     "fieldname": "adjustment_amount",
-        #     "label": _("Adjustment (SAR)"),
-        #     "fieldtype": "Currency",
-        #     "options": "currency",
-        #     "width": 150,
-        # },
-        # {
-        #     "fieldname": "vat_amount",
-        #     "label": _("VAT Amount (SAR)"),
-        #     "fieldtype": "Currency",
-        #     "options": "currency",
-        #     "width": 150,
-        # },
         {
             "fieldname": "currency",
             "label": _("Currency"),
@@ -67,100 +53,29 @@ def get_data(filters):
 
     ksa_vat_setting = frappe.get_doc("Zatca VAT Setting", company)
 
-    # Sales Heading
-    append_data(data, "VAT on Sales", "", "", "", company_currency)
+    append_data(data, "VAT on Sales", "", company_currency)
 
-    grand_total_taxable_amount = 0
-    grand_total_taxable_adjustment_amount = 0
-    grand_total_tax = 0
-
-    net_vat_due_amount = 0
-
+    sales_vat = 0
     for vat_setting in ksa_vat_setting.zatca_vat_sales_accounts:
-        (
-            total_taxable_amount,
-            total_taxable_adjustment_amount,
-            total_tax,
-        ) = get_tax_data_for_each_vat_setting(vat_setting, filters, "Sales Invoice")
+        vat_amount = get_vat_amount(vat_setting, filters, "Sales Invoice")
+        append_data(data, vat_setting.title, vat_amount, company_currency)
+        sales_vat += vat_amount
 
-        # Adding results to data
-        append_data(
-            data,
-            vat_setting.title,
-            total_taxable_amount,
-            total_taxable_adjustment_amount,
-            total_tax,
-            company_currency,
-        )
+    append_data(data, "Grand Total", sales_vat, company_currency)
 
-        grand_total_taxable_amount += total_taxable_amount
-        grand_total_taxable_adjustment_amount += total_taxable_adjustment_amount
-        grand_total_tax += total_tax
+    append_data(data, "", "", company_currency)
 
-    net_vat_due_amount += grand_total_tax
+    append_data(data, "VAT on Purchases", "", company_currency)
 
-    # Sales Grand Total
-    append_data(
-        data,
-        "Grand Total",
-        grand_total_taxable_amount,
-        grand_total_taxable_adjustment_amount,
-        grand_total_tax,
-        company_currency,
-    )
-
-    # Blank Line
-    append_data(data, "", "", "", "", company_currency)
-
-    # Purchase Heading
-    append_data(data, "VAT on Purchases", "", "", "", company_currency)
-
-    grand_total_taxable_amount = 0
-    grand_total_taxable_adjustment_amount = 0
-    grand_total_tax = 0
-
+    purchase_vat = 0
     for vat_setting in ksa_vat_setting.zatca_vat_purchase_accounts:
-        (
-            total_taxable_amount,
-            total_taxable_adjustment_amount,
-            total_tax,
-        ) = get_tax_data_for_each_vat_setting(vat_setting, filters, "Purchase Invoice")
+        vat_amount = get_vat_amount(vat_setting, filters, "Purchase Invoice")
+        append_data(data, vat_setting.title, vat_amount, company_currency)
+        purchase_vat += vat_amount
 
-        # Adding results to data
-        append_data(
-            data,
-            vat_setting.title,
-            total_taxable_amount,
-            total_taxable_adjustment_amount,
-            total_tax,
-            company_currency,
-        )
+    append_data(data, "Grand Total", purchase_vat, company_currency)
 
-        grand_total_taxable_amount += total_taxable_amount
-        grand_total_taxable_adjustment_amount += total_taxable_adjustment_amount
-        grand_total_tax += total_tax
-
-    net_vat_due_amount -= grand_total_tax
-
-    # Purchase Grand Total
-    append_data(
-        data,
-        "Grand Total",
-        grand_total_taxable_amount,
-        grand_total_taxable_adjustment_amount,
-        grand_total_tax,
-        company_currency,
-    )
-
-    # Net VAT Due
-    append_data(
-        data,
-        "Net VAT Due",
-        None,
-        None,
-        net_vat_due_amount,
-        company_currency,
-    )
+    append_data(data, "Net VAT Due", sales_vat - purchase_vat, company_currency)
 
     return data
 
@@ -209,13 +124,10 @@ def get_data(filters):
 # 	return total_taxable_amount, total_taxable_adjustment_amount, total_tax
 
 
-def append_data(data, title, amount, adjustment_amount, vat_amount, company_currency):
-    """Returns data with appended value."""
+def append_data(data, title, vat_amount, company_currency):
     data.append(
         {
             "title": _(title),
-            "amount": amount,
-            "adjustment_amount": adjustment_amount,
             "vat_amount": vat_amount,
             "currency": company_currency,
         }
@@ -246,37 +158,21 @@ def append_data(data, title, amount, adjustment_amount, vat_amount, company_curr
 # 	return tax_amount
 
 
-def get_tax_data_for_each_vat_setting(vat_setting, filters, doctype):
-    """
-    (KSA, {filters}, 'Sales Invoice') => 500, 153, 10 \n
-    calculates and returns \n
-    total_taxable_amount, total_taxable_adjustment_amount, total_tax"""
-    from_date = filters.get("from_date")
-    to_date = filters.get("to_date")
+def get_vat_amount(vat_setting, filters, doctype):
+    """VAT that `doctype` vouchers posted to the setting's account in the period, after returns."""
+    totals = frappe.db.sql(
+        """
+        SELECT COALESCE(SUM(debit), 0) AS debit, COALESCE(SUM(credit), 0) AS credit
+        FROM `tabGL Entry`
+        WHERE voucher_type = %s AND account = %s AND posting_date BETWEEN %s AND %s
+            AND is_cancelled = 0
+        """,
+        (doctype, vat_setting.account, filters.get("from_date"), filters.get("to_date")),
+        as_dict=True,
+    )[0]
+    return net_vat(doctype, totals.debit, totals.credit)
 
-    # Initiate variables
-    total_taxable_amount = 0
-    total_taxable_adjustment_amount = 0
-    total_tax = 0
-    # Fetch All Invoices
-    invoices = frappe.db.sql("""
-                        SELECT 
-                            SUM(credit) AS credit, 
-                            SUM(debit) AS debit,
-                            SUM(credit) - SUM(debit) AS total_1,
-                            SUM(debit) - SUM(credit) AS total_2
-                        FROM `tabGL Entry`
-                        WHERE voucher_type = %s AND account = %s AND posting_date BETWEEN %s AND %s
-                                AND is_cancelled = 0;
-                        """, (doctype, vat_setting.account, from_date, to_date), as_dict=1)
 
-    if doctype == "Sales Invoice":
-        total_taxable_amount = invoices[0].get("credit") if invoices[0].get("credit") else 0
-        total_taxable_adjustment_amount = invoices[0].get("debit") if invoices[0].get("debit") else 0
-        total_tax = invoices[0].get("total_1") if invoices[0].get("total_1") else 0
-    else:
-        total_taxable_amount = invoices[0].get("debit") if invoices[0].get("debit") else 0
-        total_taxable_adjustment_amount = invoices[0].get("credit") if invoices[0].get("credit") else 0
-        total_tax = invoices[0].get("total_2") if invoices[0].get("total_2") else 0
-
-    return total_taxable_amount, total_taxable_adjustment_amount, total_tax
+def net_vat(doctype, debit, credit):
+    """Invoices credit output VAT and debit input VAT; their returns post the other way and reduce it."""
+    return credit - debit if doctype == "Sales Invoice" else debit - credit

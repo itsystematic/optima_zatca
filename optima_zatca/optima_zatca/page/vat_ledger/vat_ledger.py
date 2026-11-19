@@ -109,13 +109,6 @@ def get_vat_data(company, from_date, to_date, accounts, party=None):
             CASE 
                 WHEN gl.voucher_type = 'Sales Invoice' THEN t1.tax_id
                 WHEN gl.voucher_type = 'Purchase Invoice' THEN t2.tax_id
-                WHEN gl.voucher_type = 'Journal Entry' THEN ( 
-                    SELECT custom_party_tax_id FROM `tabJournal Entry Account` 
-                    WHERE account = gl.account 
-                        AND gl.party = party 
-                        AND parent = gl.voucher_no 
-                    LIMIT 1
-                )
                 ELSE ""
             END as tax_id,
             
