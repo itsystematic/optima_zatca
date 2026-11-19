@@ -37,17 +37,17 @@ def execute():
     if not os.path.isdir(files_dir):
         return
 
-    report = remove_scratch_files(files_dir)
-    if report:
-        frappe.log_error(title=LOG_TITLE, message=report)
-        click.echo(report)
+    sets = remove_scratch_files(files_dir)
+    if sets:
+        frappe.log_error(title=LOG_TITLE, message=_format_report(files_dir, sets))
+        click.echo(_format_report(files_dir, sets, style=click.style))
 
 
-def remove_scratch_files(files_dir: str) -> str:
-    """Delete the sets whose private key is stored on a setting, and return the report ("" if none)."""
+def remove_scratch_files(files_dir: str) -> list[ScratchSet]:
+    """Delete the sets whose private key is stored on a setting, and return every set found."""
     groups = _group_scratch_files(_file_names(files_dir))
     if not groups:
-        return ""
+        return []
 
     stored_keys = _stored_private_keys()
     uploaded = _names_with_file_record([name for names in groups.values() for name in names])
@@ -60,7 +60,7 @@ def remove_scratch_files(files_dir: str) -> str:
             scratch_set.failed = _delete_files(files_dir, scratch_set.names)
         sets.append(scratch_set)
 
-    return _format_report(files_dir, sets)
+    return sets
 
 
 # ====================================================================================================
@@ -97,23 +97,26 @@ def _decide_set(names, key_text, stored_keys, uploaded) -> tuple[bool, str]:
     return True, f'the private key is saved on Optima Zatca Setting "{setting}"'
 
 
-def _format_report(files_dir, sets) -> str:
-    """Names, dates and reasons only: copying a key's contents would move the secret into the log."""
+def _format_report(files_dir, sets, style=lambda text, **_: text) -> str:
+    """Names, dates and reasons only: copying a key's contents would move the secret into the log.
+
+    `style` is click.style for the terminal; the Error Log copy stays plain text.
+    """
     lines = [f"ZATCA onboarding left key and CSR files in {files_dir}."]
 
-    for title, chosen in (
-        ("Deleted:", [s for s in sets if s.delete]),
-        ("Kept, for an administrator to decide on:", [s for s in sets if not s.delete]),
+    for title, color, chosen in (
+        ("Deleted:", "green", [s for s in sets if s.delete]),
+        ("Kept, for an administrator to decide on:", "yellow", [s for s in sets if not s.delete]),
     ):
         if chosen:
-            lines += ["", title]
+            lines += ["", style(title, fg=color, bold=True)]
             for s in chosen:
-                lines.append(f"  {s.prefix}_* ({s.modified}): {s.reason}")
+                lines.append(f"  {style(s.prefix + '_*', bold=True)} ({s.modified}): {s.reason}")
                 lines.append(f"      {', '.join(s.names)}")
 
     failures = [failure for s in sets for failure in s.failed]
     if failures:
-        lines += ["", "Could not delete:"] + [f"  {failure}" for failure in failures]
+        lines += ["", style("Could not delete:", fg="red", bold=True)] + [f"  {failure}" for failure in failures]
 
     return "\n".join(lines)
 
