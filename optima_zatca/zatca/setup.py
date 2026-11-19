@@ -276,7 +276,7 @@ def add_company_to_zatca(name: str):
         # requested with, so a retry must keep the stored key.
         setting_updates = {}
         if not settings.check_csid:
-            csr_generator = GenerateCSR(settings, frappe.local.site, **get_csr_identity(settings))
+            csr_generator = GenerateCSR(settings, **get_csr_identity(settings))
             setting_updates = csr_generator.get_generated_details()
 
         if settings.otp and not settings.check_csid:
