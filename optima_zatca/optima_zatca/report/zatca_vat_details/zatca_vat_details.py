@@ -111,14 +111,6 @@ def get_data(filters=None , accounts:list=None) -> list :
             CASE 
                 WHEN gl.voucher_type = 'Sales Invoice' THEN t1.tax_id
                 WHEN gl.voucher_type = 'Purchase Invoice' THEN t2.tax_id
-                WHEN gl.voucher_type = 'Journal Entry' THEN ( 
-                    SELECT custom_party_tax_id FROM `tabJournal Entry Account` 
-                    WHERE account = gl.account 
-                        AND gl.party = party 
-                        AND parent = gl.voucher_no 
-                        
-                    LIMIT 1
-                )
                 ELSE ""
             
             END as tax_id  ,
@@ -191,7 +183,6 @@ def make_group_by_type(data:list[dict] = None) -> list[dict] :
     
     FinalResult = []
     ReportSummary = []
-    # types = ["Sales Invoice" , "Purchase Invoice" , "Journal Entry" , "Payment Entry"]
     # dict.fromkeys keeps the query order (by voucher type); a set gave a random section order
     types = list(dict.fromkeys(x.get("parenttype") for x in data))
     
