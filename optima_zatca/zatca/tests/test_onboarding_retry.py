@@ -13,7 +13,6 @@ def pass_every_sample_invoice(settings, setting_updates):
 
 def run_onboarding(settings, invoices_pass=False, register_has_invoice_setting=False):
 	with (
-		patch.object(setup.frappe.local, "site", "test.site", create=True),
 		patch.object(setup.frappe, "get_doc", return_value=settings),
 		patch.object(setup, "get_csr_identity", return_value={}),
 		patch.object(setup, "GenerateCSR") as generate,
