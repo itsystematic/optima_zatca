@@ -1,3 +1,4 @@
+import os
 import uuid
 import time
 import json
@@ -30,7 +31,7 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
 
     PIH = "gSNPKCpoXIlSvtP2p5JwDXLOaEWfkevQ2pbtnkosqjE="
         
-    samples_path = get_app_path("optima_zatca", "zatca", "Samples", "Invoices", "sales_invoices.json")
+    samples_path = os.path.join(get_app_path("optima_zatca"), "zatca", "Samples", "Invoices", "sales_invoices.json")
     # path is an app-bundled constant, never user input
     with open(samples_path, "r") as file:  # nosemgrep
         sales_invoices = json.load(file)
