@@ -1,13 +1,11 @@
 import os
-import re
 import shlex
 import base64
-import hashlib
 import subprocess
+import tempfile
 
 import frappe
 from frappe import _
-from frappe.utils import get_bench_relative_path
 
 from optima_zatca.zatca.utils import generate_serial_number, get_company_info
 
@@ -40,15 +38,14 @@ CERTIFICATE_TEMPLATES = {
 
 class GenerateCSR:
 
-    def __init__(self, settings, site=None, **kwargs):
-        self.site = site
+    def __init__(self, settings, **kwargs):
         self.company = settings.get("company")
         self.settings = settings
         self.company_details = kwargs
 
         self.validate()
         self.generate_required_fields()
-        self.create_csr_and_private_key()
+        self.generated_details = self.create_csr_and_private_key()
 
     # ====================================================================================================
     # CSR INPUT PREPARATION
@@ -80,18 +77,23 @@ class GenerateCSR:
 
     # ====================================================================================================
     # KEY AND CSR GENERATION
-    # Four artefacts under the site's private files, in order: the EC private key, the OpenSSL
-    # config that carries ZATCA's required extensions, the signed request, and the compressed
-    # public key. get_generated_details reads them back for the caller to persist.
+    # Four scratch files in a temporary folder, in order: the EC private key, the OpenSSL config
+    # that carries ZATCA's required extensions, the signed request, and the compressed public
+    # key. Their contents are read back before the folder is removed; the caller stores them on
+    # the Optima Zatca Setting, which is the only place the private key may persist.
 
     def create_csr_and_private_key(self):
-        try:
-            self.create_private_key()
-            self.create_config_file()
-            self.create_csr()
-            self.create_public_key()
-        except subprocess.CalledProcessError as e:
-            frappe.throw(_("OpenSSL command failed: {0}").format(str(e)))
+        # Never under the site's files: a key there is outside Frappe's permissions and goes into
+        # every files backup. The folder is 0700 and is removed even when a step below fails.
+        with tempfile.TemporaryDirectory(prefix="zatca-csr-") as self.workdir:
+            try:
+                self.create_private_key()
+                self.create_config_file()
+                self.create_csr()
+                self.create_public_key()
+            except subprocess.CalledProcessError as e:
+                frappe.throw(_("OpenSSL command failed: {0}").format(str(e)))
+            return self.read_generated_files()
 
     def create_private_key(self):
         path = self.get_file_path("PrivateKey.pem")
@@ -139,7 +141,7 @@ title = {self.company_details['invoice_type']}
 registeredAddress = {self.company_details['address']}
 businessCategory = {self.company_details['industry']}"""
 
-        # validated path inside private/files (get_file_path)
+        # fixed name inside the temporary folder this run created (get_file_path)
         with open(self.get_file_path("config.cnf"), "w", encoding="utf-8") as f:  # nosemgrep
             f.write(config)
 
@@ -162,8 +164,11 @@ businessCategory = {self.company_details['industry']}"""
         )
 
     def get_generated_details(self):
+        return self.generated_details
+
+    def read_generated_files(self):
         try:
-            # validated paths inside private/files (get_file_path)
+            # fixed names inside the temporary folder this run created (get_file_path)
             with (
                 open(self.get_file_path("PrivateKey.pem"), "r") as priv_key,  # nosemgrep
                 open(self.get_file_path("csr.pem"), "r") as csr,  # nosemgrep
@@ -186,9 +191,8 @@ businessCategory = {self.company_details['industry']}"""
     # ====================================================================================================
     # FILESYSTEM AND OPENSSL PLUMBING
 
-    def get_file_path(self, suffix):
-        files_dir = os.path.join(get_bench_relative_path(self.site or frappe.local.site), "private", "files")
-        return key_file_path(files_dir, self.company, suffix)
+    def get_file_path(self, name):
+        return os.path.join(self.workdir, name)
 
     def run_openssl_command(self, command):
         full_cmd = f"openssl {command}"
@@ -198,23 +202,3 @@ businessCategory = {self.company_details['industry']}"""
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-
-
-def key_file_path(files_dir, company, suffix):
-    """Path of one of a company's key/CSR scratch files, guaranteed to be inside files_dir.
-
-    The files are written and read back within one GenerateCSR run (their contents are stored
-    on the Optima Zatca Setting), so the name only has to be unique and safe. The company name
-    is reduced to [a-z0-9_-] and followed by a short hash of the full name, because a name in
-    Arabic would otherwise reduce to nothing and two companies could share a file.
-    """
-    slug = re.sub(r"[^a-z0-9_-]", "", (company or "").lower().replace(" ", ""))
-    digest = hashlib.sha1((company or "").encode("utf-8")).hexdigest()[:8]
-    if not re.fullmatch(r"[A-Za-z0-9_.-]+", suffix or "") or ".." in suffix:
-        raise ValueError(f"Invalid key file suffix: {suffix!r}")
-
-    root = os.path.realpath(files_dir)
-    path = os.path.realpath(os.path.join(root, f"{slug or 'company'}-{digest}_{suffix}"))
-    if os.path.dirname(path) != root:
-        raise ValueError(f"Key file path escapes {root}: {path}")
-    return path

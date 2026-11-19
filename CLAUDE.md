@@ -132,6 +132,8 @@ The mirrors are the subtle one. They were historically `precision "0"` (stored a
 
 Declared in `pyproject.toml`, installed via `bench setup requirements`: `cryptography` (signing), `asn1` (certificate/CSR encoding), `qrcode` (Phase-1 TLV QR), `pikepdf` (embedding invoice XML into a PDF/A-3 file — see `zatca/pdfa3.py`). CSR/key generation lives in `zatca/keys.py` (`GenerateCSR`) and `zatca/setup.py` (onboarding: CSR → compliance CSID → sample invoices → production CSID).
 
+`GenerateCSR` runs openssl in a `TemporaryDirectory` and reads the results back before the folder goes, so the private key persists only on the Optima Zatca Setting. Never move these files under the site's `private/files`: a copy there is outside Frappe's permissions and goes into every files backup.
+
 ## Testing rules
 
 There are **two test suites with deliberately different rules** — match the one you're adding to.
