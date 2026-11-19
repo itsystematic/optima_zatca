@@ -26,7 +26,7 @@ def add_company_to_zatca(name: str):
         settings = frappe.get_doc("Optima Zatca Setting", name)
 
         # 1. Generate CSR and Keys
-        csr_generator = GenerateCSR(settings, frappe.local.site, **get_csr_identity(settings))
+        csr_generator = GenerateCSR(settings, **get_csr_identity(settings))
         company_details = csr_generator.get_generated_details()
 
         # 2. Handle Certificate Generation
