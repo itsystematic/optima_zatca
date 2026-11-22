@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from optima_zatca.zatca.classes.validate import ZatcaInvoiceValidate, find_short_item_names
 
@@ -18,7 +18,7 @@ def _validator(*names):
         return ZatcaInvoiceValidate({}, {"items": _rows(*names)}, {}, {}, {})
 
 
-class TestFindShortItemNames(UnitTestCase):
+class TestFindShortItemNames(FrappeTestCase):
     def test_reports_every_row_under_three_characters(self):
         # "Tea" sits on the minimum, and the second short row must not be lost behind the first.
         self.assertEqual(find_short_item_names(_rows("Ad", "Tea", "TV")), [(1, "Ad"), (3, "TV")])
@@ -27,7 +27,7 @@ class TestFindShortItemNames(UnitTestCase):
         self.assertEqual(find_short_item_names(_rows("Ad ", "   ")), [(1, "Ad "), (2, "   ")])
 
 
-class TestValidateItemNameLengths(UnitTestCase):
+class TestValidateItemNameLengths(FrappeTestCase):
     def test_blocks_and_names_only_the_short_rows(self):
         with self.assertRaises(frappe.ValidationError) as raised:
             _validator("Tea", "TV").validate_item_name_lengths()
