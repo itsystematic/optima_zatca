@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 import frappe
-from frappe.tests import UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from optima_zatca.zatca.classes.validate import ZatcaInvoiceValidate
 
@@ -30,7 +30,7 @@ def _check_with_log(status):
         _unsent_invoice_validator().validate_sales_invoice_sender()
 
 
-class TestAlreadySent(UnitTestCase):
+class TestAlreadySent(FrappeTestCase):
     def test_accepted_log_blocks_a_resend(self):
         # A missing comma once joined the two statuses into "SuccessWarning", which no log has.
         for status in ("Success", "Warning"):
