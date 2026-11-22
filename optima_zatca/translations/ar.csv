@@ -5476,3 +5476,5 @@ New Leave(s) Allocated, الإجازات الجديدة المخصصة
 Leave(s) Taken, الإجازات المستخدمة (المأخوذة)
 Leave(s) Expired, الإجازات المنتهية الصلاحية
 Closing Balance, الرصيد الختامي
+"Item Name must have at least {0} characters for ZATCA. Fix it on these rows, and on the Item for future invoices: {1}","يجب ألا يقل اسم الصنف عن {0} أحرف حسب متطلبات هيئة الزكاة والضريبة والجمارك. عدّله في هذه الصفوف، وفي الصنف نفسه للفواتير القادمة: {1}"
+Item Name Too Short,اسم الصنف قصير جدًا
