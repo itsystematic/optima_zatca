@@ -108,44 +108,25 @@ jobs:
           bench --site test_site install-app erpnext optima_zatca
           bench --site test_site set-config allow_tests true
 
-      # helpers.py now provisions its own dedicated party/item/commercial-register
-      # records, so both the in-memory matrix layer and the real-save integration
-      # layer run on a fresh CI site.
-      - name: Run prepayment matrix tests
+      # Every test_*.py in the app runs, so a new test file needs no change here. Each runs
+      # with its own --module, not --app: on Frappe 15, --app skips ERPNext's before_tests,
+      # which creates the CI company, and builds test records for every doctype test file.
+      # That company (Wind Power LLC) isn't Saudi, so region-gated code such as the Phase One
+      # QR only proves its short-circuit here.
+      - name: Run tests
         working-directory: frappe-bench
         run: |
-          bench --site test_site run-tests \
-            --module optima_zatca.events.tests.test_prepayment
-
-      - name: Run prepayment integration tests
-        working-directory: frappe-bench
-        run: |
-          bench --site test_site run-tests \
-            --module optima_zatca.events.tests.test_prepayment_integration
-
-      - name: Run sales invoice lifecycle matrix tests
-        working-directory: frappe-bench
-        run: |
-          bench --site test_site run-tests \
-            --module optima_zatca.events.tests.test_sales_invoice
-
-      # The QR generate-path is region-gated; the CI company (Wind Power LLC) is
-      # not Saudi Arabia, so this proves the hook wiring + region short-circuit.
-      # Full Phase-1 QR generation is proven locally on a KSA site.
-      - name: Run sales invoice lifecycle integration tests
-        working-directory: frappe-bench
-        run: |
-          bench --site test_site run-tests \
-            --module optima_zatca.events.tests.test_sales_invoice_integration
-
-      - name: Run advance payment report tests
-        working-directory: frappe-bench
-        run: |
-          bench --site test_site run-tests \
-            --module optima_zatca.optima_zatca.report.advance_payment_report.test_advance_payment_report
-
-      - name: Run ZATCA request guard test
-        working-directory: frappe-bench
-        run: |
-          bench --site test_site run-tests \
-            --module optima_zatca.zatca.tests.test_request
+          mapfile -t test_modules < <(
+            cd "${GITHUB_WORKSPACE}/optima_zatca" &&
+              find optima_zatca -name 'test_*.py' | sort | sed 's/\.py$//; s#/#.#g'
+          )
+          failed=()
+          for module in "${test_modules[@]}"; do
+            echo "::group::${module}"
+            bench --site test_site run-tests --module "${module}" || failed+=("${module}")
+            echo "::endgroup::"
+          done
+          if (( ${#failed[@]} )); then
+            printf '::error::%s failed\n' "${failed[@]}"
+            exit 1
+          fi
