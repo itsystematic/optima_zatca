@@ -45,7 +45,7 @@ class ZatcaInvoiceValidate :
         sales_invoice_exists = frappe.db.get_all("Optima Zatca Logs" , {
             "reference_doctype" : "Sales Invoice" ,
             "reference_name" : self.sales_invoice.get("name") ,
-            "status" : ["in", ["Success"  "Warning" ] ]
+            "status" : ["in", ["Success", "Warning"] ]
         })
         
         if sales_invoice_exists:
