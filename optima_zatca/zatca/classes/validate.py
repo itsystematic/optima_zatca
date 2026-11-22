@@ -2,7 +2,10 @@ import re
 import json
 import frappe
 from frappe import _
-from datetime import datetime 
+from frappe.utils import escape_html
+from datetime import datetime
+
+ITEM_NAME_MIN_LENGTH = 3
 
 
 class ZatcaInvoiceValidate :
@@ -26,6 +29,7 @@ class ZatcaInvoiceValidate :
         self.validate_sales_invoice_fields()
         self.validate_credit_or_debit_invoice()
         self.validate_items_fields()
+        self.validate_item_name_lengths()
         self.validate_customer_info()
         self.validate_advance_payment()
         self.validate_sending_date_restriction()
@@ -131,6 +135,21 @@ class ZatcaInvoiceValidate :
         restricted_chars = ["'", "\""]
         if any(char in item_name for char in restricted_chars):
             frappe.throw(_("Item Name [{0}] contains restricted characters, Please Remove it and Try Again.").format(item_name))
+
+    def validate_item_name_lengths(self) -> None:
+        short_names = find_short_item_names(self.sales_invoice.get("items"))
+        if not short_names:
+            return
+
+        rows = ", ".join(
+            _("Row {0}").format(idx) + ": " + frappe.bold(escape_html(name)) for idx, name in short_names
+        )
+        frappe.throw(
+            _("Item Name must have at least {0} characters for ZATCA. Fix it on these rows, and on the Item for future invoices: {1}").format(
+                ITEM_NAME_MIN_LENGTH, rows
+            ),
+            title=_("Item Name Too Short"),
+        )
 
     def validate_advance_payment(self) -> None:
         """Validate Sales Invoice Elementary Advance Payment
@@ -246,6 +265,15 @@ def validate_tax_id_in_saudia_arabia(tax_id) -> None :
         
     if not bool(re.match(r'^3\d{13}3$' , tax_id))  :
         frappe.throw(title=_("Invalid Tax ID") , msg=_("Tax ID Must Only Number , Begin 3 , End 3  and Must be 15 Number Long"))
+
+
+def find_short_item_names(items) -> list:
+    """(idx, item_name) of each row whose name, without surrounding spaces, is under the minimum."""
+    return [
+        (item.get("idx"), item.get("item_name") or "")
+        for item in items
+        if len((item.get("item_name") or "").strip()) < ITEM_NAME_MIN_LENGTH
+    ]
 
 # Validate API FOR Front end
 
