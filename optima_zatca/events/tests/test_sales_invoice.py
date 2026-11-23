@@ -148,3 +148,21 @@ class TestCollectPhaseOneQrInputs(UnitTestCase):
         with patch.object(si.frappe.db, "get_value", side_effect=["شركة", None]):
             with self.assertRaises(frappe.ValidationError):
                 si._collect_phase_one_qr_inputs(doc)
+
+
+# ====================================================================================================
+# LINE TAX TEMPLATES
+
+
+class TestTaxTemplateGate(UnitTestCase):
+    def test_only_a_saudi_phase_two_invoice_is_checked(self):
+        # An unset phase is not Phase Two, and a Phase Two site's other companies aren't ZATCA's.
+        cases = [
+            ("Saudi Arabia", "Phase Two", True),
+            ("Saudi Arabia", "Phase One", False),
+            ("Saudi Arabia", None, False),
+            ("India", "Phase Two", False),
+        ]
+        for region, phase, expected in cases:
+            with self.subTest(region=region, phase=phase):
+                self.assertEqual(si._decide_tax_templates_required(region, phase), expected)
