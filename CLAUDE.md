@@ -77,7 +77,7 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 ## Wiring (hooks.py)
 
 - `override_doctype_class`: `Sales Invoice` → `overrides.sales_invoice.CustomSalesInvoice` (prepayment GL entries). Must subclass ERPNext's `SalesInvoice`.
-- `doc_events` on `Sales Invoice`: `validate` → `validate_prepayments`, plus `on_submit` / `before_cancel` / `on_trash` in `events/sales_invoice.py`.
+- `doc_events` on `Sales Invoice`: `validate` → `validate_prepayments` and `sales_invoice_validate`, plus `on_submit` / `before_cancel` / `on_trash` in `events/sales_invoice.py`. `sales_invoice_validate` refuses a line without an Item Tax Template on a Saudi company's invoice in Phase Two; Send to ZATCA checks the same again, through the same function.
 - `regional_overrides` (Saudi Arabia): replaces ERPNext's `update_itemised_tax_data` with `zatca/itemised_tax.py` for ZATCA-compliant per-line tax.
 - `app_include_js`: the three `public/js/sales_invoice/*.js` modules are loaded **in dependency order** — `prepayment.js` (constants) first, then `pos_payments.js`, then `zatca_buttons.js`. Preserve that order.
 - `app_include_css`: `public/css/desk_fonts.bundle.css` is the **only** owner of the desk's `--font-stack` across the Optima suite — other apps must not set it, because whichever app's CSS loads last replaces the whole variable. It gives the desk:
