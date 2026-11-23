@@ -28,6 +28,7 @@ class ZatcaInvoiceValidate :
         self.validate_sales_invoice_sender()
         self.validate_sales_invoice_fields()
         self.validate_credit_or_debit_invoice()
+        validate_item_tax_templates(self.sales_invoice.get("items"))
         self.validate_items_fields()
         self.validate_item_name_lengths()
         self.validate_customer_info()
@@ -77,9 +78,6 @@ class ZatcaInvoiceValidate :
 
         for item in self.sales_invoice.get("items") :
             global tax_category
-
-            if item.get("item_tax_template") in ["",None] :
-                frappe.throw(_("Item Tax Template in Item  {0} Missing in row {1}").format(item.get("item_code") , item.get("idx")))
 
             tax_category = item.get("tax_category")
             if item.get("tax_cateogry") in ["",None] :
@@ -141,12 +139,9 @@ class ZatcaInvoiceValidate :
         if not short_names:
             return
 
-        rows = ", ".join(
-            _("Row {0}").format(idx) + ": " + frappe.bold(escape_html(name)) for idx, name in short_names
-        )
         frappe.throw(
             _("Item Name must have at least {0} characters for ZATCA. Fix it on these rows, and on the Item for future invoices: {1}").format(
-                ITEM_NAME_MIN_LENGTH, rows
+                ITEM_NAME_MIN_LENGTH, _format_rows(short_names)
             ),
             title=_("Item Name Too Short"),
         )
@@ -274,6 +269,29 @@ def find_short_item_names(items) -> list:
         for item in items
         if len((item.get("item_name") or "").strip()) < ITEM_NAME_MIN_LENGTH
     ]
+
+
+def validate_item_tax_templates(items) -> None:
+    """Refuse lines with no Item Tax Template: ZATCA takes each line's tax category from it."""
+    missing = find_rows_without_tax_template(items)
+    if not missing:
+        return
+
+    frappe.throw(
+        _("Item Tax Template is missing on these rows. Set it on each row, and on the Item or its Item Group for future invoices: {0}").format(
+            _format_rows(missing)
+        ),
+        title=_("Item Tax Template Missing"),
+    )
+
+
+def find_rows_without_tax_template(items) -> list:
+    """(idx, item_code) of each row with no Item Tax Template."""
+    return [(item.get("idx"), item.get("item_code")) for item in items if not item.get("item_tax_template")]
+
+
+def _format_rows(rows) -> str:
+    return ", ".join(_("Row {0}").format(idx) + ": " + frappe.bold(escape_html(label)) for idx, label in rows)
 
 # Validate API FOR Front end
 

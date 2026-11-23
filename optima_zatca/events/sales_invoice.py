@@ -9,9 +9,12 @@ from frappe.utils import getdate, get_time, add_to_date
 
 from erpnext import get_region
 
+from optima_zatca.zatca.classes.validate import validate_item_tax_templates
+
 
 SAUDI_REGION = "Saudi Arabia"
 PHASE_ONE = "Phase One"
+PHASE_TWO = "Phase Two"
 # ZATCA-accepted states: a cleared (B2B) or reported (B2C) invoice is final.
 CLEARED_OR_REPORTED = ("CLEARED", "REPORTED")
 
@@ -23,6 +26,12 @@ SUBMIT_ACTION_BLOCK = "block"        # Phase Two, not yet reported — disallow 
 
 # ====================================================================================================
 # ENTRY POINTS (Sales Invoice doc_events)
+
+
+def sales_invoice_validate(doc, event):
+    phase = frappe.db.get_single_value("Zatca Main Settings", "phase")
+    if _decide_tax_templates_required(get_region(doc.company), phase):
+        validate_item_tax_templates(doc.items)
 
 
 def sales_invoice_before_cancel(doc, event):
@@ -55,6 +64,17 @@ def sales_invoice_on_submit(doc, event):
     inputs = _collect_phase_one_qr_inputs(doc)
     base64_string = _build_phase_one_tlv_base64(*inputs)
     _write_qr_file(doc, base64_string)
+
+
+# ====================================================================================================
+# LINE TAX TEMPLATES
+# A Phase Two invoice can't be submitted until ZATCA accepts it, and ZATCA reads each line's tax
+# category from its Item Tax Template. Saving is the first point that knows the invoice's company,
+# so a line without one is refused there, not on the Item.
+
+
+def _decide_tax_templates_required(region, phase):
+    return region == SAUDI_REGION and phase == PHASE_TWO
 
 
 # ====================================================================================================
