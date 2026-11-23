@@ -52,8 +52,9 @@ Item Tax Template  →  "Standard VAT 15%"
 ```
 
 The installer's `create_complete_vat_system` seeds the VAT accounts and templates when it can;
-the **Zatca Vat Setting** doctype maps which accounts are the sales/purchase VAT accounts. Items
-must then carry a tax template (the Item `taxes` table is mandatory on a ZATCA site).
+the **Zatca Vat Setting** doctype maps which accounts are the sales/purchase VAT accounts. Give
+each sales item a tax template, on the Item or on its Item Group: in Phase Two, saving a Saudi
+company's invoice refuses a line without one.
 
 ---
 

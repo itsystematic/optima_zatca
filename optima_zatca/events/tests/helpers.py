@@ -18,6 +18,7 @@ company has them); the two mandatory Sales Invoice custom fields
 import frappe
 import erpnext
 from frappe.utils import nowdate, add_days
+from frappe.utils.nestedset import get_root_of
 
 
 # ====================================================================================================
@@ -132,6 +133,8 @@ def get_or_create_sales_invoice_type(name):
 
 TEST_CUSTOMER = "Optima Zatca Test Customer"
 TEST_ITEM = "Optima Zatca Test Item"
+TEST_UNTAXED_ITEM = "Optima Zatca Test Untaxed Item"
+TEST_UNTAXED_ITEM_GROUP = "Optima Zatca Test Untaxed"
 
 
 def get_or_create_customer():
@@ -161,10 +164,8 @@ def get_or_create_item(company=None):
     Explicitly ``is_stock_item=0`` and ``is_fixed_asset=0``: a fixed-asset item
     makes ERPNext's ``validate_fixed_asset`` demand an Asset on every line, which
     is the exact failure that borrowing an arbitrary existing item produced.
-    This site's KSA customization makes the Item ``taxes`` table mandatory
-    (a property setter installed by ``setup_item_table_property_setter``), so an
-    Item Tax Template row is always attached — which in turn is why the SO/SI
-    factories pre-seed their own ``taxes`` row with a ``cost_center`` (see
+    It carries the company's standard-rated Item Tax Template, which is why the
+    SO/SI factories pre-seed their own ``taxes`` row with a ``cost_center`` (see
     ``_tax_row``).
     """
     company = company or get_company()
@@ -183,6 +184,32 @@ def get_or_create_item(company=None):
             }
         ).insert(ignore_permissions=True)
     return TEST_ITEM
+
+
+def get_or_create_untaxed_item():
+    """A service item with no Item Tax Template, on itself or on its own Item Group,
+    so ERPNext leaves the template empty on its invoice lines."""
+    if not frappe.db.exists("Item Group", TEST_UNTAXED_ITEM_GROUP):
+        frappe.get_doc(
+            {
+                "doctype": "Item Group",
+                "item_group_name": TEST_UNTAXED_ITEM_GROUP,
+                "parent_item_group": get_root_of("Item Group"),
+            }
+        ).insert(ignore_permissions=True)
+    if not frappe.db.exists("Item", TEST_UNTAXED_ITEM):
+        frappe.get_doc(
+            {
+                "doctype": "Item",
+                "item_code": TEST_UNTAXED_ITEM,
+                "item_name": TEST_UNTAXED_ITEM,
+                "item_group": TEST_UNTAXED_ITEM_GROUP,
+                "stock_uom": "Nos",
+                "is_stock_item": 0,
+                "is_fixed_asset": 0,
+            }
+        ).insert(ignore_permissions=True)
+    return TEST_UNTAXED_ITEM
 
 
 TEST_ITEM_TAX_TEMPLATE = "Optima Zatca Test VAT 15%"
@@ -325,6 +352,7 @@ def make_sales_invoice(
     sales_invoice_type="Normal",
     company=None,
     customer=None,
+    item_code=None,
     do_not_insert=False,
     submit=False,
     **overrides,
@@ -353,7 +381,7 @@ def make_sales_invoice(
         "cost_center": cost_center,
         "items": [
             {
-                "item_code": get_or_create_item(),
+                "item_code": item_code or get_or_create_item(),
                 "qty": 1,
                 "rate": 100,
                 "income_account": get_income_account(company),

@@ -22,8 +22,7 @@ from optima_zatca.setup.customizations import ensure_customizations, add_standar
 #
 # Only patches doing work that `after_install` does not already do belong here.
 # The rest of `patches.txt` is covered by the calls above: roles and custom
-# fields by `ensure_customizations`, the mandatory Item taxes property setter by
-# `create_complete_vat_system`, the print format by `install_print_formats`.
+# fields by `ensure_customizations`, the print format by `install_print_formats`.
 #
 # They stay in `patches.txt` for sites upgrading from an earlier version, and are
 # listed here for sites being created now. Every one of them is idempotent —
