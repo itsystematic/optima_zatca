@@ -219,24 +219,23 @@ def get_or_create_untaxed_item():
     return TEST_UNTAXED_ITEM
 
 
+KSA_STANDARD_RATE_TEMPLATE = "KSA VAT 15% Selling"
 TEST_ITEM_TAX_TEMPLATE = "Optima Zatca Test VAT 15%"
 
 
 def get_or_create_item_tax_template(company=None):
-    """An Item Tax Template for ``company``.
+    """The company's standard-rated (15%) selling template.
 
-    A real KSA site already has the ``KSA VAT …`` templates that
-    ``setup_item_tax_templates`` installs in ``after_install`` — reuse one.
-    Only a scratch site (where that installer found no VAT accounts, so created
-    no template) reaches the fabricate branch, which builds a minimal 15%
-    template backed by a get-or-created Tax account.
+    ``setup_item_tax_templates`` creates ``KSA VAT 15% Selling`` for every company
+    that exists at install. Asking for it by title keeps every run on the same
+    template; taking whichever template came first could hand the factories a 0%
+    or purchase one, or another company's. A company without it gets a minimal 15%
+    template of its own, never another company's.
     """
     company = company or get_company()
-    existing = frappe.db.get_value(
-        "Item Tax Template", {"company": company}, "name"
-    ) or frappe.db.get_value("Item Tax Template", {}, "name")
-    if existing:
-        return existing
+    for title in (KSA_STANDARD_RATE_TEMPLATE, TEST_ITEM_TAX_TEMPLATE):
+        if existing := frappe.db.get_value("Item Tax Template", {"company": company, "title": title}, "name"):
+            return existing
 
     template = frappe.get_doc(
         {
