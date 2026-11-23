@@ -25,7 +25,7 @@ bench --site <throwaway-site> run-tests --module optima_zatca.events.tests.test_
 python -m unittest optima_zatca.zatca.tests.test_onboarding_retry optima_zatca.zatca.tests.test_register_company \
     optima_zatca.zatca.tests.test_xml_transport \
     optima_zatca.zatca.tests.test_invoice_data optima_zatca.zatca.tests.test_prepayment_invoice \
-    optima_zatca.zatca.tests.test_keys
+    optima_zatca.zatca.tests.test_keys optima_zatca.zatca.tests.test_sample_invoices
 
 # After Python changes
 bench restart
@@ -229,4 +229,4 @@ zatca/setup.py  saving_register_data → per CR: Address → Commercial Register
 - **Socket.io** connects to `<origin or :socketio_port>/<site_name>`: the namespace must be the site name, as in Frappe's own client.
 - The old desk page `/app|desk/zatca-onboarding` only redirects here; the workspace shortcut links here directly.
 
-**Known gaps in the v15 onboarding backend** (not fixed yet): `demo.py` reports gateway errors (429/520/522 from ZATCA's Cloudflare) as "Was Rejected in Zatca" and swallows exceptions without a log; `register_company` has no permission check, and `api.get_production_csid` is whitelisted though only `setup.py` calls it; Phase 1 still requests certificates like Phase 2. Certificate renewal is broken: `api.renew_production_csid` passes `header=` to `request.make_patch_request` (parameter `headers`), which passes `header=` on to `requests.patch` — both raise `TypeError`.
+**Known gaps in the v15 onboarding backend** (not fixed yet): `demo.py` reports gateway errors (429/520/522 from ZATCA's Cloudflare) as "Was Rejected in Zatca"; `register_company` has no permission check, and `api.get_production_csid` is whitelisted though only `setup.py` calls it; Phase 1 still requests certificates like Phase 2. Certificate renewal is broken: `api.renew_production_csid` passes `header=` to `request.make_patch_request` (parameter `headers`), which passes `header=` on to `requests.patch` — both raise `TypeError`.
