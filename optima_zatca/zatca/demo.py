@@ -120,7 +120,7 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
                 reference_name=settings.get("name"),
             )
             frappe.publish_realtime("zatca" , {
-                "message" : _("Invoice {0}  Type {1} Could Not Be Checked by Zatca: {2}").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus"), e),
+                "message" : _("Invoice {0}  Type {1} Could Not Be Checked by Zatca: {2}").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus"), str(e)),
                 "indicator" : "red" ,
                 "percentage" : percentage,
                 "commercial_register_name": settings.get('commercial_register')
