@@ -80,20 +80,20 @@ class TestSalesInvoiceLifecycleWiring(FrappeTestCase):
             self.assertFalse(si.ksa_einv_qr)
 
 
-class TestTaxTemplateCheckWiring(IntegrationTestCase):
+class TestTaxTemplateCheckWiring(FrappeTestCase):
     def tearDown(self):
         frappe.db.rollback()
         frappe.clear_cache()
 
     def test_phase_one_saves_a_line_without_tax_template(self):
         # Also proves an Item with no tax rows can be saved at all.
-        utils.set_zatca_main_settings(phase="Phase One")
-        si = utils.make_sales_invoice(item_code=utils.get_or_create_untaxed_item())
+        helpers.set_zatca_main_settings(phase="Phase One")
+        si = helpers.make_sales_invoice(item_code=helpers.get_or_create_untaxed_item())
         self.assertFalse(si.items[0].item_tax_template)
 
     def test_phase_two_refuses_a_line_without_tax_template(self):
-        if erpnext.get_region(utils.get_company()) != "Saudi Arabia":
+        if erpnext.get_region(helpers.get_company()) != "Saudi Arabia":
             self.skipTest("the check applies to Saudi companies only")
-        utils.set_zatca_main_settings(phase="Phase Two")
+        helpers.set_zatca_main_settings(phase="Phase Two")
         with self.assertRaises(frappe.ValidationError):
-            utils.make_sales_invoice(item_code=utils.get_or_create_untaxed_item())
+            helpers.make_sales_invoice(item_code=helpers.get_or_create_untaxed_item())

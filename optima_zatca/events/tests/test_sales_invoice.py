@@ -154,7 +154,7 @@ class TestCollectPhaseOneQrInputs(FrappeTestCase):
 # LINE TAX TEMPLATES
 
 
-class TestTaxTemplateGate(UnitTestCase):
+class TestTaxTemplateGate(FrappeTestCase):
     def test_only_a_saudi_phase_two_invoice_is_checked(self):
         # An unset phase is not Phase Two, and a Phase Two site's other companies aren't ZATCA's.
         cases = [

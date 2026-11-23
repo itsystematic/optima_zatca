@@ -3,7 +3,7 @@
 from unittest.mock import DEFAULT, Mock, patch
 
 import frappe
-from frappe.tests import UnitTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from optima_zatca.zatca.classes import validate
 from optima_zatca.zatca.classes.validate import (
@@ -20,7 +20,7 @@ def _rows(*templates):
     ]
 
 
-class TestFindRowsWithoutTaxTemplate(UnitTestCase):
+class TestFindRowsWithoutTaxTemplate(FrappeTestCase):
     def test_reports_every_row_without_one(self):
         # A row cleared on the form keeps "", which must count as missing like None does.
         self.assertEqual(
@@ -29,7 +29,7 @@ class TestFindRowsWithoutTaxTemplate(UnitTestCase):
         )
 
 
-class TestValidateItemTaxTemplates(UnitTestCase):
+class TestValidateItemTaxTemplates(FrappeTestCase):
     def test_blocks_and_names_only_the_missing_rows(self):
         with self.assertRaises(frappe.ValidationError) as raised:
             validate_item_tax_templates(_rows("KSA VAT 15% Selling", None))
@@ -41,7 +41,7 @@ class TestValidateItemTaxTemplates(UnitTestCase):
         validate_item_tax_templates(_rows("KSA VAT 15% Selling", "KSA VAT 0% Selling"))
 
 
-class TestSendChecksTaxTemplates(UnitTestCase):
+class TestSendChecksTaxTemplates(FrappeTestCase):
     def test_send_runs_the_check_on_the_invoice_lines(self):
         # Drafts saved before the save-time check existed reach ZATCA only through this one.
         items = _rows(None)
