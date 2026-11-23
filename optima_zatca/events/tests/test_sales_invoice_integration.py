@@ -1,6 +1,6 @@
 """Integration smoke tests for the Sales Invoice lifecycle doc_events.
 
-These save/submit/cancel/delete real invoices so the ``on_submit`` /
+These save/submit/cancel/delete real invoices so the ``validate`` / ``on_submit`` /
 ``before_cancel`` / ``on_trash`` hooks fire end-to-end, proving the wiring the
 in-memory matrix layer can't (that the hooks are registered and read the ZATCA
 settings/state at the right moment). They assert only *that* the guard fires or
@@ -78,3 +78,22 @@ class TestSalesInvoiceLifecycleWiring(IntegrationTestCase):
             # Non-KSA company (e.g. the CI test company): on_submit short-circuits
             # on region, so no QR is generated but the submit still succeeds.
             self.assertFalse(si.ksa_einv_qr)
+
+
+class TestTaxTemplateCheckWiring(IntegrationTestCase):
+    def tearDown(self):
+        frappe.db.rollback()
+        frappe.clear_cache()
+
+    def test_phase_one_saves_a_line_without_tax_template(self):
+        # Also proves an Item with no tax rows can be saved at all.
+        utils.set_zatca_main_settings(phase="Phase One")
+        si = utils.make_sales_invoice(item_code=utils.get_or_create_untaxed_item())
+        self.assertFalse(si.items[0].item_tax_template)
+
+    def test_phase_two_refuses_a_line_without_tax_template(self):
+        if erpnext.get_region(utils.get_company()) != "Saudi Arabia":
+            self.skipTest("the check applies to Saudi companies only")
+        utils.set_zatca_main_settings(phase="Phase Two")
+        with self.assertRaises(frappe.ValidationError):
+            utils.make_sales_invoice(item_code=utils.get_or_create_untaxed_item())
