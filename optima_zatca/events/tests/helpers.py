@@ -15,6 +15,8 @@ company has them); the two mandatory Sales Invoice custom fields
 
 """
 
+import hashlib
+
 import frappe
 import erpnext
 from frappe.utils import nowdate, add_days
@@ -67,13 +69,12 @@ def get_or_create_commercial_register(company=None):
 
     A real KSA site already has a (cert-bound, ``is_default``) Commercial
     Register, and the controller forbids adding a second default for the same
-    company — so reuse the site's existing register when there is one and only
-    fabricate a minimal record on a scratch site that has none.
+    company — so reuse the company's own register when there is one and only
+    fabricate a minimal record for a company that has none. Never another
+    company's: its invoices would carry a register they don't belong to.
     """
     company = company or get_company()
-    existing = frappe.db.get_value(
-        "Commercial Register", {"company": company}, "name"
-    ) or frappe.db.get_value("Commercial Register", {}, "name")
+    existing = frappe.db.get_value("Commercial Register", {"company": company}, "name")
     if existing:
         return existing
 
@@ -82,13 +83,19 @@ def get_or_create_commercial_register(company=None):
         {
             "doctype": "Commercial Register",
             "company": company,
-            "commercial_register": "1010101010",  # 10-digit CRN, per the field's description
+            "commercial_register": _test_crn(company),
             "commercial_register_name": TEST_COMMERCIAL_REGISTER,
             "address": address,
         }
     )
     cr.insert(ignore_permissions=True)
     return cr.name
+
+
+def _test_crn(company):
+    """Ten digits, as the field asks. The register is named by its CRN, so each company
+    needs its own; deriving it from the company keeps it the same on every run."""
+    return "10" + str(int(hashlib.sha256(company.encode()).hexdigest(), 16) % 10**8).zfill(8)
 
 
 def _get_or_create_test_address(company):
