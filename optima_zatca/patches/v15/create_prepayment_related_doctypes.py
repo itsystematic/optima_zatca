@@ -111,17 +111,11 @@ def create_advance_payment_item():
                 "is_fixed_asset": 0,
                 "is_stock_item": 0,
                 "stock_uom": frappe.db.get_single_value("Stock Settings", "stock_uom") or "Nos",
-                # `set_item_taxes_reqd` makes this table mandatory on Item, so an
-                # advance payment created without it is refused — by this app's own
-                # rule. A prepayment against a standard-rated supply is itself
+                # A prepayment against a standard-rated supply is itself
                 # standard-rated, so the 15% selling template is the right row.
                 "taxes": default_tax_rows(),
             })
-            # Only when nothing could be filled in: on a site whose VAT templates
-            # have not been created yet there is no correct row to add, and an
-            # advance payment item with no tax template is still better than none
-            # at all. Whoever uses it will be asked for the template on the invoice.
-            doc.insert(ignore_permissions=True, ignore_mandatory=not doc.taxes)
+            doc.insert(ignore_permissions=True)
             frappe.db.commit()
             frappe.logger().info(f"Created Item: {item_code}")
             
