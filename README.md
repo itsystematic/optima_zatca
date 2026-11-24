@@ -84,6 +84,8 @@ Follow these steps to install Optima ZATCA on your ERPNext setup:
    bench --site [your.site.name] migrate
    ```
 
+For an Arabic desk, install [DaaD](https://github.com/itsystematic/daad) as well. It brings the human Arabic translation of ERPNext, the Almarai font and the Saudi Riyal sign. Optima ZATCA translates only its own screens and messages.
+
 ---
 
 ## ✅ Testing
@@ -186,4 +188,5 @@ Explore other powerful apps developed by the IT Systematic team:
 
 - **[Optima Payment](https://github.com/itsystematic/optima_payment):**  Streamline ERPNext payments with integrated PDC (post-dated Cheque), Company expenses, and LC (bank guarantee) management.  
 - **[Optima HR](https://github.com/itsystematic/optima-hr):** Transform HR in Saudi Arabia with our innovative ERPNext-powered solution.
+- **[DaaD](https://github.com/itsystematic/daad):** human Arabic translation of ERPNext, the Almarai font and the Saudi Riyal sign across the desk.
 - **[ERPNext Themes](https://github.com/itsystematic/themes):** beautifully designed ERPNext with stunning color themes, Arabic Almarai font, and Arabic human translations.
