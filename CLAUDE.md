@@ -25,7 +25,8 @@ bench --site <throwaway-site> run-tests --module optima_zatca.events.tests.test_
 python -m unittest optima_zatca.zatca.tests.test_onboarding_retry optima_zatca.zatca.tests.test_register_company \
     optima_zatca.zatca.tests.test_xml_transport \
     optima_zatca.zatca.tests.test_invoice_data optima_zatca.zatca.tests.test_prepayment_invoice \
-    optima_zatca.zatca.tests.test_keys optima_zatca.zatca.tests.test_sample_invoices
+    optima_zatca.zatca.tests.test_keys optima_zatca.zatca.tests.test_sample_invoices \
+    optima_zatca.zatca.tests.test_legacy_zatca_logs
 
 # After Python changes
 bench restart
@@ -102,6 +103,7 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 - **Zatca Main Settings** (single) — global toggles, including Phase 1 vs Phase 2.
 - **Commercial Register** — multi-device support for one company.
 - **Optima Zatca Logs** — one record per ZATCA API call (request/response XML, hashes, QR). Listed in `ignore_links_on_delete`.
+  The patch `move_legacy_zatca_logs` moved in the rows of the optima app's old **Zatca Logs** doctype and dropped its table. Those rows have no commercial register or environment, which keeps them out of the ICV/PIH chain in `get_invoice_counter_and_pih`.
 - **Prepayment Invoice** / **Prepayment Details** — advance-payment linkage for adjustment invoices.
 - **Zatca Vat Setting** / **Zatca Vat Sales Account** / **Zatca Vat Purchase Account** — VAT account mapping.
 
