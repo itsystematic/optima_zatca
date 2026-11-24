@@ -4,8 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* The app's own Almarai, limited to Arabic so Latin text stays in IBM Plex.
-   The same faces and ranges as public/css/desk_fonts.bundle.css. */
+/* The app's own Almarai, limited to Arabic so Latin text stays in IBM Plex. */
 @font-face {
 	font-family: "Almarai";
 	font-weight: 400;

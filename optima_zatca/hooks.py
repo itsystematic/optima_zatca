@@ -25,7 +25,6 @@ required_apps = ["erpnext"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "desk_fonts.bundle.css"
 
 # Load modular JS files in dependency order
 app_include_js = [
