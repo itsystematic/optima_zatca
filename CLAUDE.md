@@ -154,3 +154,7 @@ The prepayment `validate` rules (`events/prepayment.py`) are covered by a **two-
 ## Onboarding frontend (`zatca-onboarding/`)
 
 A standalone **React + Vite** SPA (Ant Design, Redux Toolkit, `frappe-react-sdk`, socket.io) — the guided ZATCA device-onboarding wizard. It builds with `--base=/assets/optima_zatca/zatca-onboarding/` and its HTML entry is copied to `optima_zatca/www/zatca-onboarding.html` (see the `copy-html-entry` script). Lint with `yarn lint` (ESLint 9 flat config). It is served by Frappe via the `website_route_rules` hook, not by bench's asset bundler.
+
+## Translations
+
+`translations/ar.csv` holds only this app's own strings; Arabic for the rest of ERPNext belongs in [DaaD](https://github.com/itsystematic/daad). Never add a string Frappe or ERPNext already translates — a row here overrides it desk-wide. `SAR` is one of the app's strings: `money_in_words.py` passes the currency code through `_()` into every in-words field.
