@@ -80,12 +80,7 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 - `doc_events` on `Sales Invoice`: `validate` → `validate_prepayments` and `sales_invoice_validate`, plus `on_submit` / `before_cancel` / `on_trash` in `events/sales_invoice.py`. `sales_invoice_validate` refuses a line without an Item Tax Template on a Saudi company's invoice in Phase Two; Send to ZATCA checks the same again, through the same function.
 - `regional_overrides` (Saudi Arabia): replaces ERPNext's `update_itemised_tax_data` with `zatca/itemised_tax.py` for ZATCA-compliant per-line tax.
 - `app_include_js`: the three `public/js/sales_invoice/*.js` modules are loaded **in dependency order** — `prepayment.js` (constants) first, then `pos_payments.js`, then `zatca_buttons.js`. Preserve that order.
-- `app_include_css`: `public/css/desk_fonts.bundle.css` is the **only** owner of the desk's `--font-stack` across the Optima suite — other apps must not set it, because whichever app's CSS loads last replaces the whole variable. It gives the desk:
-  - the Saudi Riyal sign (U+20C0, U+FDFC) from `public/fonts/Claudion.ttf`, `unicode-range`-limited to those two characters and **first** in the stack. Almarai has its own older U+FDFC glyph, so Claudion must stay ahead of it.
-  - Almarai (300/400/700/800) for Arabic text only, via an Arabic `unicode-range`, so Latin text keeps Inter.
-  - `body .chart-container { font-family: var(--font-stack) }` — frappe-charts injects its own `.chart-container` font into `<head>` at runtime, after every `app_include_css` link, so equal specificity would lose.
-
-  The stack is a copy of Frappe's (`espresso/_typography.scss`) with Claudion and Almarai added — re-sync it if a Frappe upgrade changes it. As a bundle it needs `bench build --app optima_zatca`; in return its filename is content-hashed, so edits reach browsers despite nginx's one-year `/assets` cache. Print formats and PDF/A-3 do not use it; they load Claudion and Almarai themselves.
+- No `app_include_css`: the desk's Arabic font and the Saudi Riyal sign come from the [DaaD](https://github.com/itsystematic/daad) app, which owns `--font-stack`. Don't set it here again; whichever app's CSS loads last replaces the whole variable. `public/fonts/` keeps Claudion and Almarai Regular/Bold for the PDF/A-3 (`zatca/pdfa3.py`), which DaaD's CSS doesn't reach.
 - `website_route_rules` + `www/zatca-onboarding.html` serve the onboarding SPA at `/zatca-onboarding`.
 - `after_install` / `after_app_install` run installers; migrations run the patches in `optima_zatca/patches.txt` (prepayment doctypes/fields, roles, print formats, item-tax setup).
 
@@ -159,3 +154,7 @@ The prepayment `validate` rules (`events/prepayment.py`) are covered by a **two-
 ## Onboarding frontend (`zatca-onboarding/`)
 
 A standalone **React + Vite** SPA (Ant Design, Redux Toolkit, `frappe-react-sdk`, socket.io) — the guided ZATCA device-onboarding wizard. It builds with `--base=/assets/optima_zatca/zatca-onboarding/` and its HTML entry is copied to `optima_zatca/www/zatca-onboarding.html` (see the `copy-html-entry` script). Lint with `yarn lint` (ESLint 9 flat config). It is served by Frappe via the `website_route_rules` hook, not by bench's asset bundler.
+
+## Translations
+
+`translations/ar.csv` holds only this app's own strings; Arabic for the rest of ERPNext belongs in [DaaD](https://github.com/itsystematic/daad). Never add a string Frappe or ERPNext already translates — a row here overrides it desk-wide. `SAR` is one of the app's strings: `money_in_words.py` passes the currency code through `_()` into every in-words field.
