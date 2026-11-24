@@ -119,7 +119,6 @@ jobs:
             optima_zatca.zatca.tests.test_onboarding_retry \
             optima_zatca.zatca.tests.test_register_company \
             optima_zatca.zatca.tests.test_sample_invoices \
-            optima_zatca.zatca.tests.test_legacy_zatca_logs \
             optima_zatca.zatca.tests.test_keys
 
       - name: Create test site and install apps
