@@ -103,7 +103,7 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 - **Zatca Main Settings** (single) — global toggles, including Phase 1 vs Phase 2.
 - **Commercial Register** — multi-device support for one company.
 - **Optima Zatca Logs** — one record per ZATCA API call (request/response XML, hashes, QR). Listed in `ignore_links_on_delete`.
-  The patch `move_legacy_zatca_logs` moved in the rows of the optima app's old **Zatca Logs** doctype and dropped its table. Those rows have no commercial register or environment, which keeps them out of the ICV/PIH chain in `get_invoice_counter_and_pih`.
+  The patch `move_legacy_zatca_logs` copies in the rows of the optima app's old **Zatca Logs** doctype that the 2024 migration skipped, then drops that table. Its rows have no commercial register or environment, which keeps them out of the ICV/PIH chain in `get_invoice_counter_and_pih`.
 - **Prepayment Invoice** / **Prepayment Details** — advance-payment linkage for adjustment invoices.
 - **Zatca Vat Setting** / **Zatca Vat Sales Account** / **Zatca Vat Purchase Account** — VAT account mapping.
 

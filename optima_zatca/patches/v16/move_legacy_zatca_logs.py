@@ -1,9 +1,9 @@
-"""Move the logs of the optima app's old ZATCA integration into Optima Zatca Logs, then drop their table.
+"""Copy what is left of the optima app's old Zatca Logs into Optima Zatca Logs, then drop the table.
 
 Before optima_zatca, the optima app sent invoices to ZATCA itself and logged each call in its own
-Zatca Logs doctype. Those rows are the only record of what that integration sent. handle_optima_zatca
-was meant to copy them, but it was listed in patches.txt only from 29 to 31 December 2024, so most
-sites still hold them there alone.
+Zatca Logs doctype. handle_optima_zatca copied a company's rows over in December 2024 and January
+2025, but skipped the rows an early version of that logger wrote without a company. For some
+invoices, ZATCA's answer in one of those rows is the only copy of the cleared invoice on the site.
 
 The table is read directly, not through the doctype: once optima stops shipping Zatca Logs, Frappe
 deletes the DocType record at the end of a migrate but leaves the table and its rows.
@@ -39,7 +39,7 @@ def execute():
         return
 
     for rows in _legacy_batches():
-        for log in _logs_to_copy(rows, _creations_already_copied(rows)):
+        for log in _logs_to_copy(rows, _keys_already_copied(rows)):
             frappe.get_doc(log).insert(ignore_permissions=True, ignore_links=True, set_name=log["name"])
         frappe.db.commit()
 
@@ -50,10 +50,10 @@ def execute():
 # ====================================================================================================
 # WHAT EACH LEGACY ROW BECOMES
 
-def _logs_to_copy(rows, copied_creations) -> list[dict]:
-    """Every row not copied yet, matched by creation: handle_optima_zatca kept a row's creation but
-    gave it a new name."""
-    return [_optima_log(row) for row in rows if row.creation not in copied_creations]
+def _logs_to_copy(rows, copied_keys) -> list[dict]:
+    """Every row not copied yet. handle_optima_zatca's copies kept a row's uuid and hash, but not its
+    name or creation."""
+    return [_optima_log(row) for row in rows if not (row.uuid and (row.uuid, row.hash) in copied_keys)]
 
 
 def _optima_log(row) -> dict:
@@ -113,9 +113,9 @@ def _legacy_batches():
         last_name = rows[-1].name
 
 
-def _creations_already_copied(rows) -> set:
-    return set(
-        frappe.get_all(
-            "Optima Zatca Logs", filters={"creation": ["in", [row.creation for row in rows]]}, pluck="creation"
-        )
-    )
+def _keys_already_copied(rows) -> set:
+    uuids = [row.uuid for row in rows if row.uuid]
+    if not uuids:
+        return set()
+    copies = frappe.get_all("Optima Zatca Logs", filters={"uuid": ["in", uuids]}, fields=["uuid", "hash"])
+    return {(copy.uuid, copy.hash) for copy in copies}

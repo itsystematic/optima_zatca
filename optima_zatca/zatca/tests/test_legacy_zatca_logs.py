@@ -48,13 +48,18 @@ class TestLegacyZatcaLog(unittest.TestCase):
         )
         self.assertEqual(log["reference_name"], "ACC-SINV-2024-00042", "the already-sent check stops seeing the invoice")
 
-    def test_a_row_already_copied_is_skipped(self):
-        copied = legacy_row(name="copied", creation=CREATED)
-        new = legacy_row(name="new", creation=datetime(2024, 11, 4, 8, 0, 0, 1))
+    def test_only_rows_handle_optima_zatca_did_not_copy_are_copied(self):
+        copied = legacy_row(name="copied", uuid="uuid-1", hash="hash-1")
+        same_uuid_other_hash = legacy_row(name="retried", uuid="uuid-1", hash="hash-2")
+        no_uuid = legacy_row(name="early", uuid=None, hash=None)
 
-        logs = legacy._logs_to_copy([copied, new], {CREATED})
+        logs = legacy._logs_to_copy([copied, same_uuid_other_hash, no_uuid], {("uuid-1", "hash-1"), (None, None)})
 
-        self.assertEqual([log["name"] for log in logs], ["new"], "a row handle_optima_zatca already copied is copied twice")
+        self.assertEqual(
+            [log["name"] for log in logs],
+            ["retried", "early"],
+            "a copied row is copied twice, or a row the early logger wrote without a uuid is lost",
+        )
 
     def test_endpoint_comes_from_the_method_or_zatca_answer(self):
         both_statuses = json.dumps({"clearanceStatus": None, "reportingStatus": None})
