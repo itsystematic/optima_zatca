@@ -27623,7 +27623,7 @@ msgid "Material Handling Equipment"
 msgstr "معدات مناولة"
 
 msgid "Material Issue"
-msgstr "أمور مادية"
+msgstr "صرف مواد"
 
 msgid "Material Planning"
 msgstr "تخطيط المواد"
