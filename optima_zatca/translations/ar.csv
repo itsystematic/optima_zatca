@@ -128,3 +128,7 @@ Commercial register {0} already has a setting in the {1} environment: {2},للس
 Only a setting with a production CSID can be used for invoices,لا يُستخدم للفواتير إلا إعداد لديه شهادة CSID للإنتاج
 No Optima Zatca Setting of commercial register {0} is ticked Use for Invoices,لا يوجد إعداد Optima Zatca للسجل التجاري {0} محدد عليه خيار استخدام للفواتير
 Not Connected,غير مرتبط
+"Item Name must have at least {0} characters for ZATCA. Fix it on these rows, and on the Item for future invoices: {1}","يجب ألا يقل اسم الصنف عن {0} أحرف حسب متطلبات هيئة الزكاة والضريبة والجمارك. عدّله في هذه الصفوف، وفي الصنف نفسه للفواتير القادمة: {1}"
+Item Name Too Short,اسم الصنف قصير جدًا
+"Item Tax Template is missing on these rows. Set it on each row, and on the Item or its Item Group for future invoices: {0}","قالب ضريبة الصنف غير محدد في هذه الصفوف. حدّده في كل صف، وفي الصنف أو مجموعة الأصناف للفواتير القادمة: {0}"
+Item Tax Template Missing,قالب ضريبة الصنف غير محدد

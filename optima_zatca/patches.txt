@@ -6,6 +6,7 @@ optima_zatca.patches.v15.create_zatca_additoinal_role
 optima_zatca.patches.v15.create_prepayment_related_doctypes
 optima_zatca.patches.v15.create_prepayment_fields
 optima_zatca.patches.v15.add_default_print_format_for_sales_invoice
-optima_zatca.patches.v15.set_item_taxes_reqd
 optima_zatca.patches.v15.set_prepayment_percentage_precision
 optima_zatca.patches.v16.redesign_zatca_workspace
+optima_zatca.patches.v16.remove_csr_scratch_files
+optima_zatca.patches.v16.stop_requiring_item_tax_rows

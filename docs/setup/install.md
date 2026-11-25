@@ -36,7 +36,6 @@ Migrations run the `post_model_sync` patches, in this order:
 | `create_prepayment_related_doctypes` | Creates Prepayment Invoice / Prepayment Details |
 | `create_prepayment_fields` | Adds the prepayment custom fields to Sales Invoice |
 | `add_default_print_format_for_sales_invoice` | Installs the print format on already-installed sites |
-| `set_item_taxes_reqd` | Makes the Item `taxes` table mandatory |
 | `set_prepayment_percentage_precision` | Raises the mirror `adjustment_percentage` precision to 9 dp |
 
 The last one is the going-forward fix for the [prepayment precision

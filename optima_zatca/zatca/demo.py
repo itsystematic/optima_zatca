@@ -1,3 +1,4 @@
+import os
 import uuid
 import time
 import json
@@ -30,7 +31,7 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
 
     PIH = "gSNPKCpoXIlSvtP2p5JwDXLOaEWfkevQ2pbtnkosqjE="
         
-    samples_path = get_app_path("optima_zatca", "zatca", "Samples", "Invoices", "sales_invoices.json")
+    samples_path = os.path.join(get_app_path("optima_zatca"), "zatca", "Samples", "Invoices", "sales_invoices.json")
     # path is an app-bundled constant, never user input
     with open(samples_path, "r") as file:  # nosemgrep
         sales_invoices = json.load(file)
@@ -112,9 +113,19 @@ def send_sample_sales_invoices(settings ,company_details , on_document=None) :
             time.sleep(5)
 
         except Exception as e:
+            frappe.log_error(
+                title="ZATCA sample invoice not checked",
+                message=frappe.get_traceback(),
+                reference_doctype="Optima Zatca Setting",
+                reference_name=settings.get("name"),
+            )
             frappe.publish_realtime("zatca" , {
-                "message" : _("Invoice {0}  Type {1} Was Rejected in Zatca").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus")), "indicator" : "red"
+                "message" : _("Invoice {0}  Type {1} Could Not Be Checked by Zatca: {2}").format(sales_invoice.get("InvoiceStatus") ,sales_invoice.get("InvoiceSubStatus"), str(e)),
+                "indicator" : "red" ,
+                "percentage" : percentage,
+                "commercial_register_name": settings.get('commercial_register')
             }, user=frappe.session.user)
+            _report(on_document, idx, len(sales_invoices.get("Invoices")), False)
     
     # time.sleep(5)
 

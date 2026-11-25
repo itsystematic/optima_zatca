@@ -24,7 +24,8 @@ bench --site <throwaway-site> run-tests --module optima_zatca.events.tests.test_
 # bench env active (pytest is not installed in the Frappe 16 bench env):
 python -m unittest optima_zatca.zatca.tests.test_onboarding_retry optima_zatca.zatca.tests.test_register_company \
     optima_zatca.zatca.tests.test_xml_transport \
-    optima_zatca.zatca.tests.test_invoice_data optima_zatca.zatca.tests.test_prepayment_invoice
+    optima_zatca.zatca.tests.test_invoice_data optima_zatca.zatca.tests.test_prepayment_invoice \
+    optima_zatca.zatca.tests.test_keys optima_zatca.zatca.tests.test_sample_invoices
 
 # After Python changes
 bench restart
@@ -83,7 +84,7 @@ zatca/submission_workflow.py  submit_sales_invoice_to_zatca(sales_invoice)   ←
 ## Wiring (hooks.py)
 
 - `override_doctype_class`: `Sales Invoice` → `overrides.sales_invoice.CustomSalesInvoice` (prepayment GL entries). Must subclass ERPNext's `SalesInvoice`.
-- `doc_events` on `Sales Invoice`: `validate` → `validate_prepayments`, plus `on_submit` / `before_cancel` / `on_trash` in `events/sales_invoice.py`.
+- `doc_events` on `Sales Invoice`: `validate` → `validate_prepayments` and `sales_invoice_validate`, plus `on_submit` / `before_cancel` / `on_trash` in `events/sales_invoice.py`. `sales_invoice_validate` refuses a line without an Item Tax Template on a Saudi company's invoice in Phase Two; Send to ZATCA checks the same again, through the same function.
 - `regional_overrides` (Saudi Arabia): replaces ERPNext's `update_itemised_tax_data` with `zatca/itemised_tax.py` for ZATCA-compliant per-line tax.
 - `app_include_js`: the three `public/js/sales_invoice/*.js` modules are loaded **in dependency order** — `prepayment.js` (constants) first, then `pos_payments.js`, then `zatca_buttons.js`. Preserve that order.
 - No `app_include_css`: the desk's Arabic font and the Saudi Riyal sign come from the [DaaD](https://github.com/itsystematic/daad) app, which owns `--font-stack`. Don't set it here again; whichever app's CSS loads last replaces the whole variable. `public/fonts/` keeps Claudion and Almarai Regular/Bold for the PDF/A-3 (`zatca/pdfa3.py`) and the onboarding wizard (`zatca-onboarding/src/style.css`), which DaaD's CSS doesn't reach.
@@ -133,6 +134,8 @@ The mirrors are the subtle one. They were historically `precision "0"` (stored a
 
 Declared in `pyproject.toml`, installed via `bench setup requirements`: `cryptography` (signing), `asn1` (certificate/CSR encoding), `qrcode` (Phase-1 TLV QR), `pikepdf` (embedding invoice XML into a PDF/A-3 file — see `zatca/pdfa3.py`). CSR/key generation lives in `zatca/keys.py` (`GenerateCSR`) and `zatca/setup.py` (onboarding: CSR → compliance CSID → sample invoices → production CSID).
 
+`GenerateCSR` runs openssl in a `TemporaryDirectory` and reads the results back before the folder goes, so the private key persists only on the Optima Zatca Setting. Never move these files under the site's `private/files`: a copy there is outside Frappe's permissions and goes into every files backup. Onboarding used to leave them there; the patch `patches/v16/remove_csr_scratch_files.py` deletes a leftover set only when its key is stored on a setting, and lists every other set in the Error Log ("Optima ZATCA: key file cleanup").
+
 ## Testing rules
 
 ### Base classes (Frappe 16)
@@ -148,7 +151,7 @@ Import them from `frappe.tests`. The base class decides how the runner prepares 
 - **Never subclass `FrappeTestCase`.** On Frappe 16 it is a deprecated stand-in, and the runner prepares such suites the old way: it walks the whole app and builds test records for every `test_*.py` in a `doctype/` folder. That walk reached ERPNext's test utilities and failed CI with `MandatoryError: [Item, _Test Item]: taxes`.
 - **Keep `IntegrationTestCase` suites outside `doctype/` folders.** Inside one, `setUpClass` builds test records for the doctype's whole link graph.
 - **Roll back after every test.** Give every integration suite a `tearDown` with `frappe.db.rollback()`, plus `frappe.clear_cache()` when it touches Singles or Company. The class itself rolls back only once, after its last test.
-- **Never import `erpnext.tests.*`**, or ERPNext test helpers such as `create_sales_invoice`. Importing them runs `BootStrapTestData`, whose `_Test Item` has no taxes and is refused by the mandatory Item `taxes` rule (#96 asks whether to keep that rule). CI's first step greps for such imports and fails the build.
+- **Never import `erpnext.tests.*`**, or ERPNext test helpers such as `create_sales_invoice`. Importing them runs `BootStrapTestData`, which commits `_Test Company`, test users and System Settings changes to the site. CI's first step greps for such imports and fails the build.
 - **Assert messages in matrix tests, never in integration tests.** Every case names the bug it catches.
 
 ```
@@ -182,7 +185,7 @@ The prepayment `validate` rules (`events/prepayment.py`) are covered by a **two-
 **The factories are site-agnostic — keep them that way.** They provision their own dedicated `Optima Zatca Test …` records (party, item, item-tax-template, commercial register + address) rather than borrowing whatever the site contains; borrowing broke them on a fresh site (the first "non-stock" item found was a fixed asset).
 
 - **Each one takes the company's own record, never another company's.** The template factory asks for `KSA VAT 15% Selling` by title; taking the company's first template once gave CI a 0% purchase one. A fabricated Commercial Register takes a CRN derived from the company, because registers are named by their CRN.
-- **Watch for the KSA landmines already handled there:** `customer_type="Individual"` (dodges mandatory registration/`tax_id`), the mandatory Item `taxes` table, and pre-seeding order/invoice `taxes` rows **with `cost_center`**.
+- **Watch for the KSA landmines already handled there:** `customer_type="Individual"` (dodges mandatory registration/`tax_id`) and pre-seeding order/invoice `taxes` rows **with `cost_center`**.
 - **Only CI proves the fabricate branches.** Existing sites already have the records, so the *fabricate* branches only run on a fresh CI site. A wrong field name there stays invisible locally (as the `Sales Invoice Type` `type` field and the fixed-asset item both did), so a green CI run is the real proof.
 
 ### CI
@@ -221,4 +224,4 @@ zatca/setup.py  saving_register_data → per CR: Address → Commercial Register
 - **Socket.io** connects to `<origin or :socketio_port>/<site_name>`: the namespace must be the site name, as in Frappe's own client.
 - The old desk page `/app|desk/zatca-onboarding` only redirects here; the workspace shortcut links here directly.
 
-**Known gaps in the v15 onboarding backend** (not fixed yet): `demo.py` reports gateway errors (429/520/522 from ZATCA's Cloudflare) as "Was Rejected in Zatca" and swallows exceptions without a log; `register_company` has no permission check, and `api.get_production_csid` is whitelisted though only `setup.py` calls it; Phase 1 still requests certificates like Phase 2. Certificate renewal is broken: `api.renew_production_csid` passes `header=` to `request.make_patch_request` (parameter `headers`), which passes `header=` on to `requests.patch` — both raise `TypeError`.
+**Known gaps in the v15 onboarding backend** (not fixed yet): `demo.py` reports gateway errors (429/520/522 from ZATCA's Cloudflare) as "Was Rejected in Zatca"; `register_company` has no permission check, and `api.get_production_csid` is whitelisted though only `setup.py` calls it; Phase 1 still requests certificates like Phase 2. Certificate renewal is broken: `api.renew_production_csid` passes `header=` to `request.make_patch_request` (parameter `headers`), which passes `header=` on to `requests.patch` — both raise `TypeError`.

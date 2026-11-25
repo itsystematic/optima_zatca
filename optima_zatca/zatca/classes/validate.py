@@ -2,7 +2,10 @@ import re
 import json
 import frappe
 from frappe import _
-from datetime import datetime 
+from frappe.utils import escape_html
+from datetime import datetime
+
+ITEM_NAME_MIN_LENGTH = 3
 
 
 class ZatcaInvoiceValidate :
@@ -25,7 +28,9 @@ class ZatcaInvoiceValidate :
         self.validate_sales_invoice_sender()
         self.validate_sales_invoice_fields()
         self.validate_credit_or_debit_invoice()
+        validate_item_tax_templates(self.sales_invoice.get("items"))
         self.validate_items_fields()
+        self.validate_item_name_lengths()
         self.validate_customer_info()
         self.validate_advance_payment()
         self.validate_sending_date_restriction()
@@ -41,7 +46,7 @@ class ZatcaInvoiceValidate :
         sales_invoice_exists = frappe.db.get_all("Optima Zatca Logs" , {
             "reference_doctype" : "Sales Invoice" ,
             "reference_name" : self.sales_invoice.get("name") ,
-            "status" : ["in", ["Success"  "Warning" ] ]
+            "status" : ["in", ["Success", "Warning"] ]
         })
         
         if sales_invoice_exists:
@@ -73,9 +78,6 @@ class ZatcaInvoiceValidate :
 
         for item in self.sales_invoice.get("items") :
             global tax_category
-
-            if item.get("item_tax_template") in ["",None] :
-                frappe.throw(_("Item Tax Template in Item  {0} Missing in row {1}").format(item.get("item_code") , item.get("idx")))
 
             tax_category = item.get("tax_category")
             if item.get("tax_cateogry") in ["",None] :
@@ -131,6 +133,18 @@ class ZatcaInvoiceValidate :
         restricted_chars = ["'", "\""]
         if any(char in item_name for char in restricted_chars):
             frappe.throw(_("Item Name [{0}] contains restricted characters, Please Remove it and Try Again.").format(item_name))
+
+    def validate_item_name_lengths(self) -> None:
+        short_names = find_short_item_names(self.sales_invoice.get("items"))
+        if not short_names:
+            return
+
+        frappe.throw(
+            _("Item Name must have at least {0} characters for ZATCA. Fix it on these rows, and on the Item for future invoices: {1}").format(
+                ITEM_NAME_MIN_LENGTH, _format_rows(short_names)
+            ),
+            title=_("Item Name Too Short"),
+        )
 
     def validate_advance_payment(self) -> None:
         """Validate Sales Invoice Elementary Advance Payment
@@ -246,6 +260,38 @@ def validate_tax_id_in_saudia_arabia(tax_id) -> None :
         
     if not bool(re.match(r'^3\d{13}3$' , tax_id))  :
         frappe.throw(title=_("Invalid Tax ID") , msg=_("Tax ID Must Only Number , Begin 3 , End 3  and Must be 15 Number Long"))
+
+
+def find_short_item_names(items) -> list:
+    """(idx, item_name) of each row whose name, without surrounding spaces, is under the minimum."""
+    return [
+        (item.get("idx"), item.get("item_name") or "")
+        for item in items
+        if len((item.get("item_name") or "").strip()) < ITEM_NAME_MIN_LENGTH
+    ]
+
+
+def validate_item_tax_templates(items) -> None:
+    """Refuse lines with no Item Tax Template: ZATCA takes each line's tax category from it."""
+    missing = find_rows_without_tax_template(items)
+    if not missing:
+        return
+
+    frappe.throw(
+        _("Item Tax Template is missing on these rows. Set it on each row, and on the Item or its Item Group for future invoices: {0}").format(
+            _format_rows(missing)
+        ),
+        title=_("Item Tax Template Missing"),
+    )
+
+
+def find_rows_without_tax_template(items) -> list:
+    """(idx, item_code) of each row with no Item Tax Template."""
+    return [(item.get("idx"), item.get("item_code")) for item in items if not item.get("item_tax_template")]
+
+
+def _format_rows(rows) -> str:
+    return ", ".join(_("Row {0}").format(idx) + ": " + frappe.bold(escape_html(label)) for idx, label in rows)
 
 # Validate API FOR Front end
 
