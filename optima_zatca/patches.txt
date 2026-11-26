@@ -10,3 +10,4 @@ optima_zatca.patches.v15.set_prepayment_percentage_precision
 optima_zatca.patches.v16.redesign_zatca_workspace
 optima_zatca.patches.v16.remove_csr_scratch_files
 optima_zatca.patches.v16.stop_requiring_item_tax_rows
+optima_zatca.patches.v16.add_advance_payment_report_index
