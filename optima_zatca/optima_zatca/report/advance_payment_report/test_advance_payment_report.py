@@ -5,6 +5,7 @@
 
 Most tests feed build_report rows shaped like get_invoices returns them, so no invoice has to exist.
 TestExecute saves one real chain to prove the query reads the right fields and only submitted invoices.
+TestInvoiceIndex checks the site has the index that query is read through.
 """
 
 import frappe
@@ -275,4 +276,18 @@ class TestExecute(FrappeTestCase):
                 (initial.base_total_taxes_and_charges, initial.base_grand_total),
                 (-adjustment.deducted_tax_amount, -adjustment.deducted_grand_total),
             ],
+        )
+
+
+class TestInvoiceIndex(UnitTestCase):
+    def test_the_chain_invoices_are_read_through_the_company_index(self):
+        """Without it get_invoices scans every Sales Invoice. A fresh install, as on CI, gets it from
+        after_install and an upgraded site from the patch."""
+        index = frappe.db.sql(
+            """SHOW INDEX FROM `tabSales Invoice` WHERE Key_name = 'company_sales_invoice_type_index'""",
+            as_dict=True,
+        )
+        self.assertEqual(
+            [row.Column_name for row in sorted(index, key=lambda row: row.Seq_in_index)],
+            ["company", "sales_invoice_type"],
         )

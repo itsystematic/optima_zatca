@@ -2,14 +2,14 @@
 Single source of truth for optima_zatca's self-customizations.
 
 Everything the app adds to standard DocTypes — custom fields, property setters,
-and roles — is defined here ONCE and applied idempotently:
+roles, and an index — is defined here ONCE and applied idempotently:
 
 - ``ensure_customizations()`` is the apply path. It runs on install
   (``after_install``) and is re-invoked by patches so already-installed sites
   converge to the canonical definitions.
 - ``remove_customizations()`` is the symmetric teardown, run on uninstall
   (``before_uninstall``). It removes only the schema the app owns (custom fields,
-  property setters, roles) — never user data or the app's own DocTypes.
+  property setters, roles, the index) — never user data or the app's own DocTypes.
 
 Custom fields use ``update=True`` (idempotent upsert), so re-running always
 re-asserts the definitions below.
@@ -31,6 +31,10 @@ ZATCA_ROLES = ["Zatca Role", "Zatca Manager"]
 # decimals (e.g. a max limit of 66.666666667%) is neither truncated nor rejected.
 # Keep in sync with PERCENTAGE_PRECISION in optima_zatca/events/prepayment.py.
 PERCENTAGE_PRECISION = 9
+
+# The Advance Payment Report's get_invoices filters on both; company leads so a site with several
+# companies also skips the other companies' chain invoices.
+REPORT_INDEX_FIELDS = ["company", "sales_invoice_type"]
 
 ADDRESS_DOCTYPE_FIELDS = [
     "address_title", "address_type", "section_break_123", "short_address", "address_line1", "city", "pincode",
@@ -270,10 +274,18 @@ def get_property_setters():
 # ---------------------------------------------------------------------------
 
 def ensure_customizations():
-    """Idempotently create/update every custom field, property setter, and role."""
+    """Idempotently create/update every custom field, property setter, role, and index."""
     create_custom_fields(get_custom_fields(), update=True)
+    _add_report_index()
     _apply_property_setters()
     _ensure_roles()
+
+
+def _add_report_index():
+    """Added here, after the custom fields, rather than from an ``on_doctype_update`` hook: the
+    app's DocTypes sync before ``after_install`` creates the ``sales_invoice_type`` column, so the
+    index would fail a fresh install there."""
+    frappe.db.add_index("Sales Invoice", REPORT_INDEX_FIELDS)
 
 
 def _apply_property_setters():
@@ -303,9 +315,16 @@ def add_standard_data():
 def remove_customizations():
     """Remove the schema the app owns. Non-destructive: leaves user data and the
     app's own DocTypes (Frappe removes those) untouched."""
+    _remove_report_index()
     _remove_custom_fields()
     _remove_property_setters()
     _remove_roles()
+
+
+def _remove_report_index():
+    index_name = frappe.db.get_index_name(REPORT_INDEX_FIELDS)
+    if frappe.db.has_index("tabSales Invoice", index_name):
+        frappe.db.sql_ddl(f"ALTER TABLE `tabSales Invoice` DROP INDEX `{index_name}`")
 
 
 def _remove_custom_fields():
