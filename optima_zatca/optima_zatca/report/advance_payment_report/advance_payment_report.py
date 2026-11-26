@@ -83,7 +83,10 @@ def with_descendants(doctype, name):
 
 def get_invoices(filters):
     """Every submitted chain invoice of the company, whatever its date: a chain is linked whole
-    before the period cuts it, so a backdated invoice never loses its parent."""
+    before the period cuts it, so a backdated invoice never loses its parent.
+
+    The (company, sales_invoice_type) index from setup/customizations.py keeps this from scanning
+    every Sales Invoice."""
     invoice = frappe.qb.DocType("Sales Invoice")
     item = frappe.qb.DocType("Sales Invoice Item")
     item_sales_order = (
