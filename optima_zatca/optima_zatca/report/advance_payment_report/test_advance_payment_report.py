@@ -279,7 +279,7 @@ class TestExecute(FrappeTestCase):
         )
 
 
-class TestInvoiceIndex(UnitTestCase):
+class TestInvoiceIndex(FrappeTestCase):
     def test_the_chain_invoices_are_read_through_the_company_index(self):
         """Without it get_invoices scans every Sales Invoice. A fresh install, as on CI, gets it from
         after_install and an upgraded site from the patch."""
